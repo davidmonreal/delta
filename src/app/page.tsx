@@ -16,6 +16,8 @@ type SummaryRow = {
   serviceId: number;
   clientName: string;
   serviceName: string;
+  previousRef: string | null;
+  currentRef: string | null;
   previousTotal: number;
   currentTotal: number;
   previousUnits: number;
@@ -31,6 +33,19 @@ function toInt(value: string | undefined, fallback: number) {
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function formatRef(
+  series: string | null,
+  albaran: string | null,
+  numero: string | null,
+) {
+  const seriesPart = series || albaran || "";
+  const numberPart = numero || albaran || "";
+  if (seriesPart && numberPart && seriesPart !== numberPart) {
+    return `${seriesPart}-${numberPart}`;
+  }
+  return seriesPart || numberPart || null;
 }
 
 export default async function Home({
@@ -68,6 +83,29 @@ export default async function Home({
     },
   });
 
+  const refs = await prisma.invoiceLine.findMany({
+    where: {
+      month,
+      year: { in: [previousYear, year] },
+    },
+    select: {
+      clientId: true,
+      serviceId: true,
+      year: true,
+      series: true,
+      albaran: true,
+      numero: true,
+    },
+  });
+
+  const refMap = new Map<string, string>();
+  for (const ref of refs) {
+    const key = `${ref.clientId}-${ref.serviceId}-${ref.year}`;
+    if (refMap.has(key)) continue;
+    const label = formatRef(ref.series, ref.albaran, ref.numero);
+    if (label) refMap.set(key, label);
+  }
+
   const clientIds = Array.from(new Set(groups.map((group) => group.clientId)));
   const serviceIds = Array.from(new Set(groups.map((group) => group.serviceId)));
 
@@ -96,6 +134,11 @@ export default async function Home({
       serviceId: group.serviceId,
       clientName: clientMap.get(group.clientId) ?? "Unknown client",
       serviceName: serviceMap.get(group.serviceId) ?? "Unknown service",
+      previousRef:
+        refMap.get(`${group.clientId}-${group.serviceId}-${previousYear}`) ??
+        null,
+      currentRef:
+        refMap.get(`${group.clientId}-${group.serviceId}-${year}`) ?? null,
       previousTotal: 0,
       currentTotal: 0,
       previousUnits: 0,
@@ -109,9 +152,15 @@ export default async function Home({
     if (group.year === year) {
       existing.currentTotal = group._sum.total ?? 0;
       existing.currentUnits = group._sum.units ?? 0;
+      existing.currentRef =
+        refMap.get(`${group.clientId}-${group.serviceId}-${year}`) ??
+        existing.currentRef;
     } else {
       existing.previousTotal = group._sum.total ?? 0;
       existing.previousUnits = group._sum.units ?? 0;
+      existing.previousRef =
+        refMap.get(`${group.clientId}-${group.serviceId}-${previousYear}`) ??
+        existing.previousRef;
     }
 
     rows.set(key, existing);
@@ -247,8 +296,14 @@ export default async function Home({
                 </Link>
               </span>
               <span>{row.serviceName}</span>
-              <span className="num">{formatCurrency(row.previousUnitPrice)}</span>
-              <span className="num">{formatCurrency(row.currentUnitPrice)}</span>
+              <span className="num cell-stack">
+                {formatCurrency(row.previousUnitPrice)}
+                <span className="subline">{row.previousRef ?? "-"}</span>
+              </span>
+              <span className="num cell-stack">
+                {formatCurrency(row.currentUnitPrice)}
+                <span className="subline">{row.currentRef ?? "-"}</span>
+              </span>
               <span
                 className={`num delta ${
                   row.isMissing || row.deltaPrice < 0 ? "down" : "up"
@@ -268,7 +323,7 @@ export default async function Home({
             </div>
           ))}
           <div className="table-row table-foot">
-            <span>Total diferencia</span>
+            <span>Total diferencia (preu unitari)</span>
             <span />
             <span />
             <span className="num">{formatCurrency(sumDeltaVisible)}</span>
@@ -297,14 +352,17 @@ export default async function Home({
                   </Link>
                 </span>
                 <span>{row.serviceName}</span>
-                <span className="num">{formatCurrency(row.previousUnitPrice)}</span>
+                <span className="num cell-stack">
+                  {formatCurrency(row.previousUnitPrice)}
+                  <span className="subline">{row.previousRef ?? "-"}</span>
+                </span>
                 <span className="num">-</span>
                 <span className="num delta down">No fet</span>
                 <span className="num">{formatUnits(row.previousUnits)} {"->"} 0</span>
               </div>
             ))}
             <div className="table-row table-foot">
-              <span>Total diferencia</span>
+              <span>Total diferencia (no fets)</span>
               <span />
               <span />
               <span className="num">{formatCurrency(sumDeltaMissing)}</span>

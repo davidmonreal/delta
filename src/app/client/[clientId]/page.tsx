@@ -69,6 +69,34 @@ export default async function ClientPage({
     },
   });
 
+  const refs = await prisma.invoiceLine.findMany({
+    where: {
+      clientId,
+      month,
+      year: { in: [previousYear, year] },
+    },
+    select: {
+      serviceId: true,
+      year: true,
+      series: true,
+      albaran: true,
+      numero: true,
+    },
+  });
+
+  const refMap = new Map<string, string>();
+  for (const ref of refs) {
+    const key = `${ref.serviceId}-${ref.year}`;
+    if (refMap.has(key)) continue;
+    const seriesPart = ref.series || ref.albaran || "";
+    const numberPart = ref.numero || ref.albaran || "";
+    const label =
+      seriesPart && numberPart && seriesPart !== numberPart
+        ? `${seriesPart}-${numberPart}`
+        : seriesPart || numberPart || null;
+    if (label) refMap.set(key, label);
+  }
+
   const serviceIds = Array.from(new Set(groups.map((group) => group.serviceId)));
   const services = await prisma.service.findMany({
     where: { id: { in: serviceIds } },
@@ -83,6 +111,8 @@ export default async function ClientPage({
     {
       serviceId: number;
       serviceName: string;
+      previousRef: string | null;
+      currentRef: string | null;
       previousTotal: number;
       currentTotal: number;
       previousUnits: number;
@@ -99,6 +129,8 @@ export default async function ClientPage({
     const existing = rows.get(group.serviceId) ?? {
       serviceId: group.serviceId,
       serviceName: serviceMap.get(group.serviceId) ?? "Unknown service",
+      previousRef: refMap.get(`${group.serviceId}-${previousYear}`) ?? null,
+      currentRef: refMap.get(`${group.serviceId}-${year}`) ?? null,
       previousTotal: 0,
       currentTotal: 0,
       previousUnits: 0,
@@ -112,9 +144,13 @@ export default async function ClientPage({
     if (group.year === year) {
       existing.currentTotal = group._sum.total ?? 0;
       existing.currentUnits = group._sum.units ?? 0;
+      existing.currentRef =
+        refMap.get(`${group.serviceId}-${year}`) ?? existing.currentRef;
     } else {
       existing.previousTotal = group._sum.total ?? 0;
       existing.previousUnits = group._sum.units ?? 0;
+      existing.previousRef =
+        refMap.get(`${group.serviceId}-${previousYear}`) ?? existing.previousRef;
     }
 
     rows.set(group.serviceId, existing);
@@ -232,8 +268,14 @@ export default async function ClientPage({
           {summaries.map((row) => (
             <div key={row.serviceId} className="table-row">
               <span>{row.serviceName}</span>
-              <span className="num">{formatCurrency(row.previousUnitPrice)}</span>
-              <span className="num">{formatCurrency(row.currentUnitPrice)}</span>
+              <span className="num cell-stack">
+                {formatCurrency(row.previousUnitPrice)}
+                <span className="subline">{row.previousRef ?? "-"}</span>
+              </span>
+              <span className="num cell-stack">
+                {formatCurrency(row.currentUnitPrice)}
+                <span className="subline">{row.currentRef ?? "-"}</span>
+              </span>
               <span
                 className={`num delta ${
                   row.isMissing || row.deltaPrice < 0 ? "down" : "up"

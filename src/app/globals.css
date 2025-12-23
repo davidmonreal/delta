@@ -172,6 +172,17 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subline {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
 .delta {
   font-weight: 600;
 }
