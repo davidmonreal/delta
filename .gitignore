@@ -47,5 +47,7 @@ data/
 .cache/
 .prisma-cache/
 prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
 
 /src/generated/prisma
