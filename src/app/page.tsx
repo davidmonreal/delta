@@ -6,6 +6,7 @@ import { formatCurrency, formatUnits } from "@/lib/format";
 type SearchParams = {
   year?: string;
   month?: string;
+  show?: string;
 };
 
 type RowKey = `${number}-${number}`;
@@ -31,8 +32,9 @@ function toInt(value: string | undefined, fallback: number) {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: Promise<SearchParams>;
 }) {
+  const resolvedSearchParams = (await searchParams) ?? {};
   const latestEntry =
     (await prisma.invoiceLine.findFirst({
       orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -42,9 +44,10 @@ export default async function Home({
   const defaultYear = latestEntry?.year ?? new Date().getFullYear();
   const defaultMonth = latestEntry?.month ?? new Date().getMonth() + 1;
 
-  const year = toInt(searchParams?.year, defaultYear);
-  const month = toInt(searchParams?.month, defaultMonth);
+  const year = toInt(resolvedSearchParams.year, defaultYear);
+  const month = toInt(resolvedSearchParams.month, defaultMonth);
   const previousYear = year - 1;
+  const showAll = resolvedSearchParams.show === "all";
 
   const groups = await prisma.invoiceLine.groupBy({
     by: ["clientId", "serviceId", "year", "month"],
@@ -109,7 +112,9 @@ export default async function Home({
       ...row,
       delta: row.currentTotal - row.previousTotal,
     }))
-    .filter((row) => Math.abs(row.delta) > 0.001)
+    .filter((row) =>
+      showAll ? Math.abs(row.delta) > 0.001 : row.delta < -0.001,
+    )
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
 
   return (
@@ -142,14 +147,30 @@ export default async function Home({
               defaultValue={month}
             />
           </label>
+          {showAll ? (
+            <input type="hidden" name="show" value="all" />
+          ) : null}
           <button type="submit">Actualitza</button>
         </form>
       </header>
 
       <section className="card">
         <div className="table-header">
-          <span>Resultats amb diferencies ({summaries.length})</span>
-          <span className="hint">Clicka un client per veure el detall</span>
+          <span>
+            Resultats amb diferencies ({summaries.length})
+            {!showAll ? " negatives" : ""}
+          </span>
+          <span className="hint">
+            {showAll ? (
+              <Link href={`/?year=${year}&month=${month}`}>
+                Mostra només negatives
+              </Link>
+            ) : (
+              <Link href={`/?year=${year}&month=${month}&show=all`}>
+                Veure totes les diferencies
+              </Link>
+            )}
+          </span>
         </div>
         <div className="table">
           <div className="table-row table-head">
@@ -176,7 +197,7 @@ export default async function Home({
                 {formatCurrency(row.delta)}
               </span>
               <span className="num">
-                {formatUnits(row.previousUnits)} ->{" "}
+                {formatUnits(row.previousUnits)} {"->"}{" "}
                 {formatUnits(row.currentUnits)}
               </span>
             </div>

@@ -19,10 +19,12 @@ export default async function ClientPage({
   params,
   searchParams,
 }: {
-  params: { clientId: string };
-  searchParams?: SearchParams;
+  params: Promise<{ clientId: string }>;
+  searchParams?: Promise<SearchParams>;
 }) {
-  const clientId = Number.parseInt(params.clientId, 10);
+  const resolvedParams = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const clientId = Number.parseInt(resolvedParams.clientId, 10);
   if (Number.isNaN(clientId)) {
     notFound();
   }
@@ -45,8 +47,8 @@ export default async function ClientPage({
 
   const defaultYear = latestEntry?.year ?? new Date().getFullYear();
   const defaultMonth = latestEntry?.month ?? new Date().getMonth() + 1;
-  const year = toInt(searchParams?.year, defaultYear);
-  const month = toInt(searchParams?.month, defaultMonth);
+  const year = toInt(resolvedSearchParams.year, defaultYear);
+  const month = toInt(resolvedSearchParams.month, defaultMonth);
   const previousYear = year - 1;
 
   const groups = await prisma.invoiceLine.groupBy({
@@ -166,7 +168,7 @@ export default async function ClientPage({
                 {formatCurrency(row.delta)}
               </span>
               <span className="num">
-                {formatUnits(row.previousUnits)} ->{" "}
+                {formatUnits(row.previousUnits)} {"->"}{" "}
                 {formatUnits(row.currentUnits)}
               </span>
             </div>
