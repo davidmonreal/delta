@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/db";
-import { formatCurrency, formatUnits } from "@/lib/format";
+import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 
 type SearchParams = {
   year?: string;
@@ -20,7 +20,11 @@ type SummaryRow = {
   currentTotal: number;
   previousUnits: number;
   currentUnits: number;
-  delta: number;
+  previousUnitPrice: number;
+  currentUnitPrice: number;
+  deltaPrice: number;
+  isMissing: boolean;
+  percentDelta?: number;
 };
 
 function toInt(value: string | undefined, fallback: number) {
@@ -47,7 +51,10 @@ export default async function Home({
   const year = toInt(resolvedSearchParams.year, defaultYear);
   const month = toInt(resolvedSearchParams.month, defaultMonth);
   const previousYear = year - 1;
-  const showAll = resolvedSearchParams.show === "all";
+  const show = resolvedSearchParams.show ?? "neg";
+  const showNegative = show === "neg";
+  const showEqual = show === "eq";
+  const showPositive = show === "pos";
 
   const groups = await prisma.invoiceLine.groupBy({
     by: ["clientId", "serviceId", "year", "month"],
@@ -93,7 +100,10 @@ export default async function Home({
       currentTotal: 0,
       previousUnits: 0,
       currentUnits: 0,
-      delta: 0,
+      previousUnitPrice: Number.NaN,
+      currentUnitPrice: Number.NaN,
+      deltaPrice: Number.NaN,
+      isMissing: false,
     };
 
     if (group.year === year) {
@@ -108,14 +118,46 @@ export default async function Home({
   }
 
   const summaries = Array.from(rows.values())
-    .map((row) => ({
-      ...row,
-      delta: row.currentTotal - row.previousTotal,
-    }))
-    .filter((row) =>
-      showAll ? Math.abs(row.delta) > 0.001 : row.delta < -0.001,
-    )
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    .map((row) => {
+      const previousUnitPrice =
+        row.previousUnits > 0 ? row.previousTotal / row.previousUnits : Number.NaN;
+      const currentUnitPrice =
+        row.currentUnits > 0 ? row.currentTotal / row.currentUnits : Number.NaN;
+      const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
+      const deltaPrice = hasBoth
+        ? currentUnitPrice - previousUnitPrice
+        : Number.NaN;
+      const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
+      return {
+        ...row,
+        previousUnitPrice,
+        currentUnitPrice,
+        deltaPrice,
+        isMissing,
+        percentDelta:
+          hasBoth && previousUnitPrice > 0
+            ? ((currentUnitPrice - previousUnitPrice) / previousUnitPrice) * 100
+            : undefined,
+      };
+    })
+    .filter((row) => {
+      if (showNegative) return row.isMissing || row.deltaPrice < -0.001;
+      if (showEqual) return Math.abs(row.deltaPrice) <= 0.001;
+      if (showPositive) return row.deltaPrice > 0.001;
+      return row.deltaPrice < -0.001;
+    })
+    .sort((a, b) => {
+      const aScore = a.isMissing ? Number.POSITIVE_INFINITY : Math.abs(a.deltaPrice);
+      const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
+      return bScore - aScore;
+    });
+
+  const negativeWithPrice = showNegative
+    ? summaries.filter((row) => !row.isMissing)
+    : [];
+  const negativeMissing = showNegative
+    ? summaries.filter((row) => row.isMissing)
+    : [];
 
   return (
     <div className="page">
@@ -147,9 +189,7 @@ export default async function Home({
               defaultValue={month}
             />
           </label>
-          {showAll ? (
-            <input type="hidden" name="show" value="all" />
-          ) : null}
+          <input type="hidden" name="show" value={show} />
           <button type="submit">Actualitza</button>
         </form>
       </header>
@@ -157,31 +197,38 @@ export default async function Home({
       <section className="card">
         <div className="table-header">
           <span>
-            Resultats amb diferencies ({summaries.length})
-            {!showAll ? " negatives" : ""}
+            {showEqual
+              ? "Resultats amb preu unitari igual"
+              : "Resultats per preu unitari"}
+            {" "}
+            ({summaries.length})
+            {showNegative ? " negatives" : ""}
           </span>
           <span className="hint">
-            {showAll ? (
-              <Link href={`/?year=${year}&month=${month}`}>
-                Mostra només negatives
-              </Link>
-            ) : (
-              <Link href={`/?year=${year}&month=${month}&show=all`}>
-                Veure totes les diferencies
-              </Link>
-            )}
+            <Link href={`/?year=${year}&month=${month}&show=neg`}>
+              Nomes negatives
+            </Link>
+            {" | "}
+            <Link href={`/?year=${year}&month=${month}&show=eq`}>
+              Iguals
+            </Link>
+            {" | "}
+            <Link href={`/?year=${year}&month=${month}&show=pos`}>
+              Mes altes
+            </Link>
           </span>
         </div>
-        <div className="table">
+        <div className={`table ${showPositive ? "table--wide" : ""}`}>
           <div className="table-row table-head">
             <span>Client</span>
             <span>Servei</span>
-            <span className="num">{previousYear}</span>
-            <span className="num">{year}</span>
-            <span className="num">Delta</span>
+            <span className="num">Preu unit. {previousYear}</span>
+            <span className="num">Preu unit. {year}</span>
+            <span className="num">Delta preu</span>
+            {showPositive ? <span className="num">Augment %</span> : null}
             <span className="num">Unitats</span>
           </div>
-          {summaries.map((row) => (
+          {(showNegative ? negativeWithPrice : summaries).map((row) => (
             <div key={`${row.clientId}-${row.serviceId}`} className="table-row">
               <span>
                 <Link
@@ -191,11 +238,20 @@ export default async function Home({
                 </Link>
               </span>
               <span>{row.serviceName}</span>
-              <span className="num">{formatCurrency(row.previousTotal)}</span>
-              <span className="num">{formatCurrency(row.currentTotal)}</span>
-              <span className={`num delta ${row.delta < 0 ? "down" : "up"}`}>
-                {formatCurrency(row.delta)}
+              <span className="num">{formatCurrency(row.previousUnitPrice)}</span>
+              <span className="num">{formatCurrency(row.currentUnitPrice)}</span>
+              <span
+                className={`num delta ${
+                  row.isMissing || row.deltaPrice < 0 ? "down" : "up"
+                }`}
+              >
+                {row.isMissing ? "No fet" : formatCurrency(row.deltaPrice)}
               </span>
+              {showPositive ? (
+                <span className="num">
+                  {formatPercent(row.percentDelta ?? Number.NaN)}
+                </span>
+              ) : null}
               <span className="num">
                 {formatUnits(row.previousUnits)} {"->"}{" "}
                 {formatUnits(row.currentUnits)}
@@ -203,6 +259,34 @@ export default async function Home({
             </div>
           ))}
         </div>
+        {showNegative && negativeMissing.length > 0 ? (
+          <div className="table">
+            <div className="table-row table-head">
+              <span>No fets</span>
+              <span>Servei</span>
+              <span className="num">Preu unit. {previousYear}</span>
+              <span className="num">Preu unit. {year}</span>
+              <span className="num">Delta preu</span>
+              <span className="num">Unitats</span>
+            </div>
+            {negativeMissing.map((row) => (
+              <div key={`${row.clientId}-${row.serviceId}`} className="table-row">
+                <span>
+                  <Link
+                    href={`/client/${row.clientId}?year=${year}&month=${month}`}
+                  >
+                    {row.clientName}
+                  </Link>
+                </span>
+                <span>{row.serviceName}</span>
+                <span className="num">{formatCurrency(row.previousUnitPrice)}</span>
+                <span className="num">-</span>
+                <span className="num delta down">No fet</span>
+                <span className="num">{formatUnits(row.previousUnits)} {"->"} 0</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
     </div>
   );

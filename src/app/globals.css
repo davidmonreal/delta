@@ -1,14 +1,14 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   color-scheme: light;
-  --ink: #1d1a16;
-  --muted: #6b625a;
-  --accent: #c4501b;
-  --accent-soft: #f6dccf;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --accent: #0f766e;
+  --accent-soft: #d7f3ee;
   --panel: #ffffff;
-  --panel-border: #e2d8cc;
-  --shadow: 0 20px 40px rgba(48, 30, 16, 0.12);
+  --panel-border: #e2e8f0;
+  --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -17,9 +17,9 @@
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at top left, #fff7ef, #f6efe7 45%, #f1e8de);
+  background: radial-gradient(circle at top right, #ffffff, #f5f7fb 60%, #eef2f7);
 }
 
 a {
@@ -47,12 +47,13 @@ a:hover {
 
 .page-header h1 {
   margin: 6px 0 8px;
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .eyebrow {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--muted);
@@ -79,7 +80,7 @@ a:hover {
 .filters label {
   display: flex;
   flex-direction: column;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   gap: 6px;
   color: var(--muted);
 }
@@ -88,7 +89,7 @@ a:hover {
   border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 8px 10px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .filters button {
@@ -103,7 +104,7 @@ a:hover {
 }
 
 .filters button:hover {
-  background: #a94116;
+  background: #0b5f58;
 }
 
 .card {
@@ -119,16 +120,16 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 16px;
 }
 
 .hint {
   background: var(--accent-soft);
-  color: #7a2f10;
+  color: #0f4f4a;
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .table {
@@ -142,14 +143,19 @@ a:hover {
   gap: 12px;
   padding: 12px 16px;
   border-radius: 16px;
-  background: #fbfaf8;
-  border: 1px solid #efe6da;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.table--wide .table-row {
+  grid-template-columns: 2fr 2fr repeat(5, minmax(110px, 1fr));
 }
 
 .table-head {
   background: transparent;
   border: none;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
