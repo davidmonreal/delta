@@ -161,6 +161,12 @@ a:hover {
   letter-spacing: 0.08em;
 }
 
+.table-foot {
+  background: #eef2f7;
+  border: 1px dashed #cbd5f5;
+  font-weight: 600;
+}
+
 .num {
   text-align: right;
   font-variant-numeric: tabular-nums;

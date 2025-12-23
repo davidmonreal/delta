@@ -158,6 +158,15 @@ export default async function Home({
   const negativeMissing = showNegative
     ? summaries.filter((row) => row.isMissing)
     : [];
+  const visibleRows = showNegative ? negativeWithPrice : summaries;
+  const sumDeltaVisible = visibleRows.reduce(
+    (total, row) => total + (row.currentTotal - row.previousTotal),
+    0,
+  );
+  const sumDeltaMissing = negativeMissing.reduce(
+    (total, row) => total + (row.currentTotal - row.previousTotal),
+    0,
+  );
 
   return (
     <div className="page">
@@ -228,7 +237,7 @@ export default async function Home({
             {showPositive ? <span className="num">Augment %</span> : null}
             <span className="num">Unitats</span>
           </div>
-          {(showNegative ? negativeWithPrice : summaries).map((row) => (
+          {visibleRows.map((row) => (
             <div key={`${row.clientId}-${row.serviceId}`} className="table-row">
               <span>
                 <Link
@@ -258,6 +267,15 @@ export default async function Home({
               </span>
             </div>
           ))}
+          <div className="table-row table-foot">
+            <span>Total diferencia</span>
+            <span />
+            <span />
+            <span className="num">{formatCurrency(sumDeltaVisible)}</span>
+            <span />
+            {showPositive ? <span /> : null}
+            <span />
+          </div>
         </div>
         {showNegative && negativeMissing.length > 0 ? (
           <div className="table">
@@ -285,6 +303,14 @@ export default async function Home({
                 <span className="num">{formatUnits(row.previousUnits)} {"->"} 0</span>
               </div>
             ))}
+            <div className="table-row table-foot">
+              <span>Total diferencia</span>
+              <span />
+              <span />
+              <span className="num">{formatCurrency(sumDeltaMissing)}</span>
+              <span />
+              <span />
+            </div>
           </div>
         ) : null}
       </section>

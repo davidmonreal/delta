@@ -154,6 +154,10 @@ export default async function ClientPage({
       const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
       return bScore - aScore;
     });
+  const sumDeltaVisible = summaries.reduce(
+    (total, row) => total + (row.currentTotal - row.previousTotal),
+    0,
+  );
 
   return (
     <div className="page">
@@ -248,6 +252,15 @@ export default async function ClientPage({
               </span>
             </div>
           ))}
+          <div className="table-row table-foot">
+            <span>Total diferencia</span>
+            <span />
+            <span />
+            <span className="num">{formatCurrency(sumDeltaVisible)}</span>
+            <span />
+            {showPositive ? <span /> : null}
+            <span />
+          </div>
         </div>
       </section>
     </div>
