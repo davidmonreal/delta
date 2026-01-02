@@ -3,8 +3,11 @@ import path from "node:path";
 
 import { importXlsxFile } from "@/modules/ingestion/application/importInvoiceLines";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
+import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { normalizeName } from "@/lib/normalize";
 
 let repo: PrismaIngestionRepository | null = null;
+let userRepo: PrismaUserRepository | null = null;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -24,9 +27,19 @@ async function main() {
   }
 
   repo = new PrismaIngestionRepository();
+  userRepo = new PrismaUserRepository();
+  const users = await userRepo.listAll();
+  const userLookup = new Map(
+    users
+      .filter((user) => user.name)
+      .map((user) => [
+        user.nameNormalized ?? normalizeName(user.name ?? ""),
+        user.id,
+      ]),
+  );
   let totalRows = 0;
   for (const filePath of targetPaths) {
-    const imported = await importXlsxFile({ filePath, reset, repo });
+    const imported = await importXlsxFile({ filePath, reset, repo, userLookup });
     totalRows += imported;
     console.log(`Importat ${imported} files de ${path.basename(filePath)}.`);
   }
@@ -41,4 +54,5 @@ main()
   })
   .finally(async () => {
     await repo?.disconnect?.();
+    await userRepo?.disconnect?.();
   });

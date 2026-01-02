@@ -8,6 +8,7 @@ const baseUser = {
   id: 1,
   email: "user@example.com",
   name: "User",
+  nameNormalized: "USER",
   role: "USER" as const,
   passwordHash: "hashed:old",
   createdAt: new Date(),
@@ -81,5 +82,6 @@ describe("updateUser", () => {
     expect(result.success).toBe("Usuari actualitzat correctament.");
     const updated = await repo.findById(1);
     expect(updated?.passwordHash).toBe("hashed:newpass");
+    expect(updated?.nameNormalized).toBe("USER");
   });
 });

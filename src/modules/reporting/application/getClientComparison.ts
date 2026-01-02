@@ -37,10 +37,12 @@ export async function getClientComparison({
   repo,
   rawFilters,
   rawClientId,
+  managerUserId,
 }: {
   repo: ReportingRepository;
   rawFilters: { year?: string; month?: string; show?: string };
   rawClientId: string;
+  managerUserId?: number;
 }): Promise<ClientComparisonResult> {
   const parsedClientId = ClientIdSchema.safeParse(rawClientId);
   if (!parsedClientId.success) {
@@ -53,7 +55,7 @@ export async function getClientComparison({
     return { notFound: true as const };
   }
 
-  const latestEntry = await repo.getLatestEntryForClient(clientId);
+  const latestEntry = await repo.getLatestEntryForClient(clientId, { managerUserId });
   const defaults = {
     year: latestEntry?.year ?? new Date().getFullYear(),
     month: latestEntry?.month ?? new Date().getMonth() + 1,
@@ -65,12 +67,14 @@ export async function getClientComparison({
     clientId,
     years: [filters.previousYear, filters.year],
     month: filters.month,
+    managerUserId,
   });
 
   const refs = await repo.getClientRefs({
     clientId,
     years: [filters.previousYear, filters.year],
     month: filters.month,
+    managerUserId,
   });
 
   const refMap = new Map<string, string>();

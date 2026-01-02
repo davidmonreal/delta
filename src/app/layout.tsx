@@ -18,6 +18,7 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   const showAdminLink = session ? canSeeAdminNav(session.user.role) : false;
+  const showUnmatchedLink = showAdminLink;
 
   return (
     <html lang="ca">
@@ -25,6 +26,7 @@ export default async function RootLayout({
         {session ? (
           <AppHeader
             showAdminLink={showAdminLink}
+            showUnmatchedLink={showUnmatchedLink}
             role={session.user.role}
             name={session.user.name}
             email={session.user.email}

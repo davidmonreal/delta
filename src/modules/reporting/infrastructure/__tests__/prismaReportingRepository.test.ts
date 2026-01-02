@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { PrismaReportingRepository } from "../prismaReportingRepository";
 
-const describeDb = process.env.POSTGRES_PRISMA_URL ? describe : describe.skip;
+const describeDb =
+  process.env.POSTGRES_PRISMA_URL && process.env.RUN_DB_TESTS === "1"
+    ? describe
+    : describe.skip;
 
 describeDb("PrismaReportingRepository", () => {
   it("returns defaults without errors", async () => {

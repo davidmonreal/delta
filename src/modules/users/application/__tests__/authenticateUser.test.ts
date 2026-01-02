@@ -7,6 +7,7 @@ const baseUser = {
   id: 1,
   email: "user@example.com",
   name: "User",
+  nameNormalized: "USER",
   role: "USER" as const,
   passwordHash: "hashed:secret",
   createdAt: new Date(),

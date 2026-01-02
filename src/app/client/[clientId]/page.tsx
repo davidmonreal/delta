@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireSession } from "@/lib/require-auth";
+import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
 import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
@@ -25,7 +26,10 @@ export default async function ClientPage({
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
-  await requireSession();
+  const session = await requireSession();
+  const managerUserId = isAdminRole(session.user.role)
+    ? undefined
+    : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
   const result = toClientComparisonDto(
     await getClientComparison({
@@ -36,6 +40,7 @@ export default async function ClientPage({
         show: resolvedSearchParams.show,
       },
       rawClientId: resolvedParams.clientId,
+      managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
     }),
   );
   if (result.notFound) {

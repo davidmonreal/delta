@@ -30,11 +30,13 @@ export type MonthlyComparisonResult = {
 export async function getMonthlyComparison({
   repo,
   rawFilters,
+  managerUserId,
 }: {
   repo: ReportingRepository;
   rawFilters: { year?: string; month?: string; show?: string };
+  managerUserId?: number;
 }): Promise<MonthlyComparisonResult> {
-  const latestEntry = await repo.getLatestEntry();
+  const latestEntry = await repo.getLatestEntry({ managerUserId });
   const defaults = {
     year: latestEntry?.year ?? new Date().getFullYear(),
     month: latestEntry?.month ?? new Date().getMonth() + 1,
@@ -45,11 +47,13 @@ export async function getMonthlyComparison({
   const groups = await repo.getMonthlyGroups({
     years: [filters.previousYear, filters.year],
     month: filters.month,
+    managerUserId,
   });
 
   const refs = await repo.getMonthlyRefs({
     years: [filters.previousYear, filters.year],
     month: filters.month,
+    managerUserId,
   });
 
   const refMap = new Map<string, string>();

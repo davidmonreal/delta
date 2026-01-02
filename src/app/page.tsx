@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { requireSession } from "@/lib/require-auth";
+import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getMonthlyComparison } from "@/modules/reporting/application/getMonthlyComparison";
 import { toMonthlyComparisonDto } from "@/modules/reporting/dto/reportingDto";
@@ -21,7 +22,10 @@ export default async function Home({
   searchParams?: Promise<SearchParams>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  await requireSession();
+  const session = await requireSession();
+  const managerUserId = isAdminRole(session.user.role)
+    ? undefined
+    : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
   const { filters, summaries, sumDeltaVisible } =
     toMonthlyComparisonDto(
@@ -32,6 +36,7 @@ export default async function Home({
           month: resolvedSearchParams.month,
           show: resolvedSearchParams.show,
         },
+        managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
       }),
     );
   const { year, month, previousYear, show, showEqual, showNegative, showPositive } =

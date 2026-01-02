@@ -45,6 +45,10 @@ export class InMemoryUserRepository implements UserRepository {
     return updated;
   }
 
+  async listAll() {
+    return [...this.users];
+  }
+
   async list({ roles, query }: ListUsersParams) {
     const queryLower = query?.toLowerCase();
     return this.users.filter((user) => {

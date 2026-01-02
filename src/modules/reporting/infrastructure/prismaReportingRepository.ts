@@ -12,27 +12,45 @@ import type {
 } from "../ports/reportingRepository";
 
 export class PrismaReportingRepository implements ReportingRepository {
-  async getLatestEntry(): Promise<YearMonth | null> {
+  async getLatestEntry(params?: { managerUserId?: number }): Promise<YearMonth | null> {
     return prisma.invoiceLine.findFirst({
+      where: {
+        ...(params?.managerUserId ? { managerUserId: params.managerUserId } : {}),
+      },
       orderBy: [{ year: "desc" }, { month: "desc" }],
       select: { year: true, month: true },
     });
   }
 
-  async getLatestEntryForClient(clientId: number): Promise<YearMonth | null> {
+  async getLatestEntryForClient(
+    clientId: number,
+    params?: { managerUserId?: number },
+  ): Promise<YearMonth | null> {
     return prisma.invoiceLine.findFirst({
-      where: { clientId },
+      where: {
+        clientId,
+        ...(params?.managerUserId ? { managerUserId: params.managerUserId } : {}),
+      },
       orderBy: [{ year: "desc" }, { month: "desc" }],
       select: { year: true, month: true },
     });
   }
 
-  async getMonthlyGroups({ years, month }: { years: number[]; month: number }) {
+  async getMonthlyGroups({
+    years,
+    month,
+    managerUserId,
+  }: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }) {
     const rows = await prisma.invoiceLine.groupBy({
       by: ["clientId", "serviceId", "year", "month"],
       where: {
         month,
         year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
       },
       _sum: {
         total: true,
@@ -49,11 +67,20 @@ export class PrismaReportingRepository implements ReportingRepository {
     })) satisfies MonthlyGroupRow[];
   }
 
-  async getMonthlyRefs({ years, month }: { years: number[]; month: number }) {
+  async getMonthlyRefs({
+    years,
+    month,
+    managerUserId,
+  }: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }) {
     const rows = await prisma.invoiceLine.findMany({
       where: {
         month,
         year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
       },
       select: {
         clientId: true,
@@ -91,13 +118,24 @@ export class PrismaReportingRepository implements ReportingRepository {
     });
   }
 
-  async getClientGroups({ clientId, years, month }: { clientId: number; years: number[]; month: number }) {
+  async getClientGroups({
+    clientId,
+    years,
+    month,
+    managerUserId,
+  }: {
+    clientId: number;
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }) {
     const rows = await prisma.invoiceLine.groupBy({
       by: ["serviceId", "year", "month"],
       where: {
         clientId,
         month,
         year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
       },
       _sum: {
         total: true,
@@ -113,12 +151,23 @@ export class PrismaReportingRepository implements ReportingRepository {
     })) satisfies ClientGroupRow[];
   }
 
-  async getClientRefs({ clientId, years, month }: { clientId: number; years: number[]; month: number }) {
+  async getClientRefs({
+    clientId,
+    years,
+    month,
+    managerUserId,
+  }: {
+    clientId: number;
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }) {
     const rows = await prisma.invoiceLine.findMany({
       where: {
         clientId,
         month,
         year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
       },
       select: {
         serviceId: true,

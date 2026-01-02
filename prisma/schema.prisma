@@ -21,6 +21,7 @@ model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
   name         String?
+  nameNormalized String?
   role         UserRole @default(USER)
   passwordHash String
   createdAt    DateTime @default(now())
@@ -50,10 +51,13 @@ model InvoiceLine {
   price      Float
   total      Float
   manager    String
+  managerNormalized String?
   sourceFile String
   series     String?
   albaran    String?
   numero     String?
+  managerUser   User?   @relation(fields: [managerUserId], references: [id])
+  managerUserId Int?
 
   client    Client  @relation(fields: [clientId], references: [id])
   clientId  Int
@@ -62,4 +66,5 @@ model InvoiceLine {
 
   @@index([year, month])
   @@index([clientId, serviceId])
+  @@index([managerUserId])
 }

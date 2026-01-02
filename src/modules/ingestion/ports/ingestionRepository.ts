@@ -6,12 +6,14 @@ export type InvoiceLineInput = {
   price: number;
   total: number;
   manager: string;
+  managerNormalized: string | null;
   sourceFile: string;
   series: string | null;
   albaran: string | null;
   numero: string | null;
   clientId: number;
   serviceId: number;
+  managerUserId: number | null;
 };
 
 export interface IngestionRepository {

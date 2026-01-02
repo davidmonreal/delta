@@ -2,9 +2,10 @@ import type { PasswordHasher } from "../ports/passwordHasher";
 import type { UserRepository } from "../ports/userRepository";
 import type { CreateUserInput } from "../dto/userSchemas";
 import { canAssignRole } from "../domain/policies";
+import { normalizeName } from "@/lib/normalize";
 import type { ActionResult, CurrentUser } from "./types";
 
-function normalizeName(value: string | undefined) {
+function normalizeDisplayName(value: string | undefined) {
   if (!value) return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
@@ -32,9 +33,11 @@ export async function createUser({
 
   const passwordHash = await passwordHasher.hash(input.password);
 
+  const displayName = normalizeDisplayName(input.name);
   await repo.create({
     email: input.email,
-    name: normalizeName(input.name),
+    name: displayName,
+    nameNormalized: displayName ? normalizeName(displayName) : null,
     role: input.role,
     passwordHash,
   });

@@ -50,10 +50,21 @@ export type ServiceRow = {
 };
 
 export interface ReportingRepository {
-  getLatestEntry(): Promise<YearMonth | null>;
-  getLatestEntryForClient(clientId: number): Promise<YearMonth | null>;
-  getMonthlyGroups(params: { years: number[]; month: number }): Promise<MonthlyGroupRow[]>;
-  getMonthlyRefs(params: { years: number[]; month: number }): Promise<MonthlyRefRow[]>;
+  getLatestEntry(params?: { managerUserId?: number }): Promise<YearMonth | null>;
+  getLatestEntryForClient(
+    clientId: number,
+    params?: { managerUserId?: number },
+  ): Promise<YearMonth | null>;
+  getMonthlyGroups(params: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<MonthlyGroupRow[]>;
+  getMonthlyRefs(params: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<MonthlyRefRow[]>;
   getClientsByIds(ids: number[]): Promise<ClientRow[]>;
   getServicesByIds(ids: number[]): Promise<ServiceRow[]>;
   getClientById(id: number): Promise<ClientRow | null>;
@@ -61,10 +72,12 @@ export interface ReportingRepository {
     clientId: number;
     years: number[];
     month: number;
+    managerUserId?: number;
   }): Promise<ClientGroupRow[]>;
   getClientRefs(params: {
     clientId: number;
     years: number[];
     month: number;
+    managerUserId?: number;
   }): Promise<ClientRefRow[]>;
 }

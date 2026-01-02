@@ -22,6 +22,7 @@ describe("upsertUser", () => {
     expect(result.created).toBe(true);
     const created = await repo.findByEmail(baseInput.email);
     expect(created?.passwordHash).toBe("hashed:secret");
+    expect(created?.nameNormalized).toBe("USER");
   });
 
   it("updates user when email exists", async () => {
@@ -30,6 +31,7 @@ describe("upsertUser", () => {
         id: 1,
         email: baseInput.email,
         name: "Old",
+        nameNormalized: "OLD",
         role: "ADMIN",
         passwordHash: "hashed:old",
         createdAt: new Date(),
@@ -46,5 +48,6 @@ describe("upsertUser", () => {
     expect(updated?.name).toBe("New");
     expect(updated?.role).toBe("USER");
     expect(updated?.passwordHash).toBe("hashed:secret");
+    expect(updated?.nameNormalized).toBe("NEW");
   });
 });

@@ -30,6 +30,7 @@ describe("createUser", () => {
         id: 1,
         email: "user@example.com",
         name: "Existing",
+        nameNormalized: "EXISTING",
         role: "USER",
         passwordHash: "hashed:old",
         createdAt: new Date(),
@@ -58,5 +59,6 @@ describe("createUser", () => {
     const created = await repo.findByEmail("user@example.com");
     expect(created?.passwordHash).toBe("hashed:secret");
     expect(created?.name).toBe("Jane Doe");
+    expect(created?.nameNormalized).toBe("JANE DOE");
   });
 });

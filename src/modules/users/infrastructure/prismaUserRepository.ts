@@ -7,6 +7,7 @@ const userSelect = {
   id: true,
   email: true,
   name: true,
+  nameNormalized: true,
   role: true,
   passwordHash: true,
   createdAt: true,
@@ -19,6 +20,10 @@ export class PrismaUserRepository implements UserRepository {
 
   async findById(id: number): Promise<UserEntity | null> {
     return prisma.user.findUnique({ where: { id }, select: userSelect });
+  }
+
+  async listAll(): Promise<UserEntity[]> {
+    return prisma.user.findMany({ select: userSelect });
   }
 
   async create(data: CreateUserData): Promise<UserEntity> {

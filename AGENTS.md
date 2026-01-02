@@ -37,7 +37,10 @@
 ## Testing practices
 - Add unit tests for use cases using an in-memory repository + stub ports.
 - Prefer `vitest` for new tests; keep tests near the feature in `application/__tests__/`.
-- Prisma integration tests live in `infrastructure/__tests__/` and should skip unless DB env vars are present.
+- Prisma integration tests live in `infrastructure/__tests__/` and should only run when `RUN_DB_TESTS=1`.
+
+## Prisma
+- When changing `prisma/schema.prisma`, add a migration and run `prisma generate`.
 
 ## Scripts
 - CLI scripts must use use cases + repositories; no direct Prisma calls in scripts.

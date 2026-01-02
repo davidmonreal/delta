@@ -3,6 +3,7 @@ import path from "node:path";
 import * as XLSX from "xlsx";
 
 import type { IngestionRepository, InvoiceLineInput } from "../ports/ingestionRepository";
+import { normalizeName } from "@/lib/normalize";
 
 type Row = Record<string, unknown>;
 
@@ -11,6 +12,7 @@ type ImportParams = {
   sourceFile: string;
   reset: boolean;
   repo: IngestionRepository;
+  userLookup?: Map<string, number>;
 };
 
 export function normalizeHeader(value: string) {
@@ -89,7 +91,13 @@ async function getServiceId(conceptRaw: string, cache: Map<string, number>, repo
   return serviceId;
 }
 
-export async function importRows({ rows, sourceFile, reset, repo }: ImportParams) {
+export async function importRows({
+  rows,
+  sourceFile,
+  reset,
+  repo,
+  userLookup,
+}: ImportParams) {
   if (rows.length === 0) return 0;
 
   const headerMap = buildHeaderMap(rows[0]);
@@ -120,6 +128,9 @@ export async function importRows({ rows, sourceFile, reset, repo }: ImportParams
     const serviceId = await getServiceId(conceptRaw, serviceCache, repo);
 
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
+    const managerNormalized = manager.length ? normalizeName(manager) : null;
+    const managerUserId =
+      managerNormalized && userLookup ? userLookup.get(managerNormalized) ?? null : null;
     const series = toOptionalString(getValue(row, headerMap, "SERIE"));
     const albaran = toOptionalString(getValue(row, headerMap, "ALBARAN"));
     const numero = toOptionalString(getValue(row, headerMap, "NUMERO"));
@@ -132,12 +143,14 @@ export async function importRows({ rows, sourceFile, reset, repo }: ImportParams
       price,
       total,
       manager,
+      managerNormalized,
       sourceFile,
       series,
       albaran,
       numero,
       clientId,
       serviceId,
+      managerUserId,
     });
   }
 
@@ -148,10 +161,12 @@ export async function importXlsxFile({
   filePath,
   reset,
   repo,
+  userLookup,
 }: {
   filePath: string;
   reset: boolean;
   repo: IngestionRepository;
+  userLookup?: Map<string, number>;
 }) {
   const workbook = XLSX.readFile(filePath, { cellDates: true });
   const sheetName = workbook.SheetNames[0];
@@ -159,5 +174,5 @@ export async function importXlsxFile({
   const rows = XLSX.utils.sheet_to_json<Row>(sheet, { defval: null });
   const sourceFile = path.basename(filePath);
 
-  return importRows({ rows, sourceFile, reset, repo });
+  return importRows({ rows, sourceFile, reset, repo, userLookup });
 }
