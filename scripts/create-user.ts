@@ -28,12 +28,21 @@ async function main() {
     throw new Error("Rol invalid. Usa SUPERADMIN, ADMIN o USER.");
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    throw new Error("Ja existeix un usuari amb aquest email.");
-  }
-
   const passwordHash = await bcrypt.hash(password, 12);
+  const existing = await prisma.user.findUnique({ where: { email } });
+
+  if (existing) {
+    await prisma.user.update({
+      where: { email },
+      data: {
+        name: name ?? existing.name,
+        role,
+        passwordHash,
+      },
+    });
+    console.log(`Password actualitzada: ${email} (${role})`);
+    return;
+  }
 
   await prisma.user.create({
     data: {
