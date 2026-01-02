@@ -38,6 +38,7 @@
 - Add unit tests for use cases using an in-memory repository + stub ports.
 - Prefer `vitest` for new tests; keep tests near the feature in `application/__tests__/`.
 - Prisma integration tests live in `infrastructure/__tests__/` and should only run when `RUN_DB_TESTS=1`.
+- Before commit/push, run `npm run check` (tests + typecheck).
 
 ## Prisma
 - When changing `prisma/schema.prisma`, add a migration and run `prisma generate`.

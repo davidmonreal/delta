@@ -17,6 +17,7 @@ describeDb("PrismaUserRepository", () => {
       const created = await repo.create({
         email,
         name: "Repo Test",
+        nameNormalized: "REPO TEST",
         role: "USER",
         passwordHash: "hashed",
       });
@@ -26,6 +27,7 @@ describeDb("PrismaUserRepository", () => {
       const updated = await repo.update(created.id, {
         email,
         name: "Repo Updated",
+        nameNormalized: "REPO UPDATED",
         role: "ADMIN",
         passwordHash: "hashed2",
       });

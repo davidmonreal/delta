@@ -37,7 +37,7 @@ describe("updateUser", () => {
   });
 
   it("blocks admins from assigning superadmin", async () => {
-    const repo = new InMemoryUserRepository([baseUser]);
+  const repo = new InMemoryUserRepository([baseUser]);
     const result = await updateUser({
       input: { ...baseInput, role: "SUPERADMIN" },
       sessionUser: { id: "2", role: "ADMIN" },
@@ -55,6 +55,7 @@ describe("updateUser", () => {
         id: 2,
         email: "other@example.com",
         name: "Other",
+        nameNormalized: "OTHER",
         role: "USER",
         passwordHash: "hashed:other",
         createdAt: new Date(),

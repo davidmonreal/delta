@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run test && npm run typecheck",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
