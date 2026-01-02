@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { SearchableDropdownSelect } from "@/components/common/SearchableDropdownSelect";
 
@@ -13,6 +13,7 @@ type UserOption = {
 type ManagerAssignFormProps = {
   lineId: number;
   users: UserOption[];
+  suggestedUserId?: number | null;
   action: (formData: FormData) => Promise<void>;
 };
 
@@ -23,9 +24,15 @@ function buildLabel(user: UserOption) {
 export default function ManagerAssignForm({
   lineId,
   users,
+  suggestedUserId,
   action,
 }: ManagerAssignFormProps) {
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(
+    suggestedUserId ?? null,
+  );
+  useEffect(() => {
+    setSelectedUserId(suggestedUserId ?? null);
+  }, [suggestedUserId, lineId]);
   const options = useMemo(
     () =>
       [...users]

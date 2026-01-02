@@ -49,7 +49,7 @@ export default async function UnmatchedManagersPage() {
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-3">
           <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_auto] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            <span>Factura</span>
+            <span>Gestor</span>
             <span>Client</span>
             <span>Servei</span>
             <span className="text-right">Total</span>
@@ -71,6 +71,7 @@ export default async function UnmatchedManagersPage() {
               <ManagerAssignForm
                 lineId={line.id}
                 users={userOptions}
+                suggestedUserId={line.suggestedUserId}
                 action={assignManagerAction}
               />
             </div>

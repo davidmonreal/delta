@@ -15,12 +15,29 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         manager: true,
         managerNormalized: true,
         total: true,
+        clientId: true,
         client: { select: { nameRaw: true } },
         service: { select: { conceptRaw: true } },
       },
     });
 
-    return lines.map((line) => ({
+    const clientIds = Array.from(new Set(lines.map((line) => line.clientId)));
+    const suggested = clientIds.length
+      ? await prisma.invoiceLine.findMany({
+          where: {
+            clientId: { in: clientIds },
+            managerUserId: { not: null },
+          },
+          orderBy: [{ date: "desc" }],
+          distinct: ["clientId"],
+          select: { clientId: true, managerUserId: true },
+        })
+      : [];
+    const suggestedByClient = new Map(
+      suggested.map((row) => [row.clientId, row.managerUserId]),
+    );
+
+    const mapped = lines.map((line) => ({
       id: line.id,
       date: line.date,
       manager: line.manager,
@@ -28,7 +45,15 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       clientName: line.client.nameRaw,
       serviceName: line.service.conceptRaw,
       total: line.total,
+      suggestedUserId: suggestedByClient.get(line.clientId) ?? null,
     }));
+
+    return mapped.sort((a, b) => {
+      const aEmpty = a.manager.trim().length === 0;
+      const bEmpty = b.manager.trim().length === 0;
+      if (aEmpty !== bEmpty) return aEmpty ? -1 : 1;
+      return b.date.getTime() - a.date.getTime();
+    });
   }
 
   async assignManager(lineId: number, userId: number) {

@@ -6,6 +6,7 @@ export type UnmatchedInvoiceLine = {
   clientName: string;
   serviceName: string;
   total: number;
+  suggestedUserId?: number | null;
 };
 
 export interface InvoiceRepository {
