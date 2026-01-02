@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
+import ComparisonRowComment from "@/components/reporting/ComparisonRowComment";
 
 type ComparisonRow = {
   id: string;
+  clientId: number;
+  serviceId: number;
   title: string;
   subtitle?: string;
   href?: string;
@@ -22,6 +25,7 @@ type ComparisonTableProps = {
   rows: ComparisonRow[];
   previousYear: number;
   year: number;
+  month: number;
   showPositive: boolean;
   firstColumnLabel: string;
 };
@@ -30,12 +34,13 @@ export default function ComparisonTable({
   rows,
   previousYear,
   year,
+  month,
   showPositive,
   firstColumnLabel,
 }: ComparisonTableProps) {
   const gridClass = showPositive
-    ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
-    : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]";
+    ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))_90px]"
+    : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))_90px]";
 
   return (
     <div className="grid gap-3">
@@ -47,6 +52,7 @@ export default function ComparisonTable({
         <span className="text-right">Serveis {year}</span>
         <span className="text-right">Delta preu</span>
         {showPositive ? <span className="text-right">Augment %</span> : null}
+        <span className="text-right">Comentari</span>
       </div>
       {rows.map((row) => (
         <div
@@ -100,6 +106,16 @@ export default function ComparisonTable({
               {formatPercent(row.percentDelta ?? Number.NaN)}
             </span>
           ) : null}
+          <div className="flex justify-end">
+            <ComparisonRowComment
+              clientId={row.clientId}
+              serviceId={row.serviceId}
+              year={year}
+              month={month}
+              title={row.title}
+              subtitle={row.subtitle}
+            />
+          </div>
         </div>
       ))}
     </div>

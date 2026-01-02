@@ -92,6 +92,8 @@ export default async function ClientPage({
         <ComparisonTable
           rows={summaries.map((row) => ({
             id: String(row.serviceId),
+            clientId,
+            serviceId: row.serviceId,
             title: row.serviceName,
             previousUnits: row.previousUnits,
             currentUnits: row.currentUnits,
@@ -105,6 +107,7 @@ export default async function ClientPage({
           }))}
           previousYear={previousYear}
           year={year}
+          month={month}
           showPositive={showPositive}
           firstColumnLabel="Servei"
         />
