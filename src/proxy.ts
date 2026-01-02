@@ -1,6 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 
-export default withAuth({
+const proxy = withAuth({
   pages: {
     signIn: "/login",
   },
@@ -8,6 +8,8 @@ export default withAuth({
     authorized: ({ token }) => Boolean(token),
   },
 });
+
+export default proxy;
 
 export const config = {
   matcher: ["/((?!api/auth|login|_next|favicon.ico).*)"],
