@@ -25,6 +25,7 @@ type AdminUserFormModalProps = {
   initialValues: UserFormValues;
   passwordRequired?: boolean;
   passwordPlaceholder?: string;
+  autoCloseOnSuccess?: boolean;
   onClose: () => void;
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
 };
@@ -39,6 +40,7 @@ export default function AdminUserFormModal({
   initialValues,
   passwordRequired = false,
   passwordPlaceholder,
+  autoCloseOnSuccess = true,
   onClose,
   action,
 }: AdminUserFormModalProps) {
@@ -56,9 +58,11 @@ export default function AdminUserFormModal({
   useEffect(() => {
     if (state?.success) {
       router.refresh();
-      onClose();
+      if (autoCloseOnSuccess) {
+        onClose();
+      }
     }
-  }, [state, router, onClose]);
+  }, [state, router, onClose, autoCloseOnSuccess]);
 
   if (!isOpen) return null;
 

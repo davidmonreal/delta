@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createUser } from "../createUser";
 import type { CreateUserInput } from "../../dto/userSchemas";
 import { InMemoryUserRepository, StubPasswordHasher } from "./testUtils";
+import type { InvoiceRepository } from "@/modules/invoices/ports/invoiceRepository";
 
 const baseInput: CreateUserInput = {
   email: "user@example.com",
@@ -14,11 +15,18 @@ const baseInput: CreateUserInput = {
 describe("createUser", () => {
   it("blocks admins from creating superadmins", async () => {
     const repo = new InMemoryUserRepository();
+    const invoiceRepo: InvoiceRepository = {
+      listUnmatched: async () => [],
+      assignManager: async () => undefined,
+      assignManagersForUser: async () => 0,
+      backfillManagers: async () => 0,
+    };
     const result = await createUser({
       input: { ...baseInput, role: "SUPERADMIN" },
       sessionUser: { id: "1", role: "ADMIN" },
       repo,
       passwordHasher: new StubPasswordHasher(),
+      invoiceRepo,
     });
 
     expect(result.error).toBe("No tens permisos per crear superadmins.");
@@ -36,11 +44,18 @@ describe("createUser", () => {
         createdAt: new Date(),
       },
     ]);
+    const invoiceRepo: InvoiceRepository = {
+      listUnmatched: async () => [],
+      assignManager: async () => undefined,
+      assignManagersForUser: async () => 0,
+      backfillManagers: async () => 0,
+    };
     const result = await createUser({
       input: baseInput,
       sessionUser: { id: "1", role: "SUPERADMIN" },
       repo,
       passwordHasher: new StubPasswordHasher(),
+      invoiceRepo,
     });
 
     expect(result.error).toBe("Aquest email ja existeix.");
@@ -48,14 +63,21 @@ describe("createUser", () => {
 
   it("creates a user with hashed password", async () => {
     const repo = new InMemoryUserRepository();
+    const invoiceRepo: InvoiceRepository = {
+      listUnmatched: async () => [],
+      assignManager: async () => undefined,
+      assignManagersForUser: async () => 2,
+      backfillManagers: async () => 0,
+    };
     const result = await createUser({
       input: baseInput,
       sessionUser: { id: "1", role: "SUPERADMIN" },
       repo,
       passwordHasher: new StubPasswordHasher(),
+      invoiceRepo,
     });
 
-    expect(result.success).toBe("Usuari creat correctament.");
+    expect(result.success).toBe("Usuari creat correctament. 2 linies assignades.");
     const created = await repo.findByEmail("user@example.com");
     expect(created?.passwordHash).toBe("hashed:secret");
     expect(created?.name).toBe("Jane Doe");

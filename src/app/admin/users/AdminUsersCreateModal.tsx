@@ -34,6 +34,7 @@ export default function AdminUsersCreateModal({
           role: "USER",
         }}
         passwordRequired
+        autoCloseOnSuccess={false}
         onClose={() => setOpen(false)}
         action={createUserAction}
       />

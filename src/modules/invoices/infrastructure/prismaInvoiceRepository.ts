@@ -38,6 +38,42 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
+  async assignManagersForUser({
+    userId,
+    nameNormalized,
+  }: {
+    userId: number;
+    nameNormalized: string;
+  }) {
+    const direct = await prisma.invoiceLine.updateMany({
+      where: {
+        managerUserId: null,
+        managerNormalized: nameNormalized,
+      },
+      data: { managerUserId: userId },
+    });
+
+    const needsNormalization = await prisma.invoiceLine.findMany({
+      where: {
+        managerUserId: null,
+        managerNormalized: null,
+      },
+      select: { id: true, manager: true },
+    });
+
+    let updated = direct.count;
+    for (const line of needsNormalization) {
+      if (normalizeName(line.manager) !== nameNormalized) continue;
+      await prisma.invoiceLine.update({
+        where: { id: line.id },
+        data: { managerUserId: userId, managerNormalized: nameNormalized },
+      });
+      updated += 1;
+    }
+
+    return updated;
+  }
+
   async backfillManagers({
     userCandidates,
   }: {

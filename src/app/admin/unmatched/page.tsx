@@ -5,6 +5,7 @@ import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserR
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
 import { assignManagerAction } from "./actions";
+import ManagerAssignForm from "@/components/admin/ManagerAssignForm";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,11 @@ export default async function UnmatchedManagersPage() {
     listUnmatched({ repo: invoiceRepo }),
     userRepo.listAll(),
   ]);
+  const userOptions = users.map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -65,29 +71,11 @@ export default async function UnmatchedManagersPage() {
               <span className="text-right tabular-nums">
                 {formatCurrency(line.total)}
               </span>
-              <form action={assignManagerAction} className="flex items-center gap-2">
-                <input type="hidden" name="lineId" value={line.id} />
-                <select
-                  name="userId"
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Selecciona usuari
-                  </option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name ?? user.email}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-800"
-                >
-                  Assignar
-                </button>
-              </form>
+              <ManagerAssignForm
+                lineId={line.id}
+                users={userOptions}
+                action={assignManagerAction}
+              />
             </div>
           ))}
         </div>

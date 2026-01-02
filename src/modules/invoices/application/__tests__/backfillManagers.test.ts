@@ -17,6 +17,10 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return;
   }
 
+  async assignManagersForUser() {
+    return 0;
+  }
+
   async backfillManagers({
     userCandidates,
   }: {

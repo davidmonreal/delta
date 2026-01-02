@@ -8,12 +8,14 @@ import { updateUser } from "@/modules/users/application/updateUser";
 import type { ActionResult } from "@/modules/users/application/types";
 import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
 import { CreateUserSchema, UpdateUserSchema } from "@/modules/users/dto/userSchemas";
 
 type ActionState = ActionResult;
 
 const repo = new PrismaUserRepository();
 const passwordHasher = new BcryptPasswordHasher();
+const invoiceRepo = new PrismaInvoiceRepository();
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -41,6 +43,7 @@ export async function createUserAction(
     sessionUser: { id: session.user.id, role: session.user.role },
     repo,
     passwordHasher,
+    invoiceRepo,
   });
   if (result.error) {
     return result;

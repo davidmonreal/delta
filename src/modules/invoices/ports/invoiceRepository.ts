@@ -11,6 +11,10 @@ export type UnmatchedInvoiceLine = {
 export interface InvoiceRepository {
   listUnmatched(): Promise<UnmatchedInvoiceLine[]>;
   assignManager(lineId: number, userId: number): Promise<void>;
+  assignManagersForUser(params: {
+    userId: number;
+    nameNormalized: string;
+  }): Promise<number>;
   backfillManagers(params: {
     userCandidates: { id: number; nameNormalized: string }[];
   }): Promise<number>;
