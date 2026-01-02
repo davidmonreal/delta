@@ -2,6 +2,7 @@ import { ClientIdSchema } from "../dto/reportingSchemas";
 import type { ReportingRepository } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { resolveFilters } from "./filters";
+import { applySummaryMetrics, filterSummaries, sortSummaries } from "./summaryUtils";
 
 export type ClientSummaryRow = {
   serviceId: number;
@@ -19,6 +20,19 @@ export type ClientSummaryRow = {
   percentDelta?: number;
 };
 
+export type ClientComparisonResult =
+  | {
+      notFound: true;
+    }
+  | {
+      notFound: false;
+      clientId: number;
+      client: { id: number; nameRaw: string };
+      filters: ReturnType<typeof resolveFilters>;
+      summaries: ClientSummaryRow[];
+      sumDeltaVisible: number;
+    };
+
 export async function getClientComparison({
   repo,
   rawFilters,
@@ -27,7 +41,7 @@ export async function getClientComparison({
   repo: ReportingRepository;
   rawFilters: { year?: string; month?: string; show?: string };
   rawClientId: string;
-}) {
+}): Promise<ClientComparisonResult> {
   const parsedClientId = ClientIdSchema.safeParse(rawClientId);
   if (!parsedClientId.success) {
     return { notFound: true as const };
@@ -107,40 +121,12 @@ export async function getClientComparison({
     rows.set(group.serviceId, existing);
   }
 
-  const summaries = Array.from(rows.values())
-    .map((row) => {
-      const previousUnitPrice =
-        row.previousUnits > 0 ? row.previousTotal / row.previousUnits : Number.NaN;
-      const currentUnitPrice =
-        row.currentUnits > 0 ? row.currentTotal / row.currentUnits : Number.NaN;
-      const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
-      const deltaPrice = hasBoth
-        ? currentUnitPrice - previousUnitPrice
-        : Number.NaN;
-      const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
-      return {
-        ...row,
-        previousUnitPrice,
-        currentUnitPrice,
-        deltaPrice,
-        isMissing,
-        percentDelta:
-          hasBoth && previousUnitPrice > 0
-            ? ((currentUnitPrice - previousUnitPrice) / previousUnitPrice) * 100
-            : undefined,
-      };
-    })
-    .filter((row) => {
-      if (filters.showNegative) return row.isMissing || row.deltaPrice < -0.001;
-      if (filters.showEqual) return Math.abs(row.deltaPrice) <= 0.001;
-      if (filters.showPositive) return row.deltaPrice > 0.001;
-      return row.deltaPrice < -0.001;
-    })
-    .sort((a, b) => {
-      const aScore = a.isMissing ? Number.POSITIVE_INFINITY : Math.abs(a.deltaPrice);
-      const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
-      return bScore - aScore;
-    });
+  const summaries = sortSummaries(
+    filterSummaries(
+      Array.from(rows.values()).map((row) => applySummaryMetrics(row)),
+      filters,
+    ),
+  );
 
   const sumDeltaVisible = summaries.reduce(
     (total, row) => total + (row.currentTotal - row.previousTotal),

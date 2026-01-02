@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 import { requireSession } from "@/lib/require-auth";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
+import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
 
 type SearchParams = {
   year?: string;
@@ -23,15 +24,17 @@ export default async function ClientPage({
   const resolvedSearchParams = (await searchParams) ?? {};
   await requireSession();
   const repo = new PrismaReportingRepository();
-  const result = await getClientComparison({
-    repo,
-    rawFilters: {
-      year: resolvedSearchParams.year,
-      month: resolvedSearchParams.month,
-      show: resolvedSearchParams.show,
-    },
-    rawClientId: resolvedParams.clientId,
-  });
+  const result = toClientComparisonDto(
+    await getClientComparison({
+      repo,
+      rawFilters: {
+        year: resolvedSearchParams.year,
+        month: resolvedSearchParams.month,
+        show: resolvedSearchParams.show,
+      },
+      rawClientId: resolvedParams.clientId,
+    }),
+  );
   if (result.notFound) {
     notFound();
   }

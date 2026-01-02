@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
+import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 
 export async function requireSession() {
   const session = await getServerSession(authOptions);
@@ -13,7 +14,7 @@ export async function requireSession() {
 
 export async function requireAdminSession() {
   const session = await requireSession();
-  if (session.user.role !== "ADMIN" && session.user.role !== "SUPERADMIN") {
+  if (!isAdminRole(session.user.role)) {
     redirect("/");
   }
   return session;

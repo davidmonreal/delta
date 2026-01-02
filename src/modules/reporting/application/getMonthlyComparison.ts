@@ -1,6 +1,7 @@
 import type { ReportingRepository } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { resolveFilters } from "./filters";
+import { applySummaryMetrics, filterSummaries, sortSummaries } from "./summaryUtils";
 
 export type MonthlySummaryRow = {
   clientId: number;
@@ -20,13 +21,22 @@ export type MonthlySummaryRow = {
   percentDelta?: number;
 };
 
+export type MonthlyComparisonResult = {
+  filters: ReturnType<typeof resolveFilters>;
+  summaries: MonthlySummaryRow[];
+  visibleRows: MonthlySummaryRow[];
+  negativeMissing: MonthlySummaryRow[];
+  sumDeltaVisible: number;
+  sumDeltaMissing: number;
+};
+
 export async function getMonthlyComparison({
   repo,
   rawFilters,
 }: {
   repo: ReportingRepository;
   rawFilters: { year?: string; month?: string; show?: string };
-}) {
+}): Promise<MonthlyComparisonResult> {
   const latestEntry = await repo.getLatestEntry();
   const defaults = {
     year: latestEntry?.year ?? new Date().getFullYear(),
@@ -107,40 +117,12 @@ export async function getMonthlyComparison({
     rows.set(key, existing);
   }
 
-  const summaries = Array.from(rows.values())
-    .map((row) => {
-      const previousUnitPrice =
-        row.previousUnits > 0 ? row.previousTotal / row.previousUnits : Number.NaN;
-      const currentUnitPrice =
-        row.currentUnits > 0 ? row.currentTotal / row.currentUnits : Number.NaN;
-      const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
-      const deltaPrice = hasBoth
-        ? currentUnitPrice - previousUnitPrice
-        : Number.NaN;
-      const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
-      return {
-        ...row,
-        previousUnitPrice,
-        currentUnitPrice,
-        deltaPrice,
-        isMissing,
-        percentDelta:
-          hasBoth && previousUnitPrice > 0
-            ? ((currentUnitPrice - previousUnitPrice) / previousUnitPrice) * 100
-            : undefined,
-      };
-    })
-    .filter((row) => {
-      if (filters.showNegative) return row.isMissing || row.deltaPrice < -0.001;
-      if (filters.showEqual) return Math.abs(row.deltaPrice) <= 0.001;
-      if (filters.showPositive) return row.deltaPrice > 0.001;
-      return row.deltaPrice < -0.001;
-    })
-    .sort((a, b) => {
-      const aScore = a.isMissing ? Number.POSITIVE_INFINITY : Math.abs(a.deltaPrice);
-      const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
-      return bScore - aScore;
-    });
+  const summaries = sortSummaries(
+    filterSummaries(
+      Array.from(rows.values()).map((row) => applySummaryMetrics(row)),
+      filters,
+    ),
+  );
 
   const negativeWithPrice = filters.showNegative
     ? summaries.filter((row) => !row.isMissing)

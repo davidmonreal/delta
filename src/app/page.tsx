@@ -4,6 +4,7 @@ import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 import { requireSession } from "@/lib/require-auth";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getMonthlyComparison } from "@/modules/reporting/application/getMonthlyComparison";
+import { toMonthlyComparisonDto } from "@/modules/reporting/dto/reportingDto";
 
 type SearchParams = {
   year?: string;
@@ -20,14 +21,16 @@ export default async function Home({
   await requireSession();
   const repo = new PrismaReportingRepository();
   const { filters, summaries, visibleRows, negativeMissing, sumDeltaVisible, sumDeltaMissing } =
-    await getMonthlyComparison({
-      repo,
-      rawFilters: {
-        year: resolvedSearchParams.year,
-        month: resolvedSearchParams.month,
-        show: resolvedSearchParams.show,
-      },
-    });
+    toMonthlyComparisonDto(
+      await getMonthlyComparison({
+        repo,
+        rawFilters: {
+          year: resolvedSearchParams.year,
+          month: resolvedSearchParams.month,
+          show: resolvedSearchParams.show,
+        },
+      }),
+    );
   const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
     filters;
 
