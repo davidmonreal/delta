@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { DropdownSelect } from "@/components/common/DropdownSelect";
@@ -45,6 +45,7 @@ export default function AdminUserFormModal({
   action,
 }: AdminUserFormModalProps) {
   const router = useRouter();
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [role, setRole] = useState<UserFormValues["role"]>(initialValues.role);
   const [state, formAction] = useActionState<ActionState, FormData>(
     action,
@@ -63,6 +64,13 @@ export default function AdminUserFormModal({
       }
     }
   }, [state, router, onClose, autoCloseOnSuccess]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    requestAnimationFrame(() => {
+      nameInputRef.current?.focus();
+    });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -84,7 +92,7 @@ export default function AdminUserFormModal({
             <h3 className="mt-2 text-xl font-semibold text-slate-900">{title}</h3>
           </div>
         </div>
-        <form className="mt-6 space-y-4" action={formAction}>
+        <form className="mt-6 space-y-4" action={formAction} autoComplete="off">
           {initialValues.userId ? (
             <input type="hidden" name="userId" value={initialValues.userId} />
           ) : null}
@@ -93,8 +101,10 @@ export default function AdminUserFormModal({
             <input
               type="text"
               name="name"
+              ref={nameInputRef}
               autoFocus
               defaultValue={initialValues.name ?? ""}
+              autoComplete="name"
               className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
           </label>
@@ -122,6 +132,7 @@ export default function AdminUserFormModal({
               name="email"
               required
               defaultValue={initialValues.email}
+              autoComplete="off"
               className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
           </label>
@@ -132,6 +143,9 @@ export default function AdminUserFormModal({
               name="password"
               required={passwordRequired}
               placeholder={passwordPlaceholder}
+              autoComplete="new-password"
+              autoCorrect="off"
+              spellCheck={false}
               className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
           </label>
@@ -145,19 +159,31 @@ export default function AdminUserFormModal({
             </p>
           ) : null}
           <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-slate-300"
-            >
-              Cancel-lar
-            </button>
-            <button
-              type="submit"
-              className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
-            >
-              {submitLabel}
-            </button>
+            {state?.success ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+              >
+                OK
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:border-slate-300"
+                >
+                  Cancel-lar
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+                >
+                  {submitLabel}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>
