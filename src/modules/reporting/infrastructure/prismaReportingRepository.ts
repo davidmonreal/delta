@@ -50,7 +50,7 @@ export class PrismaReportingRepository implements ReportingRepository {
   }
 
   async getMonthlyRefs({ years, month }: { years: number[]; month: number }) {
-    return prisma.invoiceLine.findMany({
+    const rows = await prisma.invoiceLine.findMany({
       where: {
         month,
         year: { in: years },
@@ -64,7 +64,8 @@ export class PrismaReportingRepository implements ReportingRepository {
         albaran: true,
         numero: true,
       },
-    }) as MonthlyRefRow[];
+    });
+    return rows;
   }
 
   async getClientsByIds(ids: number[]): Promise<ClientRow[]> {
@@ -113,7 +114,7 @@ export class PrismaReportingRepository implements ReportingRepository {
   }
 
   async getClientRefs({ clientId, years, month }: { clientId: number; years: number[]; month: number }) {
-    return prisma.invoiceLine.findMany({
+    const rows = await prisma.invoiceLine.findMany({
       where: {
         clientId,
         month,
@@ -127,6 +128,7 @@ export class PrismaReportingRepository implements ReportingRepository {
         albaran: true,
         numero: true,
       },
-    }) as ClientRefRow[];
+    });
+    return rows;
   }
 }
