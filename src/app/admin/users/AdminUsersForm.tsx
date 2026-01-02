@@ -4,14 +4,22 @@ import { useActionState } from "react";
 
 import { createUserAction } from "@/app/admin/users/actions";
 
-const initialState = {};
+type ActionState = {
+  error?: string;
+  success?: string;
+};
+
+const initialState: ActionState = {};
 
 type AdminUsersFormProps = {
   allowSuperadmin: boolean;
 };
 
 export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps) {
-  const [state, formAction] = useActionState(createUserAction, initialState);
+  const [state, formAction] = useActionState<ActionState, FormData>(
+    createUserAction,
+    initialState,
+  );
 
   return (
     <form
