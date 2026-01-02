@@ -32,6 +32,7 @@
 - Validate inputs at boundaries using Zod schemas in `dto/`.
 - UI/server actions must not contain business logic; they call use cases and map DTOs.
 - Domain policies (authz rules) live in `domain/` and are reused by use cases.
+- UI visibility rules should be centralized in a `domain/uiPolicies.ts` file per module.
 
 ## Testing practices
 - Add unit tests for use cases using an in-memory repository + stub ports.

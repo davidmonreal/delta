@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import AppHeader from "@/components/layout/AppHeader";
+import { canSeeAdminNav } from "@/modules/users/domain/uiPolicies";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,8 +17,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const showAdminLink =
-    session?.user.role === "ADMIN" || session?.user.role === "SUPERADMIN";
+  const showAdminLink = session ? canSeeAdminNav(session.user.role) : false;
 
   return (
     <html lang="ca">
