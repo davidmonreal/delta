@@ -72,12 +72,12 @@ a:hover {
 }
 
 .brand-logo {
-  height: 34px;
+  height: 48px;
   width: auto;
 }
 
 .brand-logo--login {
-  height: 48px;
+  height: 64px;
   margin-bottom: 12px;
 }
 
