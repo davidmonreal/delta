@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 import { requireSession } from "@/lib/require-auth";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
 import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
+import ComparisonTable from "@/components/reporting/ComparisonTable";
+import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
 
 type SearchParams = {
   year?: string;
@@ -78,71 +79,30 @@ export default async function ClientPage({
           </span>
           <ShowLinks baseHref={`/client/${clientId}`} year={year} month={month} />
         </div>
-        <div className="grid gap-3">
-          <div
-            className={`grid items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 ${
-              showPositive
-                ? "grid-cols-[2fr_repeat(5,minmax(110px,1fr))]"
-                : "grid-cols-[2fr_repeat(4,minmax(110px,1fr))]"
-            }`}
-          >
-            <span>Servei</span>
-            <span className="text-right">Preu unit. {previousYear}</span>
-            <span className="text-right">Preu unit. {year}</span>
-            <span className="text-right">Delta preu</span>
-            {showPositive ? <span className="text-right">Augment %</span> : null}
-            <span className="text-right">Unitats</span>
-          </div>
-          {summaries.map((row) => (
-            <div
-              key={row.serviceId}
-              className={`grid items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 ${
-                showPositive
-                  ? "grid-cols-[2fr_repeat(5,minmax(110px,1fr))]"
-                  : "grid-cols-[2fr_repeat(4,minmax(110px,1fr))]"
-              }`}
-            >
-              <span className="font-medium">{row.serviceName}</span>
-              <span className="text-right tabular-nums">
-                <span className="block">{formatCurrency(row.previousUnitPrice)}</span>
-                <span className="mt-1 block text-xs text-slate-400">
-                  {row.previousRef ?? "-"}
-                </span>
-              </span>
-              <span className="text-right tabular-nums">
-                <span className="block">{formatCurrency(row.currentUnitPrice)}</span>
-                <span className="mt-1 block text-xs text-slate-400">
-                  {row.currentRef ?? "-"}
-                </span>
-              </span>
-              <span
-                className={`text-right font-semibold tabular-nums ${
-                  row.isMissing || row.deltaPrice < 0
-                    ? "text-red-600"
-                    : "text-emerald-700"
-                }`}
-              >
-                {row.isMissing ? "No fet" : formatCurrency(row.deltaPrice)}
-              </span>
-              {showPositive ? (
-                <span className="text-right tabular-nums">
-                  {formatPercent(row.percentDelta ?? Number.NaN)}
-                </span>
-              ) : null}
-              <span className="text-right tabular-nums">
-                {formatUnits(row.previousUnits)} {"->"} {formatUnits(row.currentUnits)}
-              </span>
-            </div>
-          ))}
-          <div className="grid grid-cols-[2fr_repeat(4,minmax(110px,1fr))] items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">
-            <span>Total diferencia</span>
-            <span />
-            <span />
-            <span className="text-right tabular-nums">{formatCurrency(sumDeltaVisible)}</span>
-            <span />
-            <span />
-          </div>
-        </div>
+        <ComparisonTable
+          rows={summaries.map((row) => ({
+            id: String(row.serviceId),
+            title: row.serviceName,
+            previousUnits: row.previousUnits,
+            currentUnits: row.currentUnits,
+            previousUnitPrice: row.previousUnitPrice,
+            currentUnitPrice: row.currentUnitPrice,
+            previousRef: row.previousRef,
+            currentRef: row.currentRef,
+            deltaPrice: row.deltaPrice,
+            isMissing: row.isMissing,
+            percentDelta: row.percentDelta,
+          }))}
+          previousYear={previousYear}
+          year={year}
+          showPositive={showPositive}
+          firstColumnLabel="Servei"
+        />
+        <ComparisonSummaryRow
+          label="Total diferencia"
+          value={sumDeltaVisible}
+          showPositive={showPositive}
+        />
       </section>
     </div>
   );
