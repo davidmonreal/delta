@@ -46,15 +46,22 @@ export default function AdminUserFormModal({
 }: AdminUserFormModalProps) {
   const router = useRouter();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const requestIdRef = useRef(0);
   const [role, setRole] = useState<UserFormValues["role"]>(initialValues.role);
+  const [nameValue, setNameValue] = useState(initialValues.name ?? "");
+  const [matchCount, setMatchCount] = useState<number | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
   const [state, formAction] = useActionState<ActionState, FormData>(
     action,
     initialState,
   );
 
   useEffect(() => {
+    if (!isOpen) return;
     setRole(initialValues.role);
-  }, [initialValues.role]);
+    setNameValue(initialValues.name ?? "");
+    setMatchCount(null);
+  }, [initialValues.role, initialValues.name, isOpen]);
 
   useEffect(() => {
     if (state?.success) {
@@ -71,6 +78,42 @@ export default function AdminUserFormModal({
       nameInputRef.current?.focus();
     });
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const trimmed = nameValue.trim();
+    if (trimmed.length < 2) {
+      setMatchCount(null);
+      return;
+    }
+
+    const id = requestIdRef.current + 1;
+    requestIdRef.current = id;
+    setIsChecking(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/admin/manager-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed }),
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { count?: number };
+        if (requestIdRef.current === id) {
+          setMatchCount(typeof data.count === "number" ? data.count : 0);
+        }
+      } finally {
+        if (requestIdRef.current === id) {
+          setIsChecking(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [nameValue, isOpen]);
 
   if (!isOpen) return null;
 
@@ -103,7 +146,8 @@ export default function AdminUserFormModal({
               name="name"
               ref={nameInputRef}
               autoFocus
-              defaultValue={initialValues.name ?? ""}
+              value={nameValue}
+              onChange={(event) => setNameValue(event.target.value)}
               autoComplete="name"
               className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
@@ -156,6 +200,14 @@ export default function AdminUserFormModal({
           {state?.success ? (
             <p className="text-sm font-semibold text-emerald-700">
               {state.success}
+            </p>
+          ) : matchCount !== null ? (
+            <p className="text-sm font-semibold text-slate-600">
+              {isChecking
+                ? "Comprovant coincidencies..."
+                : matchCount > 0
+                  ? `Aquest usuari s'assignara a ${matchCount} linies.`
+                  : "Aquest usuari no apareix en cap linia encara."}
             </p>
           ) : null}
           <div className="flex items-center justify-end gap-3">

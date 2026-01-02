@@ -99,6 +99,19 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return updated;
   }
 
+  async countUnassignedByManagerName({
+    nameNormalized,
+  }: {
+    nameNormalized: string;
+  }) {
+    return prisma.invoiceLine.count({
+      where: {
+        managerUserId: null,
+        managerNormalized: nameNormalized,
+      },
+    });
+  }
+
   async backfillManagers({
     userCandidates,
   }: {

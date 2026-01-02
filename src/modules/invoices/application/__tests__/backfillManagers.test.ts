@@ -21,6 +21,10 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return 0;
   }
 
+  async countUnassignedByManagerName() {
+    return 0;
+  }
+
   async backfillManagers({
     userCandidates,
   }: {

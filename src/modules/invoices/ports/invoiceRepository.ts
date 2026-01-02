@@ -16,6 +16,7 @@ export interface InvoiceRepository {
     userId: number;
     nameNormalized: string;
   }): Promise<number>;
+  countUnassignedByManagerName(params: { nameNormalized: string }): Promise<number>;
   backfillManagers(params: {
     userCandidates: { id: number; nameNormalized: string }[];
   }): Promise<number>;
