@@ -14,7 +14,9 @@ export default function ShowLinks({
   activeShow,
 }: ShowLinksProps) {
   const linkClass = (value: string) =>
-    value === activeShow ? "font-semibold text-emerald-900" : "text-emerald-800";
+    value === activeShow
+      ? "rounded-full bg-emerald-200 px-2 py-0.5 font-semibold text-emerald-900"
+      : "text-emerald-800";
 
   return (
     <span className="rounded-full bg-emerald-50 px-4 py-1 text-xs font-semibold text-emerald-800">
