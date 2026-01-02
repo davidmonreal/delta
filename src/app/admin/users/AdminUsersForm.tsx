@@ -60,13 +60,13 @@ export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps)
             name="role"
             required
             defaultValue="USER"
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            className="h-[42px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           >
             {allowSuperadmin ? (
-              <option value="SUPERADMIN">SUPERADMIN</option>
+              <option value="SUPERADMIN">Superadmin</option>
             ) : null}
-            <option value="ADMIN">ADMIN</option>
-            <option value="USER">USER</option>
+            <option value="ADMIN">Admin</option>
+            <option value="USER">User</option>
           </select>
         </label>
       </div>
