@@ -46,10 +46,11 @@ export function filterSummaries<T extends SummaryFilterShape>(
   filters: ResolvedFilters,
 ) {
   return summaries.filter((row) => {
-    if (filters.showNegative) return row.isMissing || row.deltaPrice < -0.001;
+    if (filters.showMissing) return row.isMissing;
+    if (filters.showNegative) return !row.isMissing && row.deltaPrice < -0.001;
     if (filters.showEqual) return Math.abs(row.deltaPrice) <= 0.001;
     if (filters.showPositive) return row.deltaPrice > 0.001;
-    return row.deltaPrice < -0.001;
+    return !row.isMissing && row.deltaPrice < -0.001;
   });
 }
 

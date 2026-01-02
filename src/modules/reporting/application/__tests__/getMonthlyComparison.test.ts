@@ -50,7 +50,6 @@ describe("getMonthlyComparison", () => {
     const result = await getMonthlyComparison({ repo, rawFilters: {} });
 
     expect(result.summaries).toHaveLength(1);
-    expect(result.visibleRows).toHaveLength(1);
     expect(result.filters.showNegative).toBe(true);
   });
 
@@ -89,8 +88,11 @@ describe("getMonthlyComparison", () => {
       services: [{ id: 20, conceptRaw: "Service B" }],
     });
 
-    const result = await getMonthlyComparison({ repo, rawFilters: {} });
-    expect(result.negativeMissing).toHaveLength(1);
-    expect(result.negativeMissing[0].isMissing).toBe(true);
+    const result = await getMonthlyComparison({
+      repo,
+      rawFilters: { show: "miss" },
+    });
+    expect(result.summaries).toHaveLength(1);
+    expect(result.summaries[0].isMissing).toBe(true);
   });
 });

@@ -77,7 +77,12 @@ export default async function ClientPage({
             ({summaries.length})
             {showNegative ? " negatives" : ""}
           </span>
-          <ShowLinks baseHref={`/client/${clientId}`} year={year} month={month} />
+          <ShowLinks
+            baseHref={`/client/${clientId}`}
+            year={year}
+            month={month}
+            activeShow={show}
+          />
         </div>
         <ComparisonTable
           rows={summaries.map((row) => ({

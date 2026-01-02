@@ -24,10 +24,7 @@ export type MonthlySummaryRow = {
 export type MonthlyComparisonResult = {
   filters: ReturnType<typeof resolveFilters>;
   summaries: MonthlySummaryRow[];
-  visibleRows: MonthlySummaryRow[];
-  negativeMissing: MonthlySummaryRow[];
   sumDeltaVisible: number;
-  sumDeltaMissing: number;
 };
 
 export async function getMonthlyComparison({
@@ -124,18 +121,7 @@ export async function getMonthlyComparison({
     ),
   );
 
-  const negativeWithPrice = filters.showNegative
-    ? summaries.filter((row) => !row.isMissing)
-    : [];
-  const negativeMissing = filters.showNegative
-    ? summaries.filter((row) => row.isMissing)
-    : [];
-  const visibleRows = filters.showNegative ? negativeWithPrice : summaries;
-  const sumDeltaVisible = visibleRows.reduce(
-    (total, row) => total + (row.currentTotal - row.previousTotal),
-    0,
-  );
-  const sumDeltaMissing = negativeMissing.reduce(
+  const sumDeltaVisible = summaries.reduce(
     (total, row) => total + (row.currentTotal - row.previousTotal),
     0,
   );
@@ -143,9 +129,6 @@ export async function getMonthlyComparison({
   return {
     filters,
     summaries,
-    visibleRows,
-    negativeMissing,
     sumDeltaVisible,
-    sumDeltaMissing,
   };
 }

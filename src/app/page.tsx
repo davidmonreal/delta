@@ -23,7 +23,7 @@ export default async function Home({
   const resolvedSearchParams = (await searchParams) ?? {};
   await requireSession();
   const repo = new PrismaReportingRepository();
-  const { filters, summaries, visibleRows, negativeMissing, sumDeltaVisible, sumDeltaMissing } =
+  const { filters, summaries, sumDeltaVisible } =
     toMonthlyComparisonDto(
       await getMonthlyComparison({
         repo,
@@ -66,10 +66,10 @@ export default async function Home({
             ({summaries.length})
             {showNegative ? " negatives" : ""}
           </span>
-          <ShowLinks baseHref="/" year={year} month={month} />
+          <ShowLinks baseHref="/" year={year} month={month} activeShow={show} />
         </div>
         <ComparisonTable
-          rows={visibleRows.map((row) => ({
+          rows={summaries.map((row) => ({
             id: `${row.clientId}-${row.serviceId}`,
             title: row.clientName,
             subtitle: row.serviceName,
@@ -94,36 +94,6 @@ export default async function Home({
           value={sumDeltaVisible}
           showPositive={showPositive}
         />
-        {showNegative && negativeMissing.length > 0 ? (
-          <div className="mt-6 grid gap-3">
-            <ComparisonTable
-              rows={negativeMissing.map((row) => ({
-                id: `${row.clientId}-${row.serviceId}`,
-                title: row.clientName,
-                subtitle: row.serviceName,
-                href: `/client/${row.clientId}?year=${year}&month=${month}`,
-                previousUnits: row.previousUnits,
-                currentUnits: row.currentUnits,
-                previousUnitPrice: row.previousUnitPrice,
-                currentUnitPrice: row.currentUnitPrice,
-                previousRef: row.previousRef,
-                currentRef: row.currentRef,
-                deltaPrice: row.deltaPrice,
-                isMissing: row.isMissing,
-                percentDelta: row.percentDelta,
-              }))}
-              previousYear={previousYear}
-              year={year}
-              showPositive={showPositive}
-              firstColumnLabel="No fets"
-            />
-            <ComparisonSummaryRow
-              label="Total diferencia (no fets)"
-              value={sumDeltaMissing}
-              showPositive={showPositive}
-            />
-          </div>
-        ) : null}
       </section>
     </div>
   );

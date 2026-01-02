@@ -8,6 +8,7 @@ export type ResolvedFilters = {
   showNegative: boolean;
   showEqual: boolean;
   showPositive: boolean;
+  showMissing: boolean;
 };
 
 export function resolveFilters({
@@ -26,6 +27,7 @@ export function resolveFilters({
   const showNegative = show === "neg";
   const showEqual = show === "eq";
   const showPositive = show === "pos";
+  const showMissing = show === "miss";
 
   return {
     year,
@@ -35,5 +37,6 @@ export function resolveFilters({
     showNegative,
     showEqual,
     showPositive,
+    showMissing,
   };
 }
