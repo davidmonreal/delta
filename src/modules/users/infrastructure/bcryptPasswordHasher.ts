@@ -6,4 +6,8 @@ export class BcryptPasswordHasher implements PasswordHasher {
   async hash(password: string) {
     return bcrypt.hash(password, 12);
   }
+
+  async compare(password: string, passwordHash: string) {
+    return bcrypt.compare(password, passwordHash);
+  }
 }

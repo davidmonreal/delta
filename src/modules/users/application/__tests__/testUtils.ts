@@ -62,4 +62,8 @@ export class StubPasswordHasher {
   async hash(password: string) {
     return `hashed:${password}`;
   }
+
+  async compare(password: string, passwordHash: string) {
+    return passwordHash === `hashed:${password}`;
+  }
 }

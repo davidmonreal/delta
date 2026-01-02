@@ -1,8 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 
-import { prisma } from "@/lib/db";
+import { CredentialsSchema } from "@/modules/users/dto/authSchemas";
+import { authenticateUser } from "@/modules/users/application/authenticateUser";
+import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -17,31 +19,21 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const email = credentials?.email?.trim().toLowerCase();
-        const password = credentials?.password ?? "";
-
-        if (!email || !password) {
-          return null;
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email },
+        const parsed = CredentialsSchema.safeParse({
+          email: credentials?.email ?? "",
+          password: credentials?.password ?? "",
         });
-        if (!user) {
+        if (!parsed.success) {
           return null;
         }
 
-        const isValid = await bcrypt.compare(password, user.passwordHash);
-        if (!isValid) {
-          return null;
-        }
-
-        return {
-          id: String(user.id),
-          email: user.email,
-          name: user.name ?? undefined,
-          role: user.role,
-        };
+        const repo = new PrismaUserRepository();
+        const passwordHasher = new BcryptPasswordHasher();
+        return authenticateUser({
+          input: parsed.data,
+          repo,
+          passwordHasher,
+        });
       },
     }),
   ],

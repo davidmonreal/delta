@@ -1,6 +1,7 @@
-import bcrypt from "bcryptjs";
-
-import { prisma } from "../src/lib/db";
+import { CreateUserSchema } from "@/modules/users/dto/userSchemas";
+import { createUser } from "@/modules/users/application/createUser";
+import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
 
 const args = process.argv.slice(2);
 
@@ -28,32 +29,31 @@ async function main() {
     throw new Error("Rol invalid. Usa SUPERADMIN, ADMIN o USER.");
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const existing = await prisma.user.findUnique({ where: { email } });
-
-  if (existing) {
-    await prisma.user.update({
-      where: { email },
-      data: {
-        name: name ?? existing.name,
-        role,
-        passwordHash,
-      },
-    });
-    console.log(`Password actualitzada: ${email} (${role})`);
-    return;
-  }
-
-  await prisma.user.create({
-    data: {
-      email,
-      name: name ?? null,
-      role,
-      passwordHash,
-    },
+  const parsed = CreateUserSchema.safeParse({
+    email,
+    name: name ?? undefined,
+    password,
+    role,
   });
 
-  console.log(`Usuari creat: ${email} (${role})`);
+  if (!parsed.success) {
+    throw new Error("Dades invalides per crear usuari.");
+  }
+
+  const repo = new PrismaUserRepository();
+  const hasher = new BcryptPasswordHasher();
+  const result = await createUser({
+    input: parsed.data,
+    sessionUser: { id: "script", role: "SUPERADMIN" },
+    repo,
+    passwordHasher: hasher,
+  });
+
+  if (result.error) {
+    throw new Error(result.error);
+  }
+
+  console.log(`Usuari creat: ${parsed.data.email} (${parsed.data.role})`);
 }
 
 main()
@@ -61,6 +61,3 @@ main()
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
