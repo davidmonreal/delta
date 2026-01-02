@@ -17,7 +17,7 @@ export default function ComparisonSummaryRow({
 
   return (
     <div
-      className={`grid items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600 ${gridClass}`}
+      className={`mt-3 grid items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600 ${gridClass}`}
     >
       <span>{label}</span>
       <span />
