@@ -11,6 +11,8 @@ function getArg(name: string) {
   return args[index + 1];
 }
 
+let repo: PrismaUserRepository | null = null;
+
 async function main() {
   const email = getArg("email")?.trim().toLowerCase();
   const password = getArg("password");
@@ -40,7 +42,7 @@ async function main() {
     throw new Error("Dades invalides per crear usuari.");
   }
 
-  const repo = new PrismaUserRepository();
+  repo = new PrismaUserRepository();
   const hasher = new BcryptPasswordHasher();
   const result = await upsertUser({
     input: parsed.data,
@@ -60,3 +62,6 @@ main()
     console.error(error);
     process.exitCode = 1;
   })
+  .finally(async () => {
+    await repo?.disconnect?.();
+  });

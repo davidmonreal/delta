@@ -46,4 +46,8 @@ export class PrismaUserRepository implements UserRepository {
       select: userSelect,
     });
   }
+
+  async disconnect() {
+    await prisma.$disconnect();
+  }
 }

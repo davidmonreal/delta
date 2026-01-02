@@ -26,4 +26,5 @@ export interface UserRepository {
   create(data: CreateUserData): Promise<UserEntity>;
   update(id: number, data: UpdateUserData): Promise<UserEntity>;
   list(params: ListUsersParams): Promise<UserEntity[]>;
+  disconnect?: () => Promise<void>;
 }

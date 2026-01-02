@@ -39,3 +39,4 @@
 
 ## Scripts
 - CLI scripts must use use cases + repositories; no direct Prisma calls in scripts.
+- Repositories may expose an optional `disconnect()` for scripts to cleanly close DB connections.
