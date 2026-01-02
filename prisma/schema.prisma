@@ -26,6 +26,7 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  managedLines InvoiceLine[]
 }
 
 model Client {
