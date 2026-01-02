@@ -15,7 +15,9 @@
     "db:generate": "prisma generate",
     "import:xlsx": "tsx scripts/import-xlsx.ts",
     "user:create": "tsx scripts/create-user.ts",
-    "managers:reconcile": "tsx scripts/reconcile-managers.ts"
+    "managers:reconcile": "tsx scripts/reconcile-managers.ts",
+    "managers:report": "tsx scripts/report-unmatched-managers.ts",
+    "users:report": "tsx scripts/report-users.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

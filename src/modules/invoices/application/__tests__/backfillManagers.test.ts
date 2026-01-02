@@ -17,11 +17,15 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return;
   }
 
-  async backfillManagers({ userLookup }: { userLookup: Map<string, number> }) {
+  async backfillManagers({
+    userCandidates,
+  }: {
+    userCandidates: { id: number; nameNormalized: string }[];
+  }) {
     let updated = 0;
     for (const line of this.lines) {
       if (!line.managerNormalized) continue;
-      if (userLookup.has(line.managerNormalized)) {
+      if (userCandidates.some((user) => user.nameNormalized === line.managerNormalized)) {
         updated += 1;
       }
     }
@@ -32,8 +36,8 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
 describe("backfillManagers", () => {
   it("returns number of updated lines", async () => {
     const repo = new InMemoryInvoiceRepository();
-    const userLookup = new Map([["ALFA", 1]]);
-    const updated = await backfillManagers({ repo, userLookup });
+    const userCandidates = [{ id: 1, nameNormalized: "ALFA" }];
+    const updated = await backfillManagers({ repo, userCandidates });
     expect(updated).toBe(1);
   });
 });

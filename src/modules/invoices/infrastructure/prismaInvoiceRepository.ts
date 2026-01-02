@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
+import { matchUserId } from "@/lib/match-user";
 
 import type { InvoiceRepository, UnmatchedInvoiceLine } from "../ports/invoiceRepository";
 
@@ -37,25 +38,33 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
-  async backfillManagers({ userLookup }: { userLookup: Map<string, number> }) {
+  async backfillManagers({
+    userCandidates,
+  }: {
+    userCandidates: { id: number; nameNormalized: string }[];
+  }) {
     const lines = await prisma.invoiceLine.findMany({
-      where: { managerUserId: null },
-      select: { id: true, manager: true, managerNormalized: true },
+      where: {
+        OR: [{ managerUserId: null }, { managerNormalized: null }],
+      },
+      select: { id: true, manager: true, managerNormalized: true, managerUserId: true },
     });
 
     let updated = 0;
     for (const line of lines) {
       const normalized = line.managerNormalized ?? normalizeName(line.manager);
-      const userId = userLookup.get(normalized);
-      if (!userId) continue;
+      const match = matchUserId(line.manager, userCandidates);
+      const userId = match.userId;
       await prisma.invoiceLine.update({
         where: { id: line.id },
         data: {
-          managerUserId: userId,
+          managerUserId: line.managerUserId ?? userId ?? null,
           managerNormalized: normalized,
         },
       });
-      updated += 1;
+      if (line.managerUserId == null && userId) {
+        updated += 1;
+      }
     }
 
     return updated;

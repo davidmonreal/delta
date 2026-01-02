@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 
 import type { IngestionRepository, InvoiceLineInput } from "../ports/ingestionRepository";
 import { normalizeName } from "@/lib/normalize";
+import { matchUserId } from "@/lib/match-user";
 
 type Row = Record<string, unknown>;
 
@@ -12,7 +13,7 @@ type ImportParams = {
   sourceFile: string;
   reset: boolean;
   repo: IngestionRepository;
-  userLookup?: Map<string, number>;
+  userCandidates?: { id: number; nameNormalized: string }[];
 };
 
 export function normalizeHeader(value: string) {
@@ -96,7 +97,7 @@ export async function importRows({
   sourceFile,
   reset,
   repo,
-  userLookup,
+  userCandidates,
 }: ImportParams) {
   if (rows.length === 0) return 0;
 
@@ -130,7 +131,9 @@ export async function importRows({
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
     const managerNormalized = manager.length ? normalizeName(manager) : null;
     const managerUserId =
-      managerNormalized && userLookup ? userLookup.get(managerNormalized) ?? null : null;
+      managerNormalized && userCandidates
+        ? matchUserId(manager, userCandidates).userId
+        : null;
     const series = toOptionalString(getValue(row, headerMap, "SERIE"));
     const albaran = toOptionalString(getValue(row, headerMap, "ALBARAN"));
     const numero = toOptionalString(getValue(row, headerMap, "NUMERO"));
@@ -161,12 +164,12 @@ export async function importXlsxFile({
   filePath,
   reset,
   repo,
-  userLookup,
+  userCandidates,
 }: {
   filePath: string;
   reset: boolean;
   repo: IngestionRepository;
-  userLookup?: Map<string, number>;
+  userCandidates?: { id: number; nameNormalized: string }[];
 }) {
   const workbook = XLSX.readFile(filePath, { cellDates: true });
   const sheetName = workbook.SheetNames[0];
@@ -174,5 +177,5 @@ export async function importXlsxFile({
   const rows = XLSX.utils.sheet_to_json<Row>(sheet, { defval: null });
   const sourceFile = path.basename(filePath);
 
-  return importRows({ rows, sourceFile, reset, repo, userLookup });
+  return importRows({ rows, sourceFile, reset, repo, userCandidates });
 }

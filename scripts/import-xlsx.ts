@@ -29,17 +29,20 @@ async function main() {
   repo = new PrismaIngestionRepository();
   userRepo = new PrismaUserRepository();
   const users = await userRepo.listAll();
-  const userLookup = new Map(
-    users
-      .filter((user) => user.name)
-      .map((user) => [
-        user.nameNormalized ?? normalizeName(user.name ?? ""),
-        user.id,
-      ]),
-  );
+  const userCandidates = users
+    .filter((user) => user.name)
+    .map((user) => ({
+      id: user.id,
+      nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
+    }));
   let totalRows = 0;
   for (const filePath of targetPaths) {
-    const imported = await importXlsxFile({ filePath, reset, repo, userLookup });
+    const imported = await importXlsxFile({
+      filePath,
+      reset,
+      repo,
+      userCandidates,
+    });
     totalRows += imported;
     console.log(`Importat ${imported} files de ${path.basename(filePath)}.`);
   }

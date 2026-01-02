@@ -36,7 +36,7 @@ export default function AppHeader({
             href="/admin/unmatched"
             className="text-sm font-medium text-slate-500 hover:text-emerald-700"
           >
-            No fets
+            Importar dades
           </Link>
         ) : null}
       </div>

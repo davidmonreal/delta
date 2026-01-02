@@ -23,16 +23,17 @@ async function main() {
     });
     user.nameNormalized = normalized;
   }
-  const userLookup = new Map(
-    users
-      .filter((user) => user.name)
-      .map((user) => [
-        user.nameNormalized ?? normalizeName(user.name ?? ""),
-        user.id,
-      ]),
-  );
+  const userCandidates = users
+    .filter((user) => user.name)
+    .map((user) => ({
+      id: user.id,
+      nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
+    }));
 
-  const updated = await backfillManagers({ repo: invoiceRepo, userLookup });
+  const updated = await backfillManagers({
+    repo: invoiceRepo,
+    userCandidates,
+  });
   console.log(`Linies actualitzades: ${updated}`);
 }
 

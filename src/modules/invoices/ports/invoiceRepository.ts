@@ -11,6 +11,8 @@ export type UnmatchedInvoiceLine = {
 export interface InvoiceRepository {
   listUnmatched(): Promise<UnmatchedInvoiceLine[]>;
   assignManager(lineId: number, userId: number): Promise<void>;
-  backfillManagers(params: { userLookup: Map<string, number> }): Promise<number>;
+  backfillManagers(params: {
+    userCandidates: { id: number; nameNormalized: string }[];
+  }): Promise<number>;
   disconnect?: () => Promise<void>;
 }

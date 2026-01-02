@@ -2,10 +2,10 @@ import type { InvoiceRepository } from "../ports/invoiceRepository";
 
 export async function backfillManagers({
   repo,
-  userLookup,
+  userCandidates,
 }: {
   repo: InvoiceRepository;
-  userLookup: Map<string, number>;
+  userCandidates: { id: number; nameNormalized: string }[];
 }) {
-  return repo.backfillManagers({ userLookup });
+  return repo.backfillManagers({ userCandidates });
 }
