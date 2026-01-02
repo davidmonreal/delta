@@ -12,5 +12,7 @@ const proxy = withAuth({
 export default proxy;
 
 export const config = {
-  matcher: ["/((?!api/auth|login|_next|favicon.ico).*)"],
+  matcher: [
+    "/((?!api/auth|login|_next|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
+  ],
 };
