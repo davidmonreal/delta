@@ -21,7 +21,7 @@ export default async function RootLayout({
 
   return (
     <html lang="ca">
-      <body className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#ffffff,_#f5f7fb_60%,_#eef2f7)] text-slate-900">
+      <body className="min-h-screen bg-slate-100 text-slate-900">
         {session ? (
           <AppHeader
             showAdminLink={showAdminLink}
