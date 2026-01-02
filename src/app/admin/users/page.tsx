@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { UserRole } from "@/generated/prisma";
 import { requireAdminSession } from "@/lib/require-auth";
 
 import AdminUsersForm from "./AdminUsersForm";
@@ -6,7 +7,9 @@ import AdminUsersForm from "./AdminUsersForm";
 export default async function AdminUsersPage() {
   const session = await requireAdminSession();
   const allowSuperadmin = session.user.role === "SUPERADMIN";
-  const visibleRoles = allowSuperadmin ? ["SUPERADMIN", "ADMIN", "USER"] : ["ADMIN", "USER"];
+  const visibleRoles = allowSuperadmin
+    ? [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.USER]
+    : [UserRole.ADMIN, UserRole.USER];
 
   const users = await prisma.user.findMany({
     where: {
