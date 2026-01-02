@@ -38,8 +38,11 @@ export default function LoginForm({ callbackUrl }: LoginFormProps) {
   }
 
   return (
-    <form className="filters" onSubmit={handleSubmit}>
-      <label>
+    <form
+      className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      onSubmit={handleSubmit}
+    >
+      <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
         Email
         <input
           type="email"
@@ -47,10 +50,11 @@ export default function LoginForm({ callbackUrl }: LoginFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           required
         />
       </label>
-      <label>
+      <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
         Password
         <input
           type="password"
@@ -58,11 +62,16 @@ export default function LoginForm({ callbackUrl }: LoginFormProps) {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           required
         />
       </label>
-      {error ? <p>{error}</p> : null}
-      <button type="submit" disabled={isSubmitting}>
+      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="rounded-full bg-emerald-700 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70"
+      >
         {isSubmitting ? "Entrant..." : "Entrar"}
       </button>
     </form>

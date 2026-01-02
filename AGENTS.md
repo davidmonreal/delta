@@ -23,3 +23,4 @@
 ## Structure
 - Create new client projects under their own folders (e.g., `delta/`).
 - If a project needs a template or stack, ask before scaffolding.
+- UI components live in `src/components` with reusable pieces in `src/components/common` (Tailwind + lucide-react); prefer reuse over one-off markup.
