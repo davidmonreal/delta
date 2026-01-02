@@ -19,4 +19,5 @@ export interface IngestionRepository {
   upsertService(conceptRaw: string, conceptNormalized: string): Promise<number>;
   deleteInvoiceLinesBySourceFile(sourceFile: string): Promise<void>;
   createInvoiceLines(lines: InvoiceLineInput[]): Promise<number>;
+  disconnect?: () => Promise<void>;
 }

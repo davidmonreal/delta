@@ -4,6 +4,8 @@ import path from "node:path";
 import { importXlsxFile } from "@/modules/ingestion/application/importInvoiceLines";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
 
+let repo: PrismaIngestionRepository | null = null;
+
 async function main() {
   const args = process.argv.slice(2);
   const reset = args.includes("--reset");
@@ -21,7 +23,7 @@ async function main() {
     throw new Error("No s'han trobat fitxers .xlsx per importar.");
   }
 
-  const repo = new PrismaIngestionRepository();
+  repo = new PrismaIngestionRepository();
   let totalRows = 0;
   for (const filePath of targetPaths) {
     const imported = await importXlsxFile({ filePath, reset, repo });
@@ -38,5 +40,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await repo?.disconnect?.();
   });

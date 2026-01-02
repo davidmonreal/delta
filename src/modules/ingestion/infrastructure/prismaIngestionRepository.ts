@@ -36,4 +36,8 @@ export class PrismaIngestionRepository implements IngestionRepository {
     const result = await prisma.invoiceLine.createMany({ data: lines });
     return result.count;
   }
+
+  async disconnect() {
+    await prisma.$disconnect();
+  }
 }

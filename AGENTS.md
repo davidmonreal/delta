@@ -36,3 +36,6 @@
 ## Testing practices
 - Add unit tests for use cases using an in-memory repository + stub ports.
 - Prefer `vitest` for new tests; keep tests near the feature in `application/__tests__/`.
+
+## Scripts
+- CLI scripts must use use cases + repositories; no direct Prisma calls in scripts.
