@@ -62,9 +62,11 @@ export default async function UnmatchedManagersPage() {
             >
               <div>
                 <span className="block font-medium">{line.manager}</span>
-                <span className="mt-1 block text-xs text-slate-400">
-                  {line.managerNormalized ?? "-"}
-                </span>
+                {line.managerNormalized && line.managerNormalized !== line.manager ? (
+                  <span className="mt-1 block text-xs text-slate-400">
+                    {line.managerNormalized}
+                  </span>
+                ) : null}
               </div>
               <span>{line.clientName}</span>
               <span>{line.serviceName}</span>
