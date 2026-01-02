@@ -49,14 +49,14 @@ export const authOptions: NextAuthOptions = {
     jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        token.role = (user as { role?: string }).role;
+        token.role = (user as { role?: "SUPERADMIN" | "ADMIN" | "USER" }).role;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = String(token.userId ?? "");
-        session.user.role = String(token.role ?? "USER");
+        session.user.role = token.role ?? "USER";
       }
       return session;
     },
