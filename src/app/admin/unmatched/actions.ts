@@ -17,10 +17,7 @@ type ActionState = {
   success?: string;
 };
 
-export async function assignManagerAction(
-  _state: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function assignManagerAction(formData: FormData): Promise<void> {
   await requireAdminSession();
   const parsed = AssignSchema.safeParse({
     lineId: formData.get("lineId"),
@@ -28,7 +25,7 @@ export async function assignManagerAction(
   });
 
   if (!parsed.success) {
-    return { error: "Dades invalides." };
+    return;
   }
 
   const repo = new PrismaInvoiceRepository();
@@ -39,5 +36,4 @@ export async function assignManagerAction(
   });
 
   revalidatePath("/admin/unmatched");
-  return { success: "Assignat correctament." };
 }
