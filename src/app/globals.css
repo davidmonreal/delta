@@ -65,6 +65,22 @@ a:hover {
   color: var(--muted);
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  height: 34px;
+  width: auto;
+}
+
+.brand-logo--login {
+  height: 48px;
+  margin-bottom: 12px;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr));

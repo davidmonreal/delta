@@ -16,6 +16,11 @@ export default function LoginPage({
   return (
     <div className="page">
       <section className="card">
+        <img
+          src="/logo-busbac.png"
+          alt="Busbac"
+          className="brand-logo brand-logo--login"
+        />
         <h1>Acces</h1>
         <p className="subtitle">Introdueix el teu email i password.</p>
         <LoginForm callbackUrl={callbackUrl} />

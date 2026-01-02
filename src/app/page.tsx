@@ -223,7 +223,14 @@ export default async function Home({
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Comparativa mensual</p>
+          <div className="brand">
+            <img
+              src="/logo-busbac.png"
+              alt="Busbac"
+              className="brand-logo"
+            />
+            <p className="eyebrow">Comparativa mensual</p>
+          </div>
           <h1>Diferencies per client i servei</h1>
           <p className="subtitle">
             Comparant {month}/{previousYear} amb {month}/{year}

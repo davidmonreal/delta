@@ -201,9 +201,16 @@ export default async function ClientPage({
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">
-            <Link href="/">&lt;- Tornar a la vista principal</Link>
-          </p>
+          <div className="brand">
+            <img
+              src="/logo-busbac.png"
+              alt="Busbac"
+              className="brand-logo"
+            />
+            <p className="eyebrow">
+              <Link href="/">&lt;- Tornar a la vista principal</Link>
+            </p>
+          </div>
           <h1>{client.nameRaw}</h1>
           <p className="subtitle">
             Diferencies per servei ({month}/{previousYear} vs {month}/{year})
