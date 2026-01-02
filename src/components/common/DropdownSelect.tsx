@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
@@ -25,56 +25,67 @@ export function DropdownSelect<T extends string | number>({
   buttonClassName,
 }: DropdownSelectProps<T>) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => options.find((opt) => opt.value === value),
     [options, value],
   );
 
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setOpen(false);
+    }
+  }, [value]);
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full flex-col gap-2" ref={rootRef}>
       {label ? (
-        <span className="whitespace-nowrap text-xs font-semibold text-slate-500">
-          {label}
-        </span>
+        <span className="text-xs font-semibold text-slate-500">{label}</span>
       ) : null}
       <div
-        className="relative"
-        tabIndex={0}
-        onBlur={() => setTimeout(() => setOpen(false), 100)}
+        className="relative w-full"
       >
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`flex min-w-[170px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 ${buttonClassName ?? ""}`}
+          className={`flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 ${buttonClassName ?? ""}`}
         >
           <span className="truncate">{selected?.label || placeholder}</span>
-          <ChevronDown size={16} className="text-slate-500" />
+          <ChevronDown size={18} className="text-slate-400" />
         </button>
         {open ? (
-          <div className="absolute right-0 z-20 mt-1 w-full min-w-[190px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-            <button
-              type="button"
-              className={`w-full px-3.5 py-2 text-left text-sm font-medium ${
-                !value
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-800 hover:bg-slate-50"
-              }`}
-              onClick={() => {
-                onChange(null);
-                setOpen(false);
-              }}
-            >
-              {placeholder}
-            </button>
-            <div className="max-h-56 overflow-y-auto py-1">
+          <div className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div className="max-h-64 overflow-y-auto py-1">
               {options.map((opt) => {
                 const isActive = opt.value === value;
                 return (
                   <button
                     key={String(opt.value)}
                     type="button"
-                    className={`w-full px-3.5 py-2 text-left text-sm font-medium ${
+                    className={`w-full px-4 py-2 text-left text-sm font-medium ${
                       isActive
                         ? "bg-emerald-50 text-emerald-700"
                         : "text-slate-800 hover:bg-slate-50"

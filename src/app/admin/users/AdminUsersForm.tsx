@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { createUserAction } from "@/app/admin/users/actions";
+import { DropdownSelect } from "@/components/common/DropdownSelect";
 
 type ActionState = {
   error?: string;
@@ -20,6 +21,7 @@ export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps)
     createUserAction,
     initialState,
   );
+  const [role, setRole] = useState<"SUPERADMIN" | "ADMIN" | "USER">("USER");
 
   return (
     <form
@@ -34,7 +36,7 @@ export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps)
             type="email"
             name="email"
             required
-            className="rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
@@ -42,7 +44,7 @@ export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps)
           <input
             type="text"
             name="name"
-            className="rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
@@ -51,25 +53,28 @@ export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps)
             type="password"
             name="password"
             required
-            className="rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            className="h-12 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
           Rol
-          <select
-            name="role"
-            required
-            defaultValue="USER"
-            className="h-[42px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-          >
-            {allowSuperadmin ? (
-              <option value="SUPERADMIN">Superadmin</option>
-            ) : null}
-            <option value="ADMIN">Admin</option>
-            <option value="USER">User</option>
-          </select>
+          <DropdownSelect
+            label={null}
+            options={[
+              ...(allowSuperadmin
+                ? [{ label: "Superadmin", value: "SUPERADMIN" as const }]
+                : []),
+              { label: "Admin", value: "ADMIN" as const },
+              { label: "User", value: "USER" as const },
+            ]}
+            value={role}
+            onChange={(value) => setRole(value ?? "USER")}
+            placeholder="User"
+            buttonClassName="h-12"
+          />
         </label>
       </div>
+      <input type="hidden" name="role" value={role} />
       {state?.error ? (
         <p className="mt-3 text-sm font-semibold text-red-600">{state.error}</p>
       ) : null}

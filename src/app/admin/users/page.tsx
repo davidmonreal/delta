@@ -3,17 +3,38 @@ import { UserRole } from "@/generated/prisma";
 import { requireAdminSession } from "@/lib/require-auth";
 
 import AdminUsersForm from "./AdminUsersForm";
+import SearchInput from "@/components/common/SearchInput";
 
-export default async function AdminUsersPage() {
+export const dynamic = "force-dynamic";
+
+type SearchParams = {
+  q?: string;
+};
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const session = await requireAdminSession();
   const allowSuperadmin = session.user.role === "SUPERADMIN";
   const visibleRoles = allowSuperadmin
     ? [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.USER]
     : [UserRole.ADMIN, UserRole.USER];
+  const query = searchParams?.q?.trim() ?? "";
+  const shouldFilter = query.length > 2;
 
   const users = await prisma.user.findMany({
     where: {
       role: { in: visibleRoles },
+      ...(shouldFilter
+        ? {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { email: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
     orderBy: [{ role: "desc" }, { email: "asc" }],
     select: {
@@ -42,23 +63,32 @@ export default async function AdminUsersPage() {
       <AdminUsersForm allowSuperadmin={allowSuperadmin} />
 
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 text-sm font-semibold text-slate-500">
-          Usuaris ({users.length})
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="text-sm font-semibold text-slate-500">
+            Usuaris ({users.length})
+          </div>
+          <form method="get" className="w-full max-w-md">
+            <SearchInput
+              name="q"
+              placeholder="Cerca usuaris..."
+              defaultValue={query}
+            />
+          </form>
         </div>
         <div className="grid gap-3">
-          <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            <span>Email</span>
+          <div className="grid grid-cols-[1.4fr_2fr_1fr_1fr] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
             <span>Nom</span>
+            <span>Email</span>
             <span>Rol</span>
-            <span>Alta</span>
+            <span>Data</span>
           </div>
           {users.map((user) => (
             <div
               key={user.id}
-              className="grid grid-cols-[2fr_1.4fr_1fr_1fr] items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+              className="grid grid-cols-[1.4fr_2fr_1fr_1fr] items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
             >
-              <span className="font-medium">{user.email}</span>
-              <span>{user.name ?? "-"}</span>
+              <span className="font-medium">{user.name ?? "-"}</span>
+              <span>{user.email}</span>
               <span>{user.role}</span>
               <span>{user.createdAt.toLocaleDateString("ca-ES")}</span>
             </div>
