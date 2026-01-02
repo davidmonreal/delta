@@ -24,3 +24,15 @@
 - Create new client projects under their own folders (e.g., `delta/`).
 - If a project needs a template or stack, ask before scaffolding.
 - UI components live in `src/components` with reusable pieces in `src/components/common` (Tailwind + lucide-react); prefer reuse over one-off markup.
+
+## Architecture practices (new baseline)
+- Follow a layered structure: `modules/<feature>/{domain,application,ports,infrastructure,dto}`.
+- Keep Prisma usage inside `infrastructure/` and expose repositories via `ports/`.
+- Use cases live in `application/` and receive repositories/ports via injection.
+- Validate inputs at boundaries using Zod schemas in `dto/`.
+- UI/server actions must not contain business logic; they call use cases and map DTOs.
+- Domain policies (authz rules) live in `domain/` and are reused by use cases.
+
+## Testing practices
+- Add unit tests for use cases using an in-memory repository + stub ports.
+- Prefer `vitest` for new tests; keep tests near the feature in `application/__tests__/`.

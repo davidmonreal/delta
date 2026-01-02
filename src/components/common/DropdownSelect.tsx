@@ -90,6 +90,11 @@ export function DropdownSelect<T extends string | number>({
                         ? "bg-emerald-50 text-emerald-700"
                         : "text-slate-800 hover:bg-slate-50"
                     }`}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      onChange(opt.value);
+                      setOpen(false);
+                    }}
                     onClick={() => {
                       onChange(opt.value);
                       setOpen(false);

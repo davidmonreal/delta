@@ -1,27 +1,23 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
-import { prisma } from "@/lib/db";
 import { requireAdminSession } from "@/lib/require-auth";
+import { createUser } from "@/modules/users/application/createUser";
+import { updateUser } from "@/modules/users/application/updateUser";
+import type { ActionResult } from "@/modules/users/application/types";
+import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
+import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { CreateUserSchema, UpdateUserSchema } from "@/modules/users/dto/userSchemas";
 
-type ActionState = {
-  error?: string;
-  success?: string;
-};
+type ActionState = ActionResult;
 
-function normalizeEmail(value: FormDataEntryValue | null) {
-  if (!value) return "";
-  return String(value).trim().toLowerCase();
-}
+const repo = new PrismaUserRepository();
+const passwordHasher = new BcryptPasswordHasher();
 
-function normalizeRole(value: FormDataEntryValue | null) {
-  const role = String(value ?? "").toUpperCase();
-  if (role === "SUPERADMIN" || role === "ADMIN" || role === "USER") {
-    return role;
-  }
-  return null;
+function getString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
 }
 
 export async function createUserAction(
@@ -29,35 +25,59 @@ export async function createUserAction(
   formData: FormData,
 ): Promise<ActionState> {
   const session = await requireAdminSession();
-  const email = normalizeEmail(formData.get("email"));
-  const name = String(formData.get("name") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const role = normalizeRole(formData.get("role"));
+  const parsed = CreateUserSchema.safeParse({
+    email: getString(formData, "email"),
+    name: getString(formData, "name") || undefined,
+    password: getString(formData, "password"),
+    role: getString(formData, "role"),
+  });
 
-  if (!email || !password || !role) {
+  if (!parsed.success) {
     return { error: "Falten camps obligatoris." };
   }
 
-  if (session.user.role !== "SUPERADMIN" && role === "SUPERADMIN") {
-    return { error: "No tens permisos per crear superadmins." };
+  const result = await createUser({
+    input: parsed.data,
+    sessionUser: { id: session.user.id, role: session.user.role },
+    repo,
+    passwordHasher,
+  });
+  if (result.error) {
+    return result;
   }
+  revalidatePath("/admin/users");
+  return result;
+}
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "Aquest email ja existeix." };
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  await prisma.user.create({
-    data: {
-      email,
-      name: name.length ? name : null,
-      role,
-      passwordHash,
-    },
+export async function updateUserAction(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireAdminSession();
+  const userIdRaw = getString(formData, "userId");
+  const userId = Number.parseInt(userIdRaw, 10);
+  const password = getString(formData, "password");
+  const parsed = UpdateUserSchema.safeParse({
+    userId,
+    email: getString(formData, "email"),
+    name: getString(formData, "name") || undefined,
+    password: password.length ? password : undefined,
+    role: getString(formData, "role"),
   });
 
+  if (!parsed.success) {
+    return { error: "Falten camps obligatoris." };
+  }
+
+  const result = await updateUser({
+    input: parsed.data,
+    sessionUser: { id: session.user.id, role: session.user.role },
+    repo,
+    passwordHasher,
+  });
+  if (result.error) {
+    return result;
+  }
   revalidatePath("/admin/users");
-  return { success: "Usuari creat correctament." };
+  return result;
 }

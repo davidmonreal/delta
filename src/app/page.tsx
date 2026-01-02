@@ -1,53 +1,15 @@
 import Link from "next/link";
 
-import { prisma } from "@/lib/db";
 import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 import { requireSession } from "@/lib/require-auth";
+import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
+import { getMonthlyComparison } from "@/modules/reporting/application/getMonthlyComparison";
 
 type SearchParams = {
   year?: string;
   month?: string;
   show?: string;
 };
-
-type RowKey = `${number}-${number}`;
-
-type SummaryRow = {
-  clientId: number;
-  serviceId: number;
-  clientName: string;
-  serviceName: string;
-  previousRef: string | null;
-  currentRef: string | null;
-  previousTotal: number;
-  currentTotal: number;
-  previousUnits: number;
-  currentUnits: number;
-  previousUnitPrice: number;
-  currentUnitPrice: number;
-  deltaPrice: number;
-  isMissing: boolean;
-  percentDelta?: number;
-};
-
-function toInt(value: string | undefined, fallback: number) {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? fallback : parsed;
-}
-
-function formatRef(
-  series: string | null,
-  albaran: string | null,
-  numero: string | null,
-) {
-  const seriesPart = series || albaran || "";
-  const numberPart = numero || albaran || "";
-  if (seriesPart && numberPart && seriesPart !== numberPart) {
-    return `${seriesPart}-${numberPart}`;
-  }
-  return seriesPart || numberPart || null;
-}
 
 export default async function Home({
   searchParams,
@@ -56,168 +18,18 @@ export default async function Home({
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   await requireSession();
-  const latestEntry =
-    (await prisma.invoiceLine.findFirst({
-      orderBy: [{ year: "desc" }, { month: "desc" }],
-      select: { year: true, month: true },
-    })) ?? undefined;
-
-  const defaultYear = latestEntry?.year ?? new Date().getFullYear();
-  const defaultMonth = latestEntry?.month ?? new Date().getMonth() + 1;
-
-  const year = toInt(resolvedSearchParams.year, defaultYear);
-  const month = toInt(resolvedSearchParams.month, defaultMonth);
-  const previousYear = year - 1;
-  const show = resolvedSearchParams.show ?? "neg";
-  const showNegative = show === "neg";
-  const showEqual = show === "eq";
-  const showPositive = show === "pos";
-
-  const groups = await prisma.invoiceLine.groupBy({
-    by: ["clientId", "serviceId", "year", "month"],
-    where: {
-      month,
-      year: { in: [previousYear, year] },
-    },
-    _sum: {
-      total: true,
-      units: true,
-    },
-  });
-
-  const refs = await prisma.invoiceLine.findMany({
-    where: {
-      month,
-      year: { in: [previousYear, year] },
-    },
-    select: {
-      clientId: true,
-      serviceId: true,
-      year: true,
-      series: true,
-      albaran: true,
-      numero: true,
-    },
-  });
-
-  const refMap = new Map<string, string>();
-  for (const ref of refs) {
-    const key = `${ref.clientId}-${ref.serviceId}-${ref.year}`;
-    if (refMap.has(key)) continue;
-    const label = formatRef(ref.series, ref.albaran, ref.numero);
-    if (label) refMap.set(key, label);
-  }
-
-  const clientIds = Array.from(new Set(groups.map((group) => group.clientId)));
-  const serviceIds = Array.from(new Set(groups.map((group) => group.serviceId)));
-
-  const [clients, services] = await Promise.all([
-    prisma.client.findMany({
-      where: { id: { in: clientIds } },
-      select: { id: true, nameRaw: true },
-    }),
-    prisma.service.findMany({
-      where: { id: { in: serviceIds } },
-      select: { id: true, conceptRaw: true },
-    }),
-  ]);
-
-  const clientMap = new Map(clients.map((client) => [client.id, client.nameRaw]));
-  const serviceMap = new Map(
-    services.map((service) => [service.id, service.conceptRaw]),
-  );
-
-  const rows = new Map<RowKey, SummaryRow>();
-
-  for (const group of groups) {
-    const key = `${group.clientId}-${group.serviceId}` as RowKey;
-    const existing = rows.get(key) ?? {
-      clientId: group.clientId,
-      serviceId: group.serviceId,
-      clientName: clientMap.get(group.clientId) ?? "Unknown client",
-      serviceName: serviceMap.get(group.serviceId) ?? "Unknown service",
-      previousRef:
-        refMap.get(`${group.clientId}-${group.serviceId}-${previousYear}`) ??
-        null,
-      currentRef:
-        refMap.get(`${group.clientId}-${group.serviceId}-${year}`) ?? null,
-      previousTotal: 0,
-      currentTotal: 0,
-      previousUnits: 0,
-      currentUnits: 0,
-      previousUnitPrice: Number.NaN,
-      currentUnitPrice: Number.NaN,
-      deltaPrice: Number.NaN,
-      isMissing: false,
-    };
-
-    if (group.year === year) {
-      existing.currentTotal = group._sum.total ?? 0;
-      existing.currentUnits = group._sum.units ?? 0;
-      existing.currentRef =
-        refMap.get(`${group.clientId}-${group.serviceId}-${year}`) ??
-        existing.currentRef;
-    } else {
-      existing.previousTotal = group._sum.total ?? 0;
-      existing.previousUnits = group._sum.units ?? 0;
-      existing.previousRef =
-        refMap.get(`${group.clientId}-${group.serviceId}-${previousYear}`) ??
-        existing.previousRef;
-    }
-
-    rows.set(key, existing);
-  }
-
-  const summaries = Array.from(rows.values())
-    .map((row) => {
-      const previousUnitPrice =
-        row.previousUnits > 0 ? row.previousTotal / row.previousUnits : Number.NaN;
-      const currentUnitPrice =
-        row.currentUnits > 0 ? row.currentTotal / row.currentUnits : Number.NaN;
-      const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
-      const deltaPrice = hasBoth
-        ? currentUnitPrice - previousUnitPrice
-        : Number.NaN;
-      const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
-      return {
-        ...row,
-        previousUnitPrice,
-        currentUnitPrice,
-        deltaPrice,
-        isMissing,
-        percentDelta:
-          hasBoth && previousUnitPrice > 0
-            ? ((currentUnitPrice - previousUnitPrice) / previousUnitPrice) * 100
-            : undefined,
-      };
-    })
-    .filter((row) => {
-      if (showNegative) return row.isMissing || row.deltaPrice < -0.001;
-      if (showEqual) return Math.abs(row.deltaPrice) <= 0.001;
-      if (showPositive) return row.deltaPrice > 0.001;
-      return row.deltaPrice < -0.001;
-    })
-    .sort((a, b) => {
-      const aScore = a.isMissing ? Number.POSITIVE_INFINITY : Math.abs(a.deltaPrice);
-      const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
-      return bScore - aScore;
+  const repo = new PrismaReportingRepository();
+  const { filters, summaries, visibleRows, negativeMissing, sumDeltaVisible, sumDeltaMissing } =
+    await getMonthlyComparison({
+      repo,
+      rawFilters: {
+        year: resolvedSearchParams.year,
+        month: resolvedSearchParams.month,
+        show: resolvedSearchParams.show,
+      },
     });
-
-  const negativeWithPrice = showNegative
-    ? summaries.filter((row) => !row.isMissing)
-    : [];
-  const negativeMissing = showNegative
-    ? summaries.filter((row) => row.isMissing)
-    : [];
-  const visibleRows = showNegative ? negativeWithPrice : summaries;
-  const sumDeltaVisible = visibleRows.reduce(
-    (total, row) => total + (row.currentTotal - row.previousTotal),
-    0,
-  );
-  const sumDeltaMissing = negativeMissing.reduce(
-    (total, row) => total + (row.currentTotal - row.previousTotal),
-    0,
-  );
+  const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
+    filters;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
