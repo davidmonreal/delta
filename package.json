@@ -10,13 +10,16 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "import:xlsx": "tsx scripts/import-xlsx.ts"
+    "import:xlsx": "tsx scripts/import-xlsx.ts",
+    "user:create": "tsx scripts/create-user.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
     "browserslist": "^4.28.1",
+    "bcryptjs": "^3.0.2",
     "caniuse-lite": "^1.0.30001761",
     "next": "16.1.1",
+    "next-auth": "^4.24.11",
     "prisma": "5.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

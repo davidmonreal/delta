@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/db";
 import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
+import { requireSession } from "@/lib/require-auth";
 
 type SearchParams = {
   year?: string;
@@ -25,6 +26,7 @@ export default async function ClientPage({
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
+  await requireSession();
   const clientId = Number.parseInt(resolvedParams.clientId, 10);
   if (Number.isNaN(clientId)) {
     notFound();

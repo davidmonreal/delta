@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/db";
 import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
+import { requireSession } from "@/lib/require-auth";
 
 type SearchParams = {
   year?: string;
@@ -54,6 +55,7 @@ export default async function Home({
   searchParams?: Promise<SearchParams>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
+  await requireSession();
   const latestEntry =
     (await prisma.invoiceLine.findFirst({
       orderBy: [{ year: "desc" }, { month: "desc" }],
