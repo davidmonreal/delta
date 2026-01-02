@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 
 import { createUserAction } from "@/app/admin/users/actions";
 
@@ -11,7 +11,7 @@ type AdminUsersFormProps = {
 };
 
 export default function AdminUsersForm({ allowSuperadmin }: AdminUsersFormProps) {
-  const [state, formAction] = useFormState(createUserAction, initialState);
+  const [state, formAction] = useActionState(createUserAction, initialState);
 
   return (
     <form className="card admin-form" action={formAction}>
