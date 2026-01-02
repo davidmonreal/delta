@@ -71,44 +71,50 @@ export default async function Home({
           <div
             className={`grid items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 ${
               showPositive
-                ? "grid-cols-[2fr_2fr_repeat(5,minmax(110px,1fr))]"
-                : "grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))]"
+                ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
             }`}
           >
             <span>Client</span>
-            <span>Servei</span>
-            <span className="text-right">Preu unit. {previousYear}</span>
-            <span className="text-right">Preu unit. {year}</span>
+            <span className="text-right">Serveis {previousYear}</span>
+            <span className="text-right">Serveis {year}</span>
             <span className="text-right">Delta preu</span>
             {showPositive ? <span className="text-right">Augment %</span> : null}
-            <span className="text-right">Unitats</span>
           </div>
           {visibleRows.map((row) => (
             <div
               key={`${row.clientId}-${row.serviceId}`}
               className={`grid items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 ${
                 showPositive
-                  ? "grid-cols-[2fr_2fr_repeat(5,minmax(110px,1fr))]"
-                  : "grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))]"
+                  ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                  : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
               }`}
             >
-              <span className="font-medium">
+              <div>
                 <Link
                   href={`/client/${row.clientId}?year=${year}&month=${month}`}
-                  className="hover:text-emerald-700"
+                  className="block font-medium hover:text-emerald-700"
                 >
                   {row.clientName}
                 </Link>
-              </span>
-              <span>{row.serviceName}</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  {row.serviceName}
+                </span>
+              </div>
               <span className="text-right tabular-nums">
-                <span className="block">{formatCurrency(row.previousUnitPrice)}</span>
+                <span className="block">
+                  {formatUnits(row.previousUnits)} -{" "}
+                  {formatCurrency(row.previousUnitPrice)}
+                </span>
                 <span className="mt-1 block text-xs text-slate-400">
                   {row.previousRef ?? "-"}
                 </span>
               </span>
               <span className="text-right tabular-nums">
-                <span className="block">{formatCurrency(row.currentUnitPrice)}</span>
+                <span className="block">
+                  {formatUnits(row.currentUnits)} -{" "}
+                  {formatCurrency(row.currentUnitPrice)}
+                </span>
                 <span className="mt-1 block text-xs text-slate-400">
                   {row.currentRef ?? "-"}
                 </span>
@@ -127,64 +133,86 @@ export default async function Home({
                   {formatPercent(row.percentDelta ?? Number.NaN)}
                 </span>
               ) : null}
-              <span className="text-right tabular-nums">
-                {formatUnits(row.previousUnits)} {"->"} {formatUnits(row.currentUnits)}
-              </span>
             </div>
           ))}
-          <div className="grid grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))] items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">
+          <div
+            className={`grid items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600 ${
+              showPositive
+                ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
+            }`}
+          >
             <span>Total diferencia (preu unitari)</span>
-            <span />
             <span />
             <span className="text-right tabular-nums">{formatCurrency(sumDeltaVisible)}</span>
             <span />
-            <span />
+            {showPositive ? <span /> : null}
           </div>
         </div>
         {showNegative && negativeMissing.length > 0 ? (
           <div className="mt-6 grid gap-3">
-            <div className="grid grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <div
+              className={`grid items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 ${
+                showPositive
+                  ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                  : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
+              }`}
+            >
               <span>No fets</span>
-              <span>Servei</span>
-              <span className="text-right">Preu unit. {previousYear}</span>
-              <span className="text-right">Preu unit. {year}</span>
+              <span className="text-right">Serveis {previousYear}</span>
+              <span className="text-right">Serveis {year}</span>
               <span className="text-right">Delta preu</span>
-              <span className="text-right">Unitats</span>
+              {showPositive ? <span className="text-right">Augment %</span> : null}
             </div>
             {negativeMissing.map((row) => (
               <div
                 key={`${row.clientId}-${row.serviceId}`}
-                className="grid grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))] items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+                className={`grid items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 ${
+                  showPositive
+                    ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                    : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
+                }`}
               >
-                <span className="font-medium">
+                <div>
                   <Link
                     href={`/client/${row.clientId}?year=${year}&month=${month}`}
-                    className="hover:text-emerald-700"
+                    className="block font-medium hover:text-emerald-700"
                   >
                     {row.clientName}
                   </Link>
-                </span>
-                <span>{row.serviceName}</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    {row.serviceName}
+                  </span>
+                </div>
                 <span className="text-right tabular-nums">
-                  <span className="block">{formatCurrency(row.previousUnitPrice)}</span>
+                  <span className="block">
+                    {formatUnits(row.previousUnits)} -{" "}
+                    {formatCurrency(row.previousUnitPrice)}
+                  </span>
                   <span className="mt-1 block text-xs text-slate-400">
                     {row.previousRef ?? "-"}
                   </span>
                 </span>
-                <span className="text-right text-slate-400">-</span>
-                <span className="text-right font-semibold text-red-600">No fet</span>
-                <span className="text-right tabular-nums">
-                  {formatUnits(row.previousUnits)} {"->"} 0
+                <span className="text-right text-slate-400">
+                  {formatUnits(row.currentUnits)} -{" "}
+                  {formatCurrency(row.currentUnitPrice)}
                 </span>
+                <span className="text-right font-semibold text-red-600">No fet</span>
+                {showPositive ? <span className="text-right text-slate-400">-</span> : null}
               </div>
             ))}
-            <div className="grid grid-cols-[2fr_2fr_repeat(4,minmax(110px,1fr))] items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">
+            <div
+              className={`grid items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600 ${
+                showPositive
+                  ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))]"
+                  : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))]"
+              }`}
+            >
               <span>Total diferencia (no fets)</span>
-              <span />
               <span />
               <span className="text-right tabular-nums">{formatCurrency(sumDeltaMissing)}</span>
               <span />
-              <span />
+              {showPositive ? <span /> : null}
             </div>
           </div>
         ) : null}
