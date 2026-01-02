@@ -1,5 +1,5 @@
 import { CreateUserSchema } from "@/modules/users/dto/userSchemas";
-import { createUser } from "@/modules/users/application/createUser";
+import { upsertUser } from "@/modules/users/application/upsertUser";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
 
@@ -42,18 +42,17 @@ async function main() {
 
   const repo = new PrismaUserRepository();
   const hasher = new BcryptPasswordHasher();
-  const result = await createUser({
+  const result = await upsertUser({
     input: parsed.data,
-    sessionUser: { id: "script", role: "SUPERADMIN" },
     repo,
     passwordHasher: hasher,
   });
 
-  if (result.error) {
-    throw new Error(result.error);
+  if (result.created) {
+    console.log(`Usuari creat: ${parsed.data.email} (${parsed.data.role})`);
+  } else {
+    console.log(`Usuari actualitzat: ${parsed.data.email} (${parsed.data.role})`);
   }
-
-  console.log(`Usuari creat: ${parsed.data.email} (${parsed.data.role})`);
 }
 
 main()
