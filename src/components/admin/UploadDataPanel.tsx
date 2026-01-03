@@ -11,7 +11,7 @@ import {
 } from "@/app/admin/upload/actions";
 
 const initialState: UploadActionState = {};
-const BATCH_SIZE = 200;
+const BATCH_SIZE = 50;
 const MAX_ERRORS = 50;
 
 type UploadProgress = {
@@ -46,7 +46,7 @@ function ProgressPanel({ progress }: { progress: UploadProgress }) {
         />
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        Pots revisar duplicats i unmatched mentre la carrega avanca.
+        Recalculem duplicats i unmatched a cada lot mentre la carrega avanca.
       </p>
     </div>
   );
@@ -155,7 +155,7 @@ export default function UploadDataPanel() {
           .map((row) => serializeRow(row));
         setProgress({
           status: "processing",
-          step: `Important dades (${batchIndex + 1}/${batches})`,
+          step: `Important dades i actualitzant duplicats (${batchIndex + 1}/${batches})`,
           processed: offset,
           total: rows.length,
         });
@@ -196,7 +196,7 @@ export default function UploadDataPanel() {
 
         setProgress({
           status: "processing",
-          step: `Important dades (${batchIndex + 1}/${batches})`,
+          step: `Important dades i actualitzant duplicats (${batchIndex + 1}/${batches})`,
           processed: Math.min(rows.length, offset + batch.length),
           total: rows.length,
         });
