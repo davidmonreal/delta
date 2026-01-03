@@ -3,31 +3,29 @@ import path from "node:path";
 import * as XLSX from "xlsx";
 
 import type { IngestionRepository, InvoiceLineInput } from "../ports/ingestionRepository";
+import {
+  buildHeaderMap,
+  normalizeHeader,
+  validateHeaders,
+  EXPECTED_HEADERS,
+  OPTIONAL_HEADERS,
+  REQUIRED_HEADERS,
+  type HeaderValidationResult,
+} from "../domain/headerUtils";
 import { normalizeName } from "@/lib/normalize";
 import { matchUserId } from "@/lib/match-user";
 
 type Row = Record<string, unknown>;
 
-export const REQUIRED_HEADERS = [
-  "FECHA",
-  "CLIENTE",
-  "CONCEPTO",
-  "UNIDADES",
-  "PRECIO",
-  "TOTAL",
-  "FACTURA",
-  "SERIE",
-  "ALBARAN",
-] as const;
-
-export const OPTIONAL_HEADERS = ["NUMERO"] as const;
-
-export const EXPECTED_HEADERS = [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS] as const;
-
-export type HeaderValidationResult = {
-  missing: string[];
-  extra: string[];
+export {
+  buildHeaderMap,
+  normalizeHeader,
+  validateHeaders,
+  EXPECTED_HEADERS,
+  OPTIONAL_HEADERS,
+  REQUIRED_HEADERS,
 };
+export type { HeaderValidationResult };
 
 export type ImportRowError = {
   row: number;
@@ -58,15 +56,6 @@ type ImportSummary = {
   skipped: number;
   errors: ImportRowError[];
 };
-
-export function normalizeHeader(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
 
 export function normalizeValue(value: string) {
   return value.replace(/\s+/g, " ").trim().toUpperCase();
@@ -113,23 +102,6 @@ export function parseDate(value: unknown) {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
   return null;
-}
-
-export function buildHeaderMap(sample: Row) {
-  const map = new Map<string, string>();
-  for (const key of Object.keys(sample)) {
-    map.set(normalizeHeader(key), key);
-  }
-  return map;
-}
-
-export function validateHeaders(headerMap: Map<string, string>): HeaderValidationResult {
-  const missing = REQUIRED_HEADERS.filter((header) => !headerMap.has(header));
-  const extra = Array.from(headerMap.keys()).filter(
-    (header) => !EXPECTED_HEADERS.includes(header as typeof EXPECTED_HEADERS[number]),
-  );
-
-  return { missing, extra };
 }
 
 function getValue(row: Row, headerMap: Map<string, string>, key: string) {
