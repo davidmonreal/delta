@@ -29,16 +29,11 @@ export async function main({
   const reset = args.includes("--reset");
   const paths = args.filter((arg) => !arg.startsWith("--"));
 
-  const targetPaths =
-    paths.length > 0
-      ? paths
-      : readDir(path.join(process.cwd(), "data"))
-          .filter((file) => file.endsWith(".xlsx"))
-          .map((file) => path.join(process.cwd(), "data", file));
-
-  if (targetPaths.length === 0) {
-    throw new Error("No s'han trobat fitxers .xlsx per importar.");
+  if (paths.length === 0) {
+    throw new Error("Cal indicar fitxers .xlsx per importar.");
   }
+
+  const targetPaths = paths;
 
   const repo = ingestRepo ?? new PrismaIngestionRepository();
   const usersRepo = userRepo ?? new PrismaUserRepository();

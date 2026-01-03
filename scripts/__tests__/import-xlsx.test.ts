@@ -9,7 +9,7 @@ function buildLogger() {
 }
 
 describe("import-xlsx script", () => {
-  it("throws when no xlsx files are found", async () => {
+  it("throws when no files are provided", async () => {
     const ingestRepo: IngestionRepository = {
       upsertClient: vi.fn(),
       upsertService: vi.fn(),
@@ -32,12 +32,11 @@ describe("import-xlsx script", () => {
     await expect(
       main({
         args: [],
-        readDir: () => [],
         ingestRepo,
         userRepo,
         logger: buildLogger(),
       }),
-    ).rejects.toThrow("No s'han trobat fitxers .xlsx per importar.");
+    ).rejects.toThrow("Cal indicar fitxers .xlsx per importar.");
   });
 
   it("imports provided files and logs totals", async () => {
