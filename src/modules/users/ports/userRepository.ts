@@ -28,6 +28,7 @@ export interface UserRepository {
   listAll(): Promise<UserEntity[]>;
   create(data: CreateUserData): Promise<UserEntity>;
   update(id: number, data: UpdateUserData): Promise<UserEntity>;
+  delete(id: number): Promise<UserEntity>;
   list(params: ListUsersParams): Promise<UserEntity[]>;
   disconnect?: () => Promise<void>;
 }

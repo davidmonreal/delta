@@ -4,7 +4,7 @@ import { useState } from "react";
 import { User } from "lucide-react";
 
 import { EditIconButton, IconButton } from "@/components/common/IconButton";
-import { updateUserAction } from "@/app/admin/users/actions";
+import { deleteUserAction, updateUserAction } from "@/app/admin/users/actions";
 import type { UserRowDto } from "@/modules/users/dto/userDto";
 import AdminUserFormModal from "@/app/admin/users/AdminUserFormModal";
 
@@ -59,6 +59,7 @@ export default function AdminUsersTable({
         title="Editar usuari"
         submitLabel="Guardar"
         allowSuperadmin={allowSuperadmin}
+        deleteAction={deleteUserAction}
         initialValues={{
           userId: editingUser?.id,
           name: editingUser?.name ?? "",

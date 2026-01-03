@@ -25,6 +25,11 @@ export const UpdateUserSchema = z.object({
   role: UserRoleSchema,
 });
 
+export const DeleteUserSchema = z.object({
+  userId: z.number().int().positive(),
+});
+
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type DeleteUserInput = z.infer<typeof DeleteUserSchema>;
 export type UserRole = z.infer<typeof UserRoleSchema>;

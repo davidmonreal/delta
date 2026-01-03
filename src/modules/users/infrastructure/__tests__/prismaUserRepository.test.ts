@@ -9,7 +9,7 @@ const describeDb =
     : describe.skip;
 
 describeDb("PrismaUserRepository", () => {
-  it("creates and updates a user", async () => {
+  it("creates, updates, and deletes a user", async () => {
     const repo = new PrismaUserRepository();
     const email = `test-${Date.now()}@example.com`;
 
@@ -34,6 +34,11 @@ describeDb("PrismaUserRepository", () => {
 
       expect(updated.name).toBe("Repo Updated");
       expect(updated.role).toBe("ADMIN");
+
+      const deleted = await repo.delete(created.id);
+      expect(deleted.id).toBe(created.id);
+      const missing = await repo.findById(created.id);
+      expect(missing).toBeNull();
     } finally {
       await prisma.user.deleteMany({ where: { email } });
       await repo.disconnect?.();

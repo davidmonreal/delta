@@ -33,6 +33,7 @@ export default function AdminUsersCreateModal({
         title="Crear usuari"
         submitLabel="Crear"
         allowSuperadmin={allowSuperadmin}
+        showMatchPreview
         initialValues={{
           name: "",
           email: "",

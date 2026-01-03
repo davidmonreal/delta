@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminSession } from "@/lib/require-auth";
 import { createUser } from "@/modules/users/application/createUser";
+import { deleteUser } from "@/modules/users/application/deleteUser";
 import { updateUser } from "@/modules/users/application/updateUser";
 import type { ActionResult } from "@/modules/users/application/types";
 import { BcryptPasswordHasher } from "@/modules/users/infrastructure/bcryptPasswordHasher";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
-import { CreateUserSchema, UpdateUserSchema } from "@/modules/users/dto/userSchemas";
+import {
+  CreateUserSchema,
+  DeleteUserSchema,
+  UpdateUserSchema,
+} from "@/modules/users/dto/userSchemas";
 
 type ActionState = ActionResult;
 
@@ -77,6 +82,31 @@ export async function updateUserAction(
     sessionUser: { id: session.user.id, role: session.user.role },
     repo,
     passwordHasher,
+  });
+  if (result.error) {
+    return result;
+  }
+  revalidatePath("/admin/users");
+  return result;
+}
+
+export async function deleteUserAction(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireAdminSession();
+  const userIdRaw = getString(formData, "userId");
+  const userId = Number.parseInt(userIdRaw, 10);
+  const parsed = DeleteUserSchema.safeParse({ userId });
+
+  if (!parsed.success) {
+    return { error: "Falten camps obligatoris." };
+  }
+
+  const result = await deleteUser({
+    userId: parsed.data.userId,
+    sessionUser: { id: session.user.id, role: session.user.role },
+    repo,
   });
   if (result.error) {
     return result;

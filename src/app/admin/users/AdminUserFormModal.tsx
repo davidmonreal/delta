@@ -26,11 +26,18 @@ type AdminUserFormModalProps = {
   passwordRequired?: boolean;
   passwordPlaceholder?: string;
   autoCloseOnSuccess?: boolean;
+  showMatchPreview?: boolean;
+  deleteLabel?: string;
+  deleteConfirmMessage?: string;
+  deleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   onClose: () => void;
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
 };
 
 const initialState: ActionState = {};
+const fallbackDeleteAction = async () => ({
+  error: "Accio no disponible.",
+});
 
 export default function AdminUserFormModal({
   isOpen,
@@ -41,6 +48,10 @@ export default function AdminUserFormModal({
   passwordRequired = false,
   passwordPlaceholder,
   autoCloseOnSuccess = true,
+  showMatchPreview = false,
+  deleteLabel = "Esborrar usuari",
+  deleteConfirmMessage = "Segur que vols esborrar aquest usuari?",
+  deleteAction,
   onClose,
   action,
 }: AdminUserFormModalProps) {
@@ -55,12 +66,19 @@ export default function AdminUserFormModal({
     action,
     initialState,
   );
+  const [deleteState, deleteFormAction] = useActionState<ActionState, FormData>(
+    deleteAction ?? fallbackDeleteAction,
+    initialState,
+  );
+  const canDelete = Boolean(deleteAction && initialValues.userId);
+  const errorMessage = state?.error ?? deleteState?.error;
 
   useEffect(() => {
     if (!isOpen) return;
     setRole(initialValues.role);
     setNameValue(initialValues.name ?? "");
     setMatchCount(null);
+    setIsChecking(false);
   }, [initialValues.role, initialValues.name, isOpen]);
 
   useEffect(() => {
@@ -73,6 +91,13 @@ export default function AdminUserFormModal({
   }, [state, router, onClose, autoCloseOnSuccess]);
 
   useEffect(() => {
+    if (deleteState?.success) {
+      router.refresh();
+      onClose();
+    }
+  }, [deleteState, router, onClose]);
+
+  useEffect(() => {
     if (!isOpen) return;
     requestAnimationFrame(() => {
       nameInputRef.current?.focus();
@@ -80,7 +105,7 @@ export default function AdminUserFormModal({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !showMatchPreview) return;
     const trimmed = nameValue.trim();
     if (trimmed.length < 2) {
       setMatchCount(null);
@@ -113,7 +138,7 @@ export default function AdminUserFormModal({
     return () => {
       clearTimeout(timeout);
     };
-  }, [nameValue, isOpen]);
+  }, [nameValue, isOpen, showMatchPreview]);
 
   if (!isOpen) return null;
 
@@ -194,14 +219,14 @@ export default function AdminUserFormModal({
             />
           </label>
           <input type="hidden" name="role" value={role} />
-          {state?.error ? (
-            <p className="text-sm font-semibold text-red-600">{state.error}</p>
+          {errorMessage ? (
+            <p className="text-sm font-semibold text-red-600">{errorMessage}</p>
           ) : null}
           {state?.success ? (
             <p className="text-sm font-semibold text-emerald-700">
               {state.success}
             </p>
-          ) : matchCount !== null ? (
+          ) : showMatchPreview && matchCount !== null ? (
             <p className="text-sm font-semibold text-slate-600">
               {isChecking
                 ? "Comprovant coincidencies..."
@@ -210,7 +235,23 @@ export default function AdminUserFormModal({
                   : "Aquest usuari no apareix en cap linia encara."}
             </p>
           ) : null}
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {!state?.success && canDelete ? (
+              <button
+                type="submit"
+                formAction={deleteFormAction}
+                onClick={(event) => {
+                  if (!confirm(deleteConfirmMessage)) {
+                    event.preventDefault();
+                  }
+                }}
+                className="rounded-full border border-red-200 px-5 py-2 text-sm font-semibold text-red-600 hover:border-red-300 hover:text-red-700"
+              >
+                {deleteLabel}
+              </button>
+            ) : (
+              <span />
+            )}
             {state?.success ? (
               <button
                 type="button"
@@ -220,7 +261,7 @@ export default function AdminUserFormModal({
                 OK
               </button>
             ) : (
-              <>
+              <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={onClose}
@@ -234,7 +275,7 @@ export default function AdminUserFormModal({
                 >
                   {submitLabel}
                 </button>
-              </>
+              </div>
             )}
           </div>
         </form>

@@ -34,6 +34,10 @@ export class PrismaUserRepository implements UserRepository {
     return prisma.user.update({ where: { id }, data, select: userSelect });
   }
 
+  async delete(id: number): Promise<UserEntity> {
+    return prisma.user.delete({ where: { id }, select: userSelect });
+  }
+
   async list({ roles, query }: ListUsersParams): Promise<UserEntity[]> {
     return prisma.user.findMany({
       where: {

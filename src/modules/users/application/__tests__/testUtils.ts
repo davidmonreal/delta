@@ -45,6 +45,15 @@ export class InMemoryUserRepository implements UserRepository {
     return updated;
   }
 
+  async delete(id: number) {
+    const index = this.users.findIndex((user) => user.id === id);
+    if (index === -1) {
+      throw new Error("User not found");
+    }
+    const [removed] = this.users.splice(index, 1);
+    return removed;
+  }
+
   async listAll() {
     return [...this.users];
   }
