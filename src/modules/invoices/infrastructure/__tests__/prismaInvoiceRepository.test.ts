@@ -98,4 +98,81 @@ describeDb("PrismaInvoiceRepository", () => {
       await repo.disconnect?.();
     }
   });
+
+  it("lists unmatched lines with suggested manager", async () => {
+    const repo = new PrismaInvoiceRepository();
+    const runId = Date.now();
+    const sourceFile = `__test__list__${runId}`;
+    const clientName = `Client ${runId}`;
+    const serviceName = `Service ${runId}`;
+    const email = `test-list-${runId}@example.com`;
+
+    const client = await prisma.client.create({
+      data: {
+        nameRaw: clientName,
+        nameNormalized: normalizeName(clientName),
+      },
+    });
+    const service = await prisma.service.create({
+      data: {
+        conceptRaw: serviceName,
+        conceptNormalized: normalizeName(serviceName),
+      },
+    });
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name: "Assigned Manager",
+        nameNormalized: "ASSIGNED MANAGER",
+        role: "USER",
+        passwordHash: "hashed",
+      },
+    });
+
+    try {
+      await prisma.invoiceLine.createMany({
+        data: [
+          {
+            date: new Date(),
+            year: 2025,
+            month: 1,
+            units: 1,
+            price: 100,
+            total: 100,
+            manager: "Unmatched Manager",
+            managerNormalized: "UNMATCHED MANAGER",
+            sourceFile,
+            clientId: client.id,
+            serviceId: service.id,
+          },
+          {
+            date: new Date(),
+            year: 2025,
+            month: 1,
+            units: 1,
+            price: 100,
+            total: 100,
+            manager: "Assigned Manager",
+            managerNormalized: "ASSIGNED MANAGER",
+            sourceFile,
+            clientId: client.id,
+            serviceId: service.id,
+            managerUserId: user.id,
+          },
+        ],
+      });
+
+      const result = await repo.listUnmatched();
+      const line = result.find((entry) => entry.manager === "Unmatched Manager");
+      expect(line?.clientName).toBe(clientName);
+      expect(line?.serviceName).toBe(serviceName);
+      expect(line?.suggestedUserId).toBe(user.id);
+    } finally {
+      await prisma.invoiceLine.deleteMany({ where: { sourceFile } });
+      await prisma.user.deleteMany({ where: { id: user.id } });
+      await prisma.client.deleteMany({ where: { id: client.id } });
+      await prisma.service.deleteMany({ where: { id: service.id } });
+      await repo.disconnect?.();
+    }
+  });
 });

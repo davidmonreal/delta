@@ -1,24 +1,36 @@
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { importXlsxFile } from "@/modules/ingestion/application/importInvoiceLines";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { normalizeName } from "@/lib/normalize";
 
-let repo: PrismaIngestionRepository | null = null;
-let userRepo: PrismaUserRepository | null = null;
+type ImportDependencies = {
+  args?: string[];
+  ingestRepo?: PrismaIngestionRepository;
+  userRepo?: PrismaUserRepository;
+  importFile?: typeof importXlsxFile;
+  readDir?: (dir: string) => string[];
+  logger?: Pick<typeof console, "log">;
+};
 
-async function main() {
-  const args = process.argv.slice(2);
+export async function main({
+  args = process.argv.slice(2),
+  ingestRepo,
+  userRepo,
+  importFile = importXlsxFile,
+  readDir = (dir) => fs.readdirSync(dir),
+  logger = console,
+}: ImportDependencies = {}) {
   const reset = args.includes("--reset");
   const paths = args.filter((arg) => !arg.startsWith("--"));
 
   const targetPaths =
     paths.length > 0
       ? paths
-      : fs
-          .readdirSync(path.join(process.cwd(), "data"))
+      : readDir(path.join(process.cwd(), "data"))
           .filter((file) => file.endsWith(".xlsx"))
           .map((file) => path.join(process.cwd(), "data", file));
 
@@ -26,36 +38,46 @@ async function main() {
     throw new Error("No s'han trobat fitxers .xlsx per importar.");
   }
 
-  repo = new PrismaIngestionRepository();
-  userRepo = new PrismaUserRepository();
-  const users = await userRepo.listAll();
-  const userCandidates = users
-    .filter((user) => user.name)
-    .map((user) => ({
-      id: user.id,
-      nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-    }));
-  let totalRows = 0;
-  for (const filePath of targetPaths) {
-    const imported = await importXlsxFile({
-      filePath,
-      reset,
-      repo,
-      userCandidates,
-    });
-    totalRows += imported;
-    console.log(`Importat ${imported} files de ${path.basename(filePath)}.`);
-  }
+  const repo = ingestRepo ?? new PrismaIngestionRepository();
+  const usersRepo = userRepo ?? new PrismaUserRepository();
+  try {
+    const users = await usersRepo.listAll();
+    const userCandidates = users
+      .filter((user) => user.name)
+      .map((user) => ({
+        id: user.id,
+        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
+      }));
+    let totalRows = 0;
+    for (const filePath of targetPaths) {
+      const imported = await importFile({
+        filePath,
+        reset,
+        repo,
+        userCandidates,
+      });
+      totalRows += imported;
+      logger.log(`Importat ${imported} files de ${path.basename(filePath)}.`);
+    }
 
-  console.log(`Importacio finalitzada. Files importades: ${totalRows}.`);
+    logger.log(`Importacio finalitzada. Files importades: ${totalRows}.`);
+  } finally {
+    await repo.disconnect?.();
+    await usersRepo.disconnect?.();
+  }
 }
 
-main()
-  .catch((error) => {
+async function runCli() {
+  try {
+    await main();
+  } catch (error) {
     console.error(error);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await repo?.disconnect?.();
-    await userRepo?.disconnect?.();
-  });
+  }
+}
+
+const isDirectRun =
+  process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (isDirectRun) {
+  void runCli();
+}

@@ -4,12 +4,13 @@ type SearchParams = {
   callbackUrl?: string | string[];
 };
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: Promise<SearchParams>;
 }) {
-  const callbackUrlParam = searchParams?.callbackUrl;
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const callbackUrlParam = resolvedSearchParams.callbackUrl;
   const callbackUrl =
     typeof callbackUrlParam === "string" ? callbackUrlParam : "/";
 
