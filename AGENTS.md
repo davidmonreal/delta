@@ -14,6 +14,7 @@
 - Naming: semantic `camelCase` for variables/functions, `PascalCase` for types/classes.
 - Keep modules small, cohesive, and easy to test.
 - Add brief code comments to capture business rationale when it affects design choices.
+- Be strict with TypeScript interface contracts; avoid widening to `any`/`unknown` and prefer explicit return types for boundary helpers.
 
 ## Git and GitHub
 - Prefer one GitHub repo per client project unless the user asks for a monorepo.

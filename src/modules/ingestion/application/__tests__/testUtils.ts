@@ -33,4 +33,15 @@ export class InMemoryIngestionRepository implements IngestionRepository {
     this.invoiceLines.push(...lines);
     return lines.length;
   }
+
+  async getImportSummary(sourceFile: string) {
+    const rows = this.invoiceLines.filter((line) => line.sourceFile === sourceFile);
+    const assigned = rows.filter((line) => line.managerUserId !== null).length;
+
+    return {
+      total: rows.length,
+      assigned,
+      unmatched: rows.length - assigned,
+    };
+  }
 }

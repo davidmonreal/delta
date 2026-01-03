@@ -210,7 +210,8 @@ test.describe("admin flows", () => {
 
   test("shows unmatched managers", async ({ page }) => {
     await login(page);
-    await page.goto("/admin/unmatched");
+    await page.goto("/admin/upload");
+    await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
     await expect(page.getByText("Unmatched Manager")).toBeVisible();
   });
 

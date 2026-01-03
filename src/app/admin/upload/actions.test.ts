@@ -27,7 +27,7 @@ function buildFormData(entries: Record<string, string>) {
   return formData;
 }
 
-describe("admin unmatched actions", () => {
+describe("admin upload actions", () => {
   beforeEach(() => {
     mocks.revalidatePath.mockReset();
     mocks.assignManager.mockReset();
@@ -46,6 +46,6 @@ describe("admin unmatched actions", () => {
     expect(mocks.assignManager).toHaveBeenCalledWith(
       expect.objectContaining({ lineId: 10, userId: 20 }),
     );
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/unmatched");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/upload");
   });
 });

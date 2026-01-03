@@ -37,6 +37,21 @@ export class PrismaIngestionRepository implements IngestionRepository {
     return result.count;
   }
 
+  async getImportSummary(sourceFile: string) {
+    const [total, assigned] = await prisma.$transaction([
+      prisma.invoiceLine.count({ where: { sourceFile } }),
+      prisma.invoiceLine.count({
+        where: { sourceFile, managerUserId: { not: null } },
+      }),
+    ]);
+
+    return {
+      total,
+      assigned,
+      unmatched: total - assigned,
+    };
+  }
+
   async disconnect() {
     await prisma.$disconnect();
   }

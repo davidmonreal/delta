@@ -16,10 +16,17 @@ export type InvoiceLineInput = {
   managerUserId: number | null;
 };
 
+export type ImportSummary = {
+  total: number;
+  assigned: number;
+  unmatched: number;
+};
+
 export interface IngestionRepository {
   upsertClient(nameRaw: string, nameNormalized: string): Promise<number>;
   upsertService(conceptRaw: string, conceptNormalized: string): Promise<number>;
   deleteInvoiceLinesBySourceFile(sourceFile: string): Promise<void>;
   createInvoiceLines(lines: InvoiceLineInput[]): Promise<number>;
+  getImportSummary(sourceFile: string): Promise<ImportSummary>;
   disconnect?: () => Promise<void>;
 }

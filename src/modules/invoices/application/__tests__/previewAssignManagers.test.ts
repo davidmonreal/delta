@@ -20,6 +20,14 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return nameNormalized === "TONI NAVARRETE" ? 5 : 0;
   }
 
+  async listDuplicates() {
+    return [];
+  }
+
+  async deleteDuplicates() {
+    return 0;
+  }
+
   async backfillManagers() {
     return 0;
   }

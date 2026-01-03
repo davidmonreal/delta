@@ -8,12 +8,55 @@ import { matchUserId } from "@/lib/match-user";
 
 type Row = Record<string, unknown>;
 
+export const REQUIRED_HEADERS = [
+  "FECHA",
+  "CLIENTE",
+  "CONCEPTO",
+  "UNIDADES",
+  "PRECIO",
+  "TOTAL",
+  "FACTURA",
+  "SERIE",
+  "ALBARAN",
+] as const;
+
+export const OPTIONAL_HEADERS = ["NUMERO"] as const;
+
+export const EXPECTED_HEADERS = [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS] as const;
+
+export type HeaderValidationResult = {
+  missing: string[];
+  extra: string[];
+};
+
+export type ImportRowError = {
+  row: number;
+  message: string;
+};
+
 type ImportParams = {
   rows: Row[];
   sourceFile: string;
   reset: boolean;
   repo: IngestionRepository;
   userCandidates?: { id: number; nameNormalized: string }[];
+};
+
+type BuildLinesParams = {
+  rows: Row[];
+  sourceFile: string;
+  repo: IngestionRepository;
+  userCandidates?: { id: number; nameNormalized: string }[];
+  strict?: boolean;
+  maxErrors?: number;
+};
+
+type ImportSummary = {
+  imported: number;
+  assigned: number;
+  unmatched: number;
+  skipped: number;
+  errors: ImportRowError[];
 };
 
 export function normalizeHeader(value: string) {
@@ -45,6 +88,19 @@ export function toNumber(value: unknown) {
   return 0;
 }
 
+export function toNumberOrNull(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const cleaned = value.replace(/\s+/g, "").replace(",", ".");
+    if (!cleaned.length) return null;
+    const parsed = Number.parseFloat(cleaned);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
 export function parseDate(value: unknown) {
   if (value instanceof Date) return value;
   if (typeof value === "number") {
@@ -59,12 +115,21 @@ export function parseDate(value: unknown) {
   return null;
 }
 
-function buildHeaderMap(sample: Row) {
+export function buildHeaderMap(sample: Row) {
   const map = new Map<string, string>();
   for (const key of Object.keys(sample)) {
     map.set(normalizeHeader(key), key);
   }
   return map;
+}
+
+export function validateHeaders(headerMap: Map<string, string>): HeaderValidationResult {
+  const missing = REQUIRED_HEADERS.filter((header) => !headerMap.has(header));
+  const extra = Array.from(headerMap.keys()).filter(
+    (header) => !EXPECTED_HEADERS.includes(header as typeof EXPECTED_HEADERS[number]),
+  );
+
+  return { missing, extra };
 }
 
 function getValue(row: Row, headerMap: Map<string, string>, key: string) {
@@ -92,38 +157,88 @@ async function getServiceId(conceptRaw: string, cache: Map<string, number>, repo
   return serviceId;
 }
 
-export async function importRows({
+export async function buildInvoiceLines({
   rows,
   sourceFile,
-  reset,
   repo,
   userCandidates,
-}: ImportParams) {
-  if (rows.length === 0) return 0;
-
-  const headerMap = buildHeaderMap(rows[0]);
-
-  if (reset) {
-    await repo.deleteInvoiceLinesBySourceFile(sourceFile);
+  strict = true,
+  maxErrors = 20,
+}: BuildLinesParams): Promise<{
+  lines: InvoiceLineInput[];
+  skipped: number;
+  errors: ImportRowError[];
+}> {
+  if (rows.length === 0) {
+    return { lines: [], skipped: 0, errors: [] };
   }
 
+  const headerMap = buildHeaderMap(rows[0]);
   const clientCache = new Map<string, number>();
   const serviceCache = new Map<string, number>();
-  const toCreate: InvoiceLineInput[] = [];
+  const lines: InvoiceLineInput[] = [];
+  const errors: ImportRowError[] = [];
+  let skipped = 0;
 
-  for (const row of rows) {
+  const recordError = (row: number, message: string) => {
+    skipped += 1;
+    if (errors.length < maxErrors) {
+      errors.push({ row, message });
+    }
+  };
+
+  for (const [index, row] of rows.entries()) {
+    const rowNumber = index + 2;
     const dateValue = getValue(row, headerMap, "FECHA");
     const date = parseDate(dateValue);
-    if (!date) continue;
+    if (!date) {
+      recordError(rowNumber, "Data invalida.");
+      continue;
+    }
 
     const clientRaw = String(getValue(row, headerMap, "CLIENTE") ?? "").trim();
-    const conceptRaw = String(getValue(row, headerMap, "CONCEPTO") ?? "").trim();
-    if (!clientRaw || !conceptRaw) continue;
+    if (!clientRaw) {
+      recordError(rowNumber, "Falta el client.");
+      continue;
+    }
 
-    const units = toNumber(getValue(row, headerMap, "UNIDADES"));
-    const price = toNumber(getValue(row, headerMap, "PRECIO"));
-    const total = toNumber(getValue(row, headerMap, "TOTAL"));
-    if (total < 0) continue;
+    const conceptRaw = String(getValue(row, headerMap, "CONCEPTO") ?? "").trim();
+    if (!conceptRaw) {
+      recordError(rowNumber, "Falta el concepte.");
+      continue;
+    }
+
+    const unitsValue = strict
+      ? toNumberOrNull(getValue(row, headerMap, "UNIDADES"))
+      : toNumber(getValue(row, headerMap, "UNIDADES"));
+    if (strict && unitsValue === null) {
+      recordError(rowNumber, "Unitats invalides.");
+      continue;
+    }
+
+    const priceValue = strict
+      ? toNumberOrNull(getValue(row, headerMap, "PRECIO"))
+      : toNumber(getValue(row, headerMap, "PRECIO"));
+    if (strict && priceValue === null) {
+      recordError(rowNumber, "Preu invalid.");
+      continue;
+    }
+
+    const totalValue = strict
+      ? toNumberOrNull(getValue(row, headerMap, "TOTAL"))
+      : toNumber(getValue(row, headerMap, "TOTAL"));
+    if (strict && totalValue === null) {
+      recordError(rowNumber, "Total invalid.");
+      continue;
+    }
+
+    const units = unitsValue ?? 0;
+    const price = priceValue ?? 0;
+    const total = totalValue ?? 0;
+    if (total < 0) {
+      recordError(rowNumber, "Total negatiu.");
+      continue;
+    }
 
     const clientId = await getClientId(clientRaw, clientCache, repo);
     const serviceId = await getServiceId(conceptRaw, serviceCache, repo);
@@ -135,10 +250,19 @@ export async function importRows({
         ? matchUserId(manager, userCandidates).userId
         : null;
     const series = toOptionalString(getValue(row, headerMap, "SERIE"));
+    if (!series) {
+      recordError(rowNumber, "Falta la serie.");
+      continue;
+    }
+
     const albaran = toOptionalString(getValue(row, headerMap, "ALBARAN"));
+    if (!albaran) {
+      recordError(rowNumber, "Falta l'albara.");
+      continue;
+    }
     const numero = toOptionalString(getValue(row, headerMap, "NUMERO"));
 
-    toCreate.push({
+    lines.push({
       date,
       year: date.getFullYear(),
       month: date.getMonth() + 1,
@@ -157,7 +281,68 @@ export async function importRows({
     });
   }
 
-  return repo.createInvoiceLines(toCreate);
+  return { lines, skipped, errors };
+}
+
+export async function importRowsWithSummary({
+  rows,
+  sourceFile,
+  reset,
+  repo,
+  userCandidates,
+  strict = true,
+}: ImportParams & { strict?: boolean }): Promise<ImportSummary> {
+  if (rows.length === 0) {
+    return {
+      imported: 0,
+      assigned: 0,
+      unmatched: 0,
+      skipped: 0,
+      errors: [],
+    };
+  }
+
+  if (reset) {
+    await repo.deleteInvoiceLinesBySourceFile(sourceFile);
+  }
+
+  const { lines, skipped, errors } = await buildInvoiceLines({
+    rows,
+    sourceFile,
+    repo,
+    userCandidates,
+    strict,
+  });
+  const imported = await repo.createInvoiceLines(lines);
+  const assigned = lines.filter((line) => line.managerUserId).length;
+  const unmatched = lines.length - assigned;
+
+  return {
+    imported,
+    assigned,
+    unmatched,
+    skipped,
+    errors,
+  };
+}
+
+export async function importRows({
+  rows,
+  sourceFile,
+  reset,
+  repo,
+  userCandidates,
+}: ImportParams) {
+  const result = await importRowsWithSummary({
+    rows,
+    sourceFile,
+    reset,
+    repo,
+    userCandidates,
+    strict: false,
+  });
+
+  return result.imported;
 }
 
 export async function importXlsxFile({

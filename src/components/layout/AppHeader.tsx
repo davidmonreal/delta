@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 
 type AppHeaderProps = {
   showAdminLink: boolean;
-  showUnmatchedLink: boolean;
+  showUploadLink: boolean;
   role: string;
   name?: string | null;
   email?: string | null;
@@ -13,7 +13,7 @@ type AppHeaderProps = {
 
 export default function AppHeader({
   showAdminLink,
-  showUnmatchedLink,
+  showUploadLink,
   role,
   name,
   email,
@@ -31,12 +31,12 @@ export default function AppHeader({
             Usuaris
           </Link>
         ) : null}
-        {showUnmatchedLink ? (
+        {showUploadLink ? (
           <Link
-            href="/admin/unmatched"
+            href="/admin/upload"
             className="text-sm font-medium text-slate-500 hover:text-emerald-700"
           >
-            Importar dades
+            Upload
           </Link>
         ) : null}
       </div>
