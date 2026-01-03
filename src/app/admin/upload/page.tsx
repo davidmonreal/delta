@@ -21,7 +21,7 @@ export default async function UploadPage() {
   const [unmatched, users, duplicates] = await Promise.all([
     listUnmatched({ repo: invoiceRepo }),
     userRepo.listAll(),
-    listDuplicates({ repo: invoiceRepo, limit: 50 }),
+    listDuplicates({ repo: invoiceRepo }),
   ]);
   const userOptions = users.map((user) => ({
     id: user.id,
@@ -56,7 +56,10 @@ export default async function UploadPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Duplicats</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {duplicates.length} grups detectats a l'ultima carrega.
+              {duplicates.length} grups duplicats globals.
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              L'accio d'esborrar nomes elimina duplicats de l'ultima carrega.
             </p>
           </div>
           {duplicates.length ? (
