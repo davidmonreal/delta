@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 
@@ -25,12 +25,56 @@ function SubmitButton() {
 
 function ProcessingMessage() {
   const { pending } = useFormStatus();
+  const steps = [
+    {
+      label: "Carregant fitxer",
+      detail: "Llegint el contingut i convertint-lo a files.",
+    },
+    {
+      label: "Validant columnes",
+      detail: "Comprovant que la capcalera coincideix amb els uploads anteriors.",
+    },
+    {
+      label: "Important dades",
+      detail: "Desant les linies i preparant els resultats.",
+    },
+    {
+      label: "Assignant gestors",
+      detail: "Buscant coincidencies automatiques per cada linia.",
+    },
+    {
+      label: "Buscant duplicats",
+      detail: "Comprovant series i albarans repetits.",
+    },
+  ];
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!pending) {
+      setStepIndex(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setStepIndex((current) => (current + 1) % steps.length);
+    }, 1600);
+
+    return () => window.clearInterval(interval);
+  }, [pending, steps.length]);
+
   if (!pending) return null;
 
+  const step = steps[stepIndex] ?? steps[0];
+
   return (
-    <p className="text-sm font-semibold text-slate-500">
-      Processant el fitxer, espera un moment...
-    </p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+      <p className="font-semibold">Processant el fitxer...</p>
+      <p className="mt-1">
+        Pas {stepIndex + 1}/{steps.length}:{" "}
+        <span className="font-semibold">{step.label}</span>
+      </p>
+      <p className="mt-1 text-xs text-slate-500">{step.detail}</p>
+    </div>
   );
 }
 
