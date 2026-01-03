@@ -173,24 +173,25 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         series: { not: null },
         albaran: { not: null },
       },
-      _count: { _all: true },
-      having: {
-        _count: {
-          _all: { gt: 1 },
-        },
-      },
+      _count: { id: true },
       orderBy: {
         _count: {
-          _all: "desc",
+          id: "desc",
         },
       },
       take: limit,
     });
 
-    if (groups.length === 0) return [];
+    const duplicateGroups = groups.filter((group) => {
+      const count =
+        group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
+      return count > 1;
+    });
+
+    if (duplicateGroups.length === 0) return [];
 
     const samples = await Promise.all(
-      groups.map((group) =>
+      duplicateGroups.map((group) =>
         prisma.invoiceLine.findFirst({
           where: {
             sourceFile,
@@ -212,11 +213,13 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       ),
     );
 
-    return groups.map((group, index) => {
+    return duplicateGroups.map((group, index) => {
+      const count =
+        group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
       const sample = samples[index];
       return {
         key: `${group.series ?? ""}|${group.albaran ?? ""}`,
-        count: group._count._all,
+        count,
         date: sample?.date ?? new Date(0),
         manager: sample?.manager ?? "",
         clientName: sample?.client.nameRaw ?? "Client desconegut",
@@ -240,17 +243,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         series: { not: null },
         albaran: { not: null },
       },
-      _count: { _all: true },
+      _count: { id: true },
       _min: { id: true },
-      having: {
-        _count: {
-          _all: { gt: 1 },
-        },
-      },
     });
 
     let deleted = 0;
-    for (const group of groups) {
+    for (const group of groups.filter((item) => {
+      const count =
+        item._count && typeof item._count === "object" ? (item._count.id ?? 0) : 0;
+      return count > 1;
+    })) {
       const result = await prisma.invoiceLine.deleteMany({
         where: {
           sourceFile,

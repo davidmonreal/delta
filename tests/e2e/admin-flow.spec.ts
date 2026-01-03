@@ -3,7 +3,8 @@ import { test as base, expect, type Page } from "@playwright/test";
 import { PrismaClient } from "../../src/generated/prisma";
 import { normalizeName } from "../../src/lib/normalize";
 
-const test = process.env.RUN_E2E === "1" ? base : base.skip;
+const test = base;
+const shouldRun = process.env.RUN_E2E === "1";
 
 const prisma = new PrismaClient();
 const runId = Date.now();
@@ -191,15 +192,17 @@ async function login(page: Page) {
   await page.goto("/");
 }
 
-test.beforeAll(async () => {
-  await seedData();
-});
-
-test.afterAll(async () => {
-  await cleanup();
-});
-
 test.describe("admin flows", () => {
+  test.skip(!shouldRun, "Set RUN_E2E=1 to run admin e2e tests.");
+
+  test.beforeAll(async () => {
+    await seedData();
+  });
+
+  test.afterAll(async () => {
+    await cleanup();
+  });
+
   test("can access admin users page", async ({ page }) => {
     await login(page);
     await page.goto("/admin/users");

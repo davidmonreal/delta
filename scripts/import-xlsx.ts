@@ -4,13 +4,15 @@ import { pathToFileURL } from "node:url";
 
 import { importXlsxFile } from "@/modules/ingestion/application/importInvoiceLines";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
+import type { IngestionRepository } from "@/modules/ingestion/ports/ingestionRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import type { UserRepository } from "@/modules/users/ports/userRepository";
 import { normalizeName } from "@/lib/normalize";
 
 type ImportDependencies = {
   args?: string[];
-  ingestRepo?: PrismaIngestionRepository;
-  userRepo?: PrismaUserRepository;
+  ingestRepo?: IngestionRepository;
+  userRepo?: UserRepository;
   importFile?: typeof importXlsxFile;
   readDir?: (dir: string) => string[];
   logger?: Pick<typeof console, "log">;

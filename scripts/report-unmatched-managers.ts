@@ -1,12 +1,14 @@
 import { pathToFileURL } from "node:url";
 
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
+import type { InvoiceRepository } from "@/modules/invoices/ports/invoiceRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import type { UserRepository } from "@/modules/users/ports/userRepository";
 import { normalizeName } from "@/lib/normalize";
 
 type ReportDependencies = {
-  invoiceRepo?: PrismaInvoiceRepository;
-  userRepo?: PrismaUserRepository;
+  invoiceRepo?: InvoiceRepository;
+  userRepo?: UserRepository;
   normalizer?: typeof normalizeName;
   logger?: Pick<typeof console, "log">;
 };

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { main } from "../import-xlsx";
+import type { IngestionRepository } from "@/modules/ingestion/ports/ingestionRepository";
+import type { UserRepository } from "@/modules/users/ports/userRepository";
 
 function buildLogger() {
   return { log: vi.fn() };
@@ -8,12 +10,31 @@ function buildLogger() {
 
 describe("import-xlsx script", () => {
   it("throws when no xlsx files are found", async () => {
+    const ingestRepo: IngestionRepository = {
+      upsertClient: vi.fn(),
+      upsertService: vi.fn(),
+      deleteInvoiceLinesBySourceFile: vi.fn(),
+      createInvoiceLines: vi.fn(),
+      getImportSummary: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    const userRepo: UserRepository = {
+      findByEmail: vi.fn(),
+      findById: vi.fn(),
+      listAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+      disconnect: vi.fn(),
+    };
+
     await expect(
       main({
         args: [],
         readDir: () => [],
-        ingestRepo: { disconnect: vi.fn() } as never,
-        userRepo: { listAll: vi.fn().mockResolvedValue([]), disconnect: vi.fn() } as never,
+        ingestRepo,
+        userRepo,
         logger: buildLogger(),
       }),
     ).rejects.toThrow("No s'han trobat fitxers .xlsx per importar.");
@@ -22,13 +43,26 @@ describe("import-xlsx script", () => {
   it("imports provided files and logs totals", async () => {
     const importFile = vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1);
     const logger = buildLogger();
-    const ingestRepo = { disconnect: vi.fn() } as never;
-    const userRepo = {
+    const ingestRepo: IngestionRepository = {
+      upsertClient: vi.fn(),
+      upsertService: vi.fn(),
+      deleteInvoiceLinesBySourceFile: vi.fn(),
+      createInvoiceLines: vi.fn(),
+      getImportSummary: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    const userRepo: UserRepository = {
+      findByEmail: vi.fn(),
+      findById: vi.fn(),
       listAll: vi.fn().mockResolvedValue([
         { id: 1, name: "User", nameNormalized: null },
       ]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
       disconnect: vi.fn(),
-    } as never;
+    };
 
     await main({
       args: ["/tmp/a.xlsx", "/tmp/b.xlsx", "--reset"],
