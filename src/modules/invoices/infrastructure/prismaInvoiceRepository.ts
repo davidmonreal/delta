@@ -164,7 +164,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
 
   async listDuplicates(limit?: number): Promise<DuplicateInvoiceGroup[]> {
     const groups = await prisma.invoiceLine.groupBy({
-      by: ["series", "albaran"],
+      by: ["series", "albaran", "serviceId"],
       where: {
         series: { not: null },
         albaran: { not: null },
@@ -195,6 +195,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         OR: limitedGroups.map((group) => ({
           series: group.series,
           albaran: group.albaran,
+          serviceId: group.serviceId,
         })),
       },
       orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -205,6 +206,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         series: true,
         albaran: true,
         numero: true,
+        serviceId: true,
         client: { select: { nameRaw: true } },
         service: { select: { conceptRaw: true } },
       },
@@ -215,7 +217,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       (typeof sampleLines)[number]
     >();
     for (const line of sampleLines) {
-      const key = `${line.series ?? ""}|${line.albaran ?? ""}`;
+      const key = `${line.series ?? ""}|${line.albaran ?? ""}|${line.serviceId}`;
       if (!samplesByKey.has(key)) {
         samplesByKey.set(key, line);
       }
@@ -224,9 +226,11 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return limitedGroups.map((group, index) => {
       const count =
         group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
-      const sample = samplesByKey.get(`${group.series ?? ""}|${group.albaran ?? ""}`);
+      const sample = samplesByKey.get(
+        `${group.series ?? ""}|${group.albaran ?? ""}|${group.serviceId}`,
+      );
       return {
-        key: `${group.series ?? ""}|${group.albaran ?? ""}`,
+        key: `${group.series ?? ""}|${group.albaran ?? ""}|${group.serviceId}`,
         count,
         date: sample?.date ?? new Date(0),
         manager: sample?.manager ?? "",
@@ -250,18 +254,19 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         series: { not: null },
         albaran: { not: null },
       },
-      distinct: ["series", "albaran"],
-      select: { series: true, albaran: true },
+      distinct: ["series", "albaran", "serviceId"],
+      select: { series: true, albaran: true, serviceId: true },
     });
 
     if (latestPairs.length === 0) return 0;
 
     const groups = await prisma.invoiceLine.groupBy({
-      by: ["series", "albaran"],
+      by: ["series", "albaran", "serviceId"],
       where: {
         OR: latestPairs.map((pair) => ({
           series: pair.series,
           albaran: pair.albaran,
+          serviceId: pair.serviceId,
         })),
         series: { not: null },
         albaran: { not: null },
@@ -283,6 +288,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         OR: duplicateKeys.map((item) => ({
           series: item.series,
           albaran: item.albaran,
+          serviceId: item.serviceId,
         })),
       },
     });

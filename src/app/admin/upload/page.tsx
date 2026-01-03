@@ -59,6 +59,9 @@ export default async function UploadPage() {
               {duplicates.length} grups duplicats globals.
             </p>
             <p className="mt-1 text-xs text-slate-400">
+              Criteri: albara + servei.
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
               L'accio d'esborrar nomes elimina duplicats de l'ultima carrega.
             </p>
           </div>
