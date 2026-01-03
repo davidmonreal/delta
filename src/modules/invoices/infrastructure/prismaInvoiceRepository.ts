@@ -190,32 +190,41 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
 
     if (limitedGroups.length === 0) return [];
 
-    const samples = await Promise.all(
-      limitedGroups.map((group) =>
-        prisma.invoiceLine.findFirst({
-          where: {
-            series: group.series,
-            albaran: group.albaran,
-          },
-          orderBy: { date: "desc" },
-          select: {
-            date: true,
-            manager: true,
-            total: true,
-            series: true,
-            albaran: true,
-            numero: true,
-            client: { select: { nameRaw: true } },
-            service: { select: { conceptRaw: true } },
-          },
-        }),
-      ),
-    );
+    const sampleLines = await prisma.invoiceLine.findMany({
+      where: {
+        OR: limitedGroups.map((group) => ({
+          series: group.series,
+          albaran: group.albaran,
+        })),
+      },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      select: {
+        date: true,
+        manager: true,
+        total: true,
+        series: true,
+        albaran: true,
+        numero: true,
+        client: { select: { nameRaw: true } },
+        service: { select: { conceptRaw: true } },
+      },
+    });
+
+    const samplesByKey = new Map<
+      string,
+      (typeof sampleLines)[number]
+    >();
+    for (const line of sampleLines) {
+      const key = `${line.series ?? ""}|${line.albaran ?? ""}`;
+      if (!samplesByKey.has(key)) {
+        samplesByKey.set(key, line);
+      }
+    }
 
     return limitedGroups.map((group, index) => {
       const count =
         group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
-      const sample = samples[index];
+      const sample = samplesByKey.get(`${group.series ?? ""}|${group.albaran ?? ""}`);
       return {
         key: `${group.series ?? ""}|${group.albaran ?? ""}`,
         count,
