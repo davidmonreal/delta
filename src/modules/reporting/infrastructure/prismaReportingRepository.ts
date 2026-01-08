@@ -5,8 +5,13 @@ import type {
   YearMonth,
   MonthlyGroupRow,
   MonthlyRefRow,
+  MonthlyManagerRow,
+  MonthlyLineRow,
   ClientGroupRow,
   ClientRefRow,
+  ClientManagerRow,
+  ClientLineRow,
+  ClientInvoiceLineRow,
   ClientRow,
   ServiceRow,
 } from "../ports/reportingRepository";
@@ -95,6 +100,90 @@ export class PrismaReportingRepository implements ReportingRepository {
     return rows;
   }
 
+  async getMonthlyManagers({
+    years,
+    month,
+    managerUserId,
+  }: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<MonthlyManagerRow[]> {
+    const rows = await prisma.invoiceLine.findMany({
+      where: {
+        month,
+        year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
+      },
+      orderBy: [{ date: "desc" }],
+      distinct: ["clientId", "serviceId", "year"],
+      select: {
+        clientId: true,
+        serviceId: true,
+        year: true,
+        month: true,
+        manager: true,
+        managerUser: { select: { name: true } },
+      },
+    });
+
+    return rows.map((row) => {
+      const rawName = row.managerUser?.name ?? row.manager ?? "";
+      const managerName = rawName.trim().length ? rawName.trim() : null;
+      return {
+        clientId: row.clientId,
+        serviceId: row.serviceId,
+        year: row.year,
+        month: row.month,
+        managerName,
+      };
+    });
+  }
+
+  async getMonthlyLines({
+    years,
+    month,
+    managerUserId,
+  }: {
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<MonthlyLineRow[]> {
+    const rows = await prisma.invoiceLine.findMany({
+      where: {
+        month,
+        year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
+      },
+      select: {
+        clientId: true,
+        serviceId: true,
+        year: true,
+        month: true,
+        total: true,
+        units: true,
+        series: true,
+        albaran: true,
+        numero: true,
+        manager: true,
+        managerUser: { select: { name: true } },
+      },
+    });
+
+    return rows.map((row) => ({
+      clientId: row.clientId,
+      serviceId: row.serviceId,
+      year: row.year,
+      month: row.month,
+      total: row.total,
+      units: row.units,
+      series: row.series,
+      albaran: row.albaran,
+      numero: row.numero,
+      managerName: (row.managerUser?.name ?? row.manager ?? "").trim() || null,
+    }));
+  }
+
   async getClientsByIds(ids: number[]): Promise<ClientRow[]> {
     if (ids.length === 0) return [];
     return prisma.client.findMany({
@@ -179,5 +268,137 @@ export class PrismaReportingRepository implements ReportingRepository {
       },
     });
     return rows;
+  }
+
+  async getClientManagers({
+    clientId,
+    years,
+    month,
+    managerUserId,
+  }: {
+    clientId: number;
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<ClientManagerRow[]> {
+    const rows = await prisma.invoiceLine.findMany({
+      where: {
+        clientId,
+        month,
+        year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
+      },
+      orderBy: [{ date: "desc" }],
+      distinct: ["serviceId", "year"],
+      select: {
+        serviceId: true,
+        year: true,
+        month: true,
+        manager: true,
+        managerUser: { select: { name: true } },
+      },
+    });
+
+    return rows.map((row) => {
+      const rawName = row.managerUser?.name ?? row.manager ?? "";
+      const managerName = rawName.trim().length ? rawName.trim() : null;
+      return {
+        serviceId: row.serviceId,
+        year: row.year,
+        month: row.month,
+        managerName,
+      };
+    });
+  }
+
+  async getClientLines({
+    clientId,
+    years,
+    month,
+    managerUserId,
+  }: {
+    clientId: number;
+    years: number[];
+    month: number;
+    managerUserId?: number;
+  }): Promise<ClientLineRow[]> {
+    const rows = await prisma.invoiceLine.findMany({
+      where: {
+        clientId,
+        month,
+        year: { in: years },
+        ...(managerUserId ? { managerUserId } : {}),
+      },
+      select: {
+        serviceId: true,
+        year: true,
+        month: true,
+        total: true,
+        units: true,
+        series: true,
+        albaran: true,
+        numero: true,
+        manager: true,
+        managerUser: { select: { name: true } },
+      },
+    });
+
+    return rows.map((row) => ({
+      serviceId: row.serviceId,
+      year: row.year,
+      month: row.month,
+      total: row.total,
+      units: row.units,
+      series: row.series,
+      albaran: row.albaran,
+      numero: row.numero,
+      managerName: (row.managerUser?.name ?? row.manager ?? "").trim() || null,
+    }));
+  }
+
+  async getClientInvoiceLines({
+    clientId,
+    managerUserId,
+  }: {
+    clientId: number;
+    managerUserId?: number;
+  }): Promise<ClientInvoiceLineRow[]> {
+    const rows = await prisma.invoiceLine.findMany({
+      where: {
+        clientId,
+        ...(managerUserId ? { managerUserId } : {}),
+      },
+      orderBy: [{ year: "desc" }, { month: "desc" }, { date: "desc" }],
+      select: {
+        id: true,
+        year: true,
+        month: true,
+        date: true,
+        total: true,
+        units: true,
+        serviceId: true,
+        series: true,
+        albaran: true,
+        numero: true,
+        manager: true,
+        managerUser: { select: { name: true } },
+        service: { select: { conceptRaw: true } },
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      year: row.year,
+      month: row.month,
+      date: row.date,
+      total: row.total,
+      units: row.units,
+      serviceId: row.serviceId,
+      serviceName: row.service.conceptRaw,
+      managerName: (row.managerUser?.name ?? row.manager ?? "").trim() || null,
+      series: row.series,
+      albaran: row.albaran,
+      numero: row.numero,
+    }));
   }
 }

@@ -1,13 +1,16 @@
 import type { ReportingRepository } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
+import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
 import { applySummaryMetrics, filterSummaries, sortSummaries } from "./summaryUtils";
 
 export type MonthlySummaryRow = {
+  id: string;
   clientId: number;
   serviceId: number;
   clientName: string;
   serviceName: string;
+  managerName?: string | null;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;
@@ -44,28 +47,14 @@ export async function getMonthlyComparison({
 
   const filters = resolveFilters({ raw: rawFilters, defaults });
 
-  const groups = await repo.getMonthlyGroups({
+  const lines = await repo.getMonthlyLines({
     years: [filters.previousYear, filters.year],
     month: filters.month,
     managerUserId,
   });
 
-  const refs = await repo.getMonthlyRefs({
-    years: [filters.previousYear, filters.year],
-    month: filters.month,
-    managerUserId,
-  });
-
-  const refMap = new Map<string, string>();
-  for (const ref of refs) {
-    const key = `${ref.clientId}-${ref.serviceId}-${ref.year}`;
-    if (refMap.has(key)) continue;
-    const label = formatRef(ref.series, ref.albaran, ref.numero);
-    if (label) refMap.set(key, label);
-  }
-
-  const clientIds = Array.from(new Set(groups.map((group) => group.clientId)));
-  const serviceIds = Array.from(new Set(groups.map((group) => group.serviceId)));
+  const clientIds = Array.from(new Set(lines.map((line) => line.clientId)));
+  const serviceIds = Array.from(new Set(lines.map((line) => line.serviceId)));
 
   const [clients, services] = await Promise.all([
     repo.getClientsByIds(clientIds),
@@ -77,50 +66,115 @@ export async function getMonthlyComparison({
     services.map((service) => [service.id, service.conceptRaw]),
   );
 
-  const rows = new Map<string, MonthlySummaryRow>();
+  const rows = new Map<string, MonthlySummaryRow[]>();
+  const linesByKey = new Map<string, typeof lines>();
 
-  for (const group of groups) {
-    const key = `${group.clientId}-${group.serviceId}`;
-    const existing = rows.get(key) ?? {
-      clientId: group.clientId,
-      serviceId: group.serviceId,
-      clientName: clientMap.get(group.clientId) ?? "Unknown client",
-      serviceName: serviceMap.get(group.serviceId) ?? "Unknown service",
-      previousRef:
-        refMap.get(`${group.clientId}-${group.serviceId}-${filters.previousYear}`) ??
-        null,
-      currentRef:
-        refMap.get(`${group.clientId}-${group.serviceId}-${filters.year}`) ?? null,
-      previousTotal: 0,
-      currentTotal: 0,
-      previousUnits: 0,
-      currentUnits: 0,
-      previousUnitPrice: Number.NaN,
-      currentUnitPrice: Number.NaN,
-      deltaPrice: Number.NaN,
-      isMissing: false,
-    };
-
-    if (group.year === filters.year) {
-      existing.currentTotal = group.total ?? 0;
-      existing.currentUnits = group.units ?? 0;
-      existing.currentRef =
-        refMap.get(`${group.clientId}-${group.serviceId}-${filters.year}`) ??
-        existing.currentRef;
-    } else {
-      existing.previousTotal = group.total ?? 0;
-      existing.previousUnits = group.units ?? 0;
-      existing.previousRef =
-        refMap.get(`${group.clientId}-${group.serviceId}-${filters.previousYear}`) ??
-        existing.previousRef;
-    }
-
-    rows.set(key, existing);
+  for (const line of lines) {
+    const key = `${line.clientId}-${line.serviceId}`;
+    const existing = linesByKey.get(key) ?? [];
+    existing.push(line);
+    linesByKey.set(key, existing);
   }
 
+  let rowCounter = 0;
+  for (const [key, serviceLines] of linesByKey) {
+    const [clientIdRaw, serviceIdRaw] = key.split("-");
+    const clientId = Number(clientIdRaw);
+    const serviceId = Number(serviceIdRaw);
+    const previous = serviceLines.filter((line) => line.year === filters.previousYear);
+    const current = serviceLines.filter((line) => line.year === filters.year);
+    const pairing =
+      previous.length === 1 && current.length === 1
+        ? {
+            matches: [{ previous: previous[0], current: current[0] }],
+            unmatchedPrevious: [],
+            unmatchedCurrent: [],
+          }
+        : pairLines({
+            previous,
+            current,
+            metric: "unit",
+            tolerance: 0.01,
+          });
+    const { matches, unmatchedPrevious, unmatchedCurrent } = pairing;
+
+    const baseRow = {
+      clientId,
+      serviceId,
+      clientName: clientMap.get(clientId) ?? "Unknown client",
+      serviceName: serviceMap.get(serviceId) ?? "Unknown service",
+    };
+
+    const summaryRows: MonthlySummaryRow[] = [];
+    for (const match of matches) {
+      summaryRows.push({
+        id: `${clientId}-${serviceId}-${rowCounter++}`,
+        ...baseRow,
+        managerName: match.current.managerName ?? match.previous.managerName ?? null,
+        previousRef: formatRef(
+          match.previous.series,
+          match.previous.albaran,
+          match.previous.numero,
+        ),
+        currentRef: formatRef(
+          match.current.series,
+          match.current.albaran,
+          match.current.numero,
+        ),
+        previousTotal: match.previous.total,
+        currentTotal: match.current.total,
+        previousUnits: match.previous.units,
+        currentUnits: match.current.units,
+        previousUnitPrice: Number.NaN,
+        currentUnitPrice: Number.NaN,
+        deltaPrice: Number.NaN,
+        isMissing: false,
+      });
+    }
+
+    for (const prev of unmatchedPrevious) {
+      summaryRows.push({
+        id: `${clientId}-${serviceId}-${rowCounter++}`,
+        ...baseRow,
+        managerName: prev.managerName ?? null,
+        previousRef: formatRef(prev.series, prev.albaran, prev.numero),
+        currentRef: null,
+        previousTotal: prev.total,
+        currentTotal: 0,
+        previousUnits: prev.units,
+        currentUnits: 0,
+        previousUnitPrice: Number.NaN,
+        currentUnitPrice: Number.NaN,
+        deltaPrice: Number.NaN,
+        isMissing: true,
+      });
+    }
+
+    for (const curr of unmatchedCurrent) {
+      summaryRows.push({
+        id: `${clientId}-${serviceId}-${rowCounter++}`,
+        ...baseRow,
+        managerName: curr.managerName ?? null,
+        previousRef: null,
+        currentRef: formatRef(curr.series, curr.albaran, curr.numero),
+        previousTotal: 0,
+        currentTotal: curr.total,
+        previousUnits: 0,
+        currentUnits: curr.units,
+        previousUnitPrice: Number.NaN,
+        currentUnitPrice: Number.NaN,
+        deltaPrice: Number.NaN,
+        isMissing: false,
+      });
+    }
+
+    rows.set(key, summaryRows);
+  }
+
+  const flattened = Array.from(rows.values()).flat();
   const summaries = sortSummaries(
     filterSummaries(
-      Array.from(rows.values()).map((row) => applySummaryMetrics(row)),
+      flattened.map((row) => applySummaryMetrics(row)),
       filters,
     ),
     filters,

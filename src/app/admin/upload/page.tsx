@@ -59,15 +59,15 @@ export default async function UploadPage({
             </p>
           </div>
           <Link
-            href={suggestionsEnabled ? "/admin/upload" : "/admin/upload?suggest=1"}
-            aria-disabled={unmatchedLines.length === 0}
+            href="/admin/upload?suggest=1"
+            aria-disabled={suggestionsEnabled || unmatchedLines.length === 0}
             className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${
-              unmatchedLines.length === 0
+              suggestionsEnabled || unmatchedLines.length === 0
                 ? "pointer-events-none bg-slate-200 text-slate-500"
                 : "bg-emerald-700 hover:bg-emerald-800"
             }`}
           >
-            {suggestionsEnabled ? "Amagar suggeriments" : "Suggerir gestors"}
+            {suggestionsEnabled ? "Suggeriments actius" : "Suggerir gestors"}
           </Link>
         </div>
         <div className="grid gap-3">

@@ -1,10 +1,7 @@
-import Link from "next/link";
-
 import { requireSession } from "@/lib/require-auth";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
-import { getMonthlyComparison } from "@/modules/reporting/application/getMonthlyComparison";
-import { toMonthlyComparisonDto } from "@/modules/reporting/dto/reportingDto";
+import { getMonthlyComparisonPage } from "@/modules/reporting/application/getMonthlyComparisonPage";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
@@ -27,18 +24,16 @@ export default async function Home({
     ? undefined
     : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
-  const { filters, summaries, sumDeltaVisible } =
-    toMonthlyComparisonDto(
-      await getMonthlyComparison({
-        repo,
-        rawFilters: {
-          year: resolvedSearchParams.year,
-          month: resolvedSearchParams.month,
-          show: resolvedSearchParams.show,
-        },
-        managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
-      }),
-    );
+  const { filters, rows, summariesCount, sumDeltaVisible } =
+    await getMonthlyComparisonPage({
+      repo,
+      rawFilters: {
+        year: resolvedSearchParams.year,
+        month: resolvedSearchParams.month,
+        show: resolvedSearchParams.show,
+      },
+      managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
+    });
   const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
     filters;
 
@@ -68,29 +63,13 @@ export default async function Home({
             {showEqual
               ? "Resultats amb preu unitari igual"
               : "Resultats per preu unitari"}{" "}
-            ({summaries.length})
+            ({summariesCount})
             {showNegative ? " negatives" : ""}
           </span>
           <ShowLinks baseHref="/" year={year} month={month} activeShow={show} />
         </div>
         <ComparisonTable
-          rows={summaries.map((row) => ({
-            id: `${row.clientId}-${row.serviceId}`,
-            clientId: row.clientId,
-            serviceId: row.serviceId,
-            title: row.clientName,
-            subtitle: row.serviceName,
-            href: `/client/${row.clientId}?year=${year}&month=${month}`,
-            previousUnits: row.previousUnits,
-            currentUnits: row.currentUnits,
-            previousUnitPrice: row.previousUnitPrice,
-            currentUnitPrice: row.currentUnitPrice,
-            previousRef: row.previousRef,
-            currentRef: row.currentRef,
-            deltaPrice: row.deltaPrice,
-            isMissing: row.isMissing,
-            percentDelta: row.percentDelta,
-          }))}
+          rows={rows}
           previousYear={previousYear}
           year={year}
           month={month}

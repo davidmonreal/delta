@@ -12,7 +12,7 @@ function buildRepo() {
     latestEntryByClient: new Map([[1, { year, month: baseMonth }]]),
     clients: [{ id: 1, nameRaw: "Client A" }],
     services: [{ id: 10, conceptRaw: "Service A" }],
-    clientGroupsByClientId: new Map([
+    clientLinesByClientIdForComparison: new Map([
       [
         1,
         [
@@ -22,6 +22,10 @@ function buildRepo() {
             month: baseMonth,
             total: 50,
             units: 5,
+            series: "A",
+            albaran: null,
+            numero: "1",
+            managerName: null,
           },
           {
             serviceId: 10,
@@ -29,21 +33,10 @@ function buildRepo() {
             month: baseMonth,
             total: 60,
             units: 5,
-          },
-        ],
-      ],
-    ]),
-    clientRefsByClientId: new Map([
-      [
-        1,
-        [
-          {
-            serviceId: 10,
-            year: previousYear,
-            month: baseMonth,
-            series: "A",
+            series: "B",
             albaran: null,
-            numero: "1",
+            numero: "2",
+            managerName: null,
           },
         ],
       ],

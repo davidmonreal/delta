@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireSession } from "@/lib/require-auth";
+import { formatCurrency, formatUnits } from "@/lib/format";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
+import { getClientInvoiceLines } from "@/modules/reporting/application/getClientInvoiceLines";
 import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
@@ -48,8 +49,27 @@ export default async function ClientPage({
   }
 
   const { clientId, client, filters, summaries, sumDeltaVisible } = result;
+  const invoiceGroups = await getClientInvoiceLines({
+    repo,
+    clientId,
+    managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
+  });
   const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
     filters;
+  const monthLabels = [
+    "Gener",
+    "Febrer",
+    "Marc",
+    "Abril",
+    "Maig",
+    "Juny",
+    "Juliol",
+    "Agost",
+    "Setembre",
+    "Octubre",
+    "Novembre",
+    "Desembre",
+  ];
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -57,11 +77,6 @@ export default async function ClientPage({
         <div>
           <div className="flex items-center gap-4">
             <img src="/logo-busbac.png" alt="Busbac" className="h-16 w-auto" />
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-              <Link href="/" className="hover:text-emerald-700">
-                &lt;- Tornar a la vista principal
-              </Link>
-            </p>
           </div>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900">
             {client.nameRaw}
@@ -91,10 +106,11 @@ export default async function ClientPage({
         </div>
         <ComparisonTable
           rows={summaries.map((row) => ({
-            id: String(row.serviceId),
+            id: row.id,
             clientId,
             serviceId: row.serviceId,
             title: row.serviceName,
+            subtitle: row.managerName ?? undefined,
             previousUnits: row.previousUnits,
             currentUnits: row.currentUnits,
             previousUnitPrice: row.previousUnitPrice,
@@ -116,6 +132,60 @@ export default async function ClientPage({
           value={sumDeltaVisible}
           showPositive={showPositive}
         />
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Altres factures per mes
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Detall per linia de les altres factures del client.
+            </p>
+          </div>
+        </div>
+        {invoiceGroups.length === 0 ? (
+          <p className="text-sm text-slate-500">No hi ha linies per mostrar.</p>
+        ) : (
+          <div className="grid gap-6">
+            {invoiceGroups.map((group) => (
+              <div key={`${group.year}-${group.month}`} className="space-y-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {monthLabels[group.month - 1] ?? group.month}/{group.year}
+                </div>
+                <div className="grid gap-2">
+                  {group.lines.map((line) => (
+                    <div
+                      key={line.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {line.serviceName}
+                        </p>
+                        {line.managerName ? (
+                          <p className="text-xs text-slate-500">{line.managerName}</p>
+                        ) : null}
+                        <p className="text-xs text-slate-500">
+                          {[line.series, line.albaran, line.numero].filter(Boolean).join("-")}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {formatCurrency(line.total)}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {formatUnits(line.units)} unitats
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

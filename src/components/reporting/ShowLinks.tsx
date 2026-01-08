@@ -47,6 +47,13 @@ export default function ShowLinks({
       >
         No fets
       </Link>
+      {" | "}
+      <Link
+        href={`${baseHref}?year=${year}&month=${month}&show=new`}
+        className={linkClass("new")}
+      >
+        Nous
+      </Link>
     </span>
   );
 }

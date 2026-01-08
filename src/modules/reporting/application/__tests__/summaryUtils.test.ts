@@ -34,10 +34,11 @@ describe("summaryUtils", () => {
 
   it("filters summaries by show flags", () => {
     const summaries = [
-      { deltaPrice: -1.5, isMissing: false },
-      { deltaPrice: 0, isMissing: false },
-      { deltaPrice: 2, isMissing: false },
-      { deltaPrice: 0, isMissing: true },
+      { deltaPrice: -1.5, isMissing: false, isNew: false },
+      { deltaPrice: 0, isMissing: false, isNew: false },
+      { deltaPrice: 2, isMissing: false, isNew: false },
+      { deltaPrice: 0, isMissing: true, isNew: false },
+      { deltaPrice: 1, isMissing: false, isNew: true },
     ];
 
     const baseFilters: ResolvedFilters = {
@@ -49,13 +50,14 @@ describe("summaryUtils", () => {
       showEqual: false,
       showPositive: false,
       showMissing: false,
+      showNew: false,
     };
 
     expect(filterSummaries(summaries, baseFilters)).toHaveLength(1);
 
     expect(
       filterSummaries(summaries, { ...baseFilters, show: "eq", showNegative: false, showEqual: true }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
 
     expect(
       filterSummaries(summaries, { ...baseFilters, show: "pos", showNegative: false, showPositive: true }),
@@ -63,6 +65,10 @@ describe("summaryUtils", () => {
 
     expect(
       filterSummaries(summaries, { ...baseFilters, show: "miss", showNegative: false, showMissing: true }),
+    ).toHaveLength(1);
+
+    expect(
+      filterSummaries(summaries, { ...baseFilters, show: "new", showNegative: false, showNew: true }),
     ).toHaveLength(1);
   });
 
@@ -76,12 +82,13 @@ describe("summaryUtils", () => {
       showEqual: false,
       showPositive: false,
       showMissing: false,
+      showNew: false,
     };
     const sorted = sortSummaries(
       [
-        { deltaPrice: -5, isMissing: false },
-        { deltaPrice: 2, isMissing: false },
-        { deltaPrice: 0, isMissing: true },
+        { deltaPrice: -5, isMissing: false, isNew: false },
+        { deltaPrice: 2, isMissing: false, isNew: false },
+        { deltaPrice: 0, isMissing: true, isNew: false },
       ],
       filters,
     );
@@ -100,12 +107,13 @@ describe("summaryUtils", () => {
       showEqual: false,
       showPositive: true,
       showMissing: false,
+      showNew: false,
     };
     const sorted = sortSummaries(
       [
-        { deltaPrice: 2, isMissing: false, percentDelta: 10 },
-        { deltaPrice: 1, isMissing: false, percentDelta: 25 },
-        { deltaPrice: 3, isMissing: false, percentDelta: 5 },
+        { deltaPrice: 2, isMissing: false, isNew: false, percentDelta: 10 },
+        { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 25 },
+        { deltaPrice: 3, isMissing: false, isNew: false, percentDelta: 5 },
       ],
       filters,
     );

@@ -10,7 +10,7 @@ const previousYear = 2023;
 function buildRepo() {
   return new InMemoryReportingRepository({
     latestEntry: { year, month: baseMonth },
-    monthlyGroups: [
+    monthlyLines: [
       {
         clientId: 1,
         serviceId: 10,
@@ -18,6 +18,10 @@ function buildRepo() {
         month: baseMonth,
         total: 100,
         units: 10,
+        series: "A",
+        albaran: null,
+        numero: "1",
+        managerName: null,
       },
       {
         clientId: 1,
@@ -26,17 +30,10 @@ function buildRepo() {
         month: baseMonth,
         total: 90,
         units: 10,
-      },
-    ],
-    monthlyRefs: [
-      {
-        clientId: 1,
-        serviceId: 10,
-        year: previousYear,
-        month: baseMonth,
-        series: "A",
+        series: "B",
         albaran: null,
-        numero: "1",
+        numero: "2",
+        managerName: null,
       },
     ],
     clients: [{ id: 1, nameRaw: "Client A" }],
@@ -66,7 +63,7 @@ describe("getMonthlyComparison", () => {
   it("marks missing when current units are zero", async () => {
     const repo = new InMemoryReportingRepository({
       latestEntry: { year, month: baseMonth },
-      monthlyGroups: [
+      monthlyLines: [
         {
           clientId: 2,
           serviceId: 20,
@@ -74,6 +71,10 @@ describe("getMonthlyComparison", () => {
           month: baseMonth,
           total: 120,
           units: 10,
+          series: "A",
+          albaran: null,
+          numero: "1",
+          managerName: null,
         },
         {
           clientId: 2,
@@ -82,6 +83,10 @@ describe("getMonthlyComparison", () => {
           month: baseMonth,
           total: 0,
           units: 0,
+          series: "B",
+          albaran: null,
+          numero: "2",
+          managerName: null,
         },
       ],
       clients: [{ id: 2, nameRaw: "Client B" }],

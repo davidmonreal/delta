@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ShowSchema = z.enum(["neg", "eq", "pos", "miss"]);
+export const ShowSchema = z.enum(["neg", "eq", "pos", "miss", "new"]);
 
 export const ComparisonFiltersSchema = z.object({
   year: z.coerce.number().int().min(2000).optional(),

@@ -12,6 +12,7 @@ export type SummaryMetrics = {
   currentUnitPrice: number;
   deltaPrice: number;
   isMissing: boolean;
+  isNew: boolean;
   percentDelta?: number;
 };
 
@@ -23,12 +24,14 @@ export function applySummaryMetrics<T extends SummaryMetricsInput>(row: T): T & 
   const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
   const deltaPrice = hasBoth ? currentUnitPrice - previousUnitPrice : Number.NaN;
   const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
+  const isNew = row.previousUnits === 0 && row.currentUnits > 0;
   return {
     ...row,
     previousUnitPrice,
     currentUnitPrice,
     deltaPrice,
     isMissing,
+    isNew,
     percentDelta:
       hasBoth && previousUnitPrice > 0
         ? ((currentUnitPrice - previousUnitPrice) / previousUnitPrice) * 100
@@ -39,6 +42,7 @@ export function applySummaryMetrics<T extends SummaryMetricsInput>(row: T): T & 
 export type SummaryFilterShape = {
   deltaPrice: number;
   isMissing: boolean;
+  isNew: boolean;
 };
 
 export function filterSummaries<T extends SummaryFilterShape>(
@@ -47,10 +51,14 @@ export function filterSummaries<T extends SummaryFilterShape>(
 ) {
   return summaries.filter((row) => {
     if (filters.showMissing) return row.isMissing;
-    if (filters.showNegative) return !row.isMissing && row.deltaPrice < -0.001;
-    if (filters.showEqual) return Math.abs(row.deltaPrice) <= 0.001;
-    if (filters.showPositive) return row.deltaPrice > 0.001;
-    return !row.isMissing && row.deltaPrice < -0.001;
+    if (filters.showNew) return row.isNew;
+    if (filters.showNegative)
+      return !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
+    if (filters.showEqual)
+      return !row.isMissing && !row.isNew && Math.abs(row.deltaPrice) <= 0.001;
+    if (filters.showPositive)
+      return !row.isMissing && !row.isNew && row.deltaPrice > 0.001;
+    return !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
   });
 }
 
