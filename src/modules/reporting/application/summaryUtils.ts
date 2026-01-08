@@ -54,8 +54,17 @@ export function filterSummaries<T extends SummaryFilterShape>(
   });
 }
 
-export function sortSummaries<T extends SummaryFilterShape>(summaries: T[]) {
+export function sortSummaries<T extends SummaryFilterShape & { percentDelta?: number }>(
+  summaries: T[],
+  filters: ResolvedFilters,
+) {
   return summaries.slice().sort((a, b) => {
+    if (filters.showPositive) {
+      const aScore = a.percentDelta ?? Number.NEGATIVE_INFINITY;
+      const bScore = b.percentDelta ?? Number.NEGATIVE_INFINITY;
+      if (bScore !== aScore) return bScore - aScore;
+    }
+
     const aScore = a.isMissing ? Number.POSITIVE_INFINITY : Math.abs(a.deltaPrice);
     const bScore = b.isMissing ? Number.POSITIVE_INFINITY : Math.abs(b.deltaPrice);
     return bScore - aScore;

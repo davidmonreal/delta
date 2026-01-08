@@ -20,8 +20,6 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 0,
       countUnassignedByManagerName: async () => 0,
-      listDuplicates: async () => [],
-      deleteDuplicates: async () => 0,
       backfillManagers: async () => 0,
     };
     const result = await createUser({
@@ -52,8 +50,6 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 0,
       countUnassignedByManagerName: async () => 0,
-      listDuplicates: async () => [],
-      deleteDuplicates: async () => 0,
       backfillManagers: async () => 0,
     };
     const result = await createUser({
@@ -74,8 +70,6 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 2,
       countUnassignedByManagerName: async () => 0,
-      listDuplicates: async () => [],
-      deleteDuplicates: async () => 0,
       backfillManagers: async () => 0,
     };
     const result = await createUser({

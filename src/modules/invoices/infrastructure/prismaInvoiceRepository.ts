@@ -2,27 +2,9 @@ import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
 import { matchUserId } from "@/lib/match-user";
 
-import type {
-  DuplicateInvoiceGroup,
-  InvoiceRepository,
-  UnmatchedInvoiceLine,
-} from "../ports/invoiceRepository";
+import type { InvoiceRepository, UnmatchedInvoiceLine } from "../ports/invoiceRepository";
 
 export class PrismaInvoiceRepository implements InvoiceRepository {
-  private async getLatestUploadSourceFile() {
-    const latest = await prisma.invoiceLine.findFirst({
-      where: {
-        sourceFile: {
-          startsWith: "upload-",
-        },
-      },
-      orderBy: { sourceFile: "desc" },
-      select: { sourceFile: true },
-    });
-
-    return latest?.sourceFile ?? null;
-  }
-
   async listUnmatched(): Promise<UnmatchedInvoiceLine[]> {
     const lines = await prisma.invoiceLine.findMany({
       where: { managerUserId: null },
@@ -160,140 +142,6 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     }
 
     return updated;
-  }
-
-  async listDuplicates(limit?: number): Promise<DuplicateInvoiceGroup[]> {
-    const groups = await prisma.invoiceLine.groupBy({
-      by: ["series", "albaran", "serviceId"],
-      where: {
-        series: { not: null },
-        albaran: { not: null },
-      },
-      _count: { id: true },
-      orderBy: {
-        _count: {
-          id: "desc",
-        },
-      },
-    });
-
-    const duplicateGroups = groups.filter((group) => {
-      const count =
-        group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
-      return count > 1;
-    });
-
-    const limitedGroups =
-      limit && duplicateGroups.length > limit
-        ? duplicateGroups.slice(0, limit)
-        : duplicateGroups;
-
-    if (limitedGroups.length === 0) return [];
-
-    const sampleLines = await prisma.invoiceLine.findMany({
-      where: {
-        OR: limitedGroups.map((group) => ({
-          series: group.series,
-          albaran: group.albaran,
-          serviceId: group.serviceId,
-        })),
-      },
-      orderBy: [{ date: "desc" }, { id: "desc" }],
-      select: {
-        date: true,
-        manager: true,
-        total: true,
-        series: true,
-        albaran: true,
-        numero: true,
-        serviceId: true,
-        client: { select: { nameRaw: true } },
-        service: { select: { conceptRaw: true } },
-      },
-    });
-
-    const samplesByKey = new Map<
-      string,
-      (typeof sampleLines)[number]
-    >();
-    for (const line of sampleLines) {
-      const key = `${line.series ?? ""}|${line.albaran ?? ""}|${line.serviceId}`;
-      if (!samplesByKey.has(key)) {
-        samplesByKey.set(key, line);
-      }
-    }
-
-    return limitedGroups.map((group, index) => {
-      const count =
-        group._count && typeof group._count === "object" ? (group._count.id ?? 0) : 0;
-      const sample = samplesByKey.get(
-        `${group.series ?? ""}|${group.albaran ?? ""}|${group.serviceId}`,
-      );
-      return {
-        key: `${group.series ?? ""}|${group.albaran ?? ""}|${group.serviceId}`,
-        count,
-        date: sample?.date ?? new Date(0),
-        manager: sample?.manager ?? "",
-        clientName: sample?.client.nameRaw ?? "Client desconegut",
-        serviceName: sample?.service.conceptRaw ?? "Servei desconegut",
-        total: sample?.total ?? 0,
-        series: sample?.series ?? null,
-        albaran: sample?.albaran ?? null,
-        numero: sample?.numero ?? null,
-      };
-    });
-  }
-
-  async deleteDuplicates(): Promise<number> {
-    const sourceFile = await this.getLatestUploadSourceFile();
-    if (!sourceFile) return 0;
-
-    const latestPairs = await prisma.invoiceLine.findMany({
-      where: {
-        sourceFile,
-        series: { not: null },
-        albaran: { not: null },
-      },
-      distinct: ["series", "albaran", "serviceId"],
-      select: { series: true, albaran: true, serviceId: true },
-    });
-
-    if (latestPairs.length === 0) return 0;
-
-    const groups = await prisma.invoiceLine.groupBy({
-      by: ["series", "albaran", "serviceId"],
-      where: {
-        OR: latestPairs.map((pair) => ({
-          series: pair.series,
-          albaran: pair.albaran,
-          serviceId: pair.serviceId,
-        })),
-        series: { not: null },
-        albaran: { not: null },
-      },
-      _count: { id: true },
-    });
-
-    const duplicateKeys = groups.filter((item) => {
-      const count =
-        item._count && typeof item._count === "object" ? (item._count.id ?? 0) : 0;
-      return count > 1;
-    });
-
-    if (duplicateKeys.length === 0) return 0;
-
-    const result = await prisma.invoiceLine.deleteMany({
-      where: {
-        sourceFile,
-        OR: duplicateKeys.map((item) => ({
-          series: item.series,
-          albaran: item.albaran,
-          serviceId: item.serviceId,
-        })),
-      },
-    });
-
-    return result.count;
   }
 
   async disconnect() {

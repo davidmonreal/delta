@@ -1,24 +1,60 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-
-import type { UploadActionState, UploadBatchResult } from "@/app/admin/upload/actions";
-import {
-  finalizeUploadAction,
-  startUploadAction,
-  uploadBatchAction,
-} from "@/app/admin/upload/actions";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { upload } from "@vercel/blob/client";
 
 const initialState: UploadActionState = {};
-const BATCH_SIZE = 50;
-const MAX_ERRORS = 50;
+const POLL_INTERVAL_MS = 3000;
 
 type UploadProgress = {
-  status: "idle" | "processing" | "finalizing";
+  status: "idle" | "uploading" | "processing" | "finalizing";
   step: string;
   processed: number;
   total: number;
+};
+
+type UploadJobSummary = {
+  fileName: string;
+  imported: number;
+  assigned: number;
+  unmatched: number;
+  skipped: number;
+  backfilled: number;
+  rowErrors?: UploadActionState["rowErrors"];
+  headerErrors?: UploadActionState["headerErrors"];
+};
+
+type UploadJobStatus =
+  | "pending"
+  | "uploading"
+  | "processing"
+  | "finalizing"
+  | "done"
+  | "error";
+
+type UploadJob = {
+  id: string;
+  fileName: string;
+  status: UploadJobStatus;
+  progress: number;
+  processedRows: number;
+  totalRows: number;
+  summary?: UploadJobSummary | null;
+  errorMessage?: string | null;
+};
+
+type UploadActionState = {
+  error?: string;
+  headerErrors?: { missing: string[]; extra: string[] };
+  rowErrors?: { row: number; message: string }[];
+  summary?: {
+    fileName: string;
+    imported: number;
+    assigned: number;
+    unmatched: number;
+    skipped: number;
+    backfilled: number;
+  };
 };
 
 function ProgressPanel({ progress }: { progress: UploadProgress }) {
@@ -33,7 +69,7 @@ function ProgressPanel({ progress }: { progress: UploadProgress }) {
     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold">{progress.step}</p>
-        {progress.total ? (
+        {progress.status !== "uploading" && progress.total ? (
           <span className="text-xs text-slate-500">
             {progress.processed}/{progress.total} ({percent}%)
           </span>
@@ -46,14 +82,15 @@ function ProgressPanel({ progress }: { progress: UploadProgress }) {
         />
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        Recalculem duplicats i unmatched a cada lot mentre la carrega avanca.
+        {progress.status === "uploading"
+          ? "Pugem el fitxer abans de processar-lo."
+          : "Recalculem les assignacions pendents mentre la carrega avanca."}
       </p>
     </div>
   );
 }
 
 export default function UploadDataPanel() {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [state, setState] = useState<UploadActionState>(initialState);
   const [progress, setProgress] = useState<UploadProgress>({
@@ -63,18 +100,88 @@ export default function UploadDataPanel() {
     total: 0,
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [job, setJob] = useState<UploadJob | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
 
   const resetProgress = () => {
     setProgress({ status: "idle", step: "", processed: 0, total: 0 });
   };
 
-  const serializeRow = (row: Record<string, unknown>) => {
-    const output: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(row)) {
-      output[key] = value instanceof Date ? value.toISOString() : value;
+  const updateFromJob = (nextJob: UploadJob) => {
+    setJob(nextJob);
+    setIsProcessing(
+      ["pending", "uploading", "processing", "finalizing"].includes(nextJob.status),
+    );
+    if (nextJob.status === "processing") {
+      setProgress({
+        status: "processing",
+        step: "Important dades",
+        processed: nextJob.processedRows,
+        total: nextJob.totalRows,
+      });
+    } else if (nextJob.status === "finalizing") {
+      setProgress({
+        status: "finalizing",
+        step: "Assignant gestors",
+        processed: nextJob.processedRows,
+        total: nextJob.totalRows,
+      });
+    } else if (nextJob.status === "done" || nextJob.status === "error") {
+      resetProgress();
     }
-    return output;
+
+    if (nextJob.summary) {
+      const summary = nextJob.summary;
+      setState({
+        summary: {
+          fileName: summary.fileName,
+          imported: summary.imported,
+          assigned: summary.assigned,
+          unmatched: summary.unmatched,
+          skipped: summary.skipped,
+          backfilled: summary.backfilled,
+        },
+        rowErrors: summary.rowErrors,
+        headerErrors: summary.headerErrors,
+        error: nextJob.errorMessage ?? undefined,
+      });
+    } else if (nextJob.errorMessage) {
+      setState({ error: nextJob.errorMessage });
+    }
   };
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("uploadJobId");
+    if (stored) {
+      setJobId(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let interval: NodeJS.Timeout | null = null;
+    let active = true;
+
+    const fetchJob = async () => {
+      const response = await fetch(`/api/uploads/${jobId}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { job: UploadJob };
+      if (!active) return;
+      updateFromJob(data.job);
+      if (data.job.status === "done" || data.job.status === "error") {
+        if (interval) clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    fetchJob();
+    interval = setInterval(fetchJob, POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [jobId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,6 +189,7 @@ export default function UploadDataPanel() {
 
     setState(initialState);
     setIsProcessing(true);
+    setJob(null);
 
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
@@ -103,128 +211,72 @@ export default function UploadDataPanel() {
     }
 
     setProgress({
-      status: "processing",
-      step: "Carregant fitxer",
+      status: "uploading",
+      step: "Pujant fitxer",
       processed: 0,
       total: 0,
     });
 
     try {
-      const XLSX = await import("xlsx");
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
-        setState({ error: "No hem trobat cap full de calcul." });
+      const safeFileName = file.name.replace(/\s+/g, "_");
+      const startResponse = await fetch("/api/uploads/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name }),
+      });
+
+      if (!startResponse.ok) {
+        setState({ error: "No s'ha pogut iniciar la carrega." });
+        setIsProcessing(false);
         return;
       }
 
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-        defval: null,
+      const { jobId: newJobId } = (await startResponse.json()) as { jobId: string };
+      window.localStorage.setItem("uploadJobId", newJobId);
+      setJobId(newJobId);
+      setIsProcessing(true);
+
+      const blob = await upload(`uploads/${newJobId}/${safeFileName}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/uploads/blob",
+        clientPayload: JSON.stringify({ jobId: newJobId }),
+        contentType: file.type || undefined,
+        onUploadProgress: ({ loaded, total }) => {
+          setProgress({
+            status: "uploading",
+            step: "Pujant fitxer",
+            processed: loaded,
+            total: total ?? 0,
+          });
+        },
       });
-      if (rows.length === 0) {
-        setState({ error: "El fitxer no te dades." });
+
+      const completeResponse = await fetch("/api/uploads/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: newJobId, blobUrl: blob.url }),
+      });
+
+      if (!completeResponse.ok) {
+        setState({ error: "No s'ha pogut iniciar el processament del fitxer." });
+        setIsProcessing(false);
+        resetProgress();
         return;
       }
 
       setProgress({
         status: "processing",
-        step: "Validant columnes",
+        step: "Important dades",
         processed: 0,
-        total: rows.length,
+        total: 0,
       });
-
-      const { sourceFile } = await startUploadAction(file.name);
-      const batches = Math.ceil(rows.length / BATCH_SIZE);
-
-      let summary: UploadActionState["summary"] = {
-        fileName: file.name,
-        imported: 0,
-        assigned: 0,
-        unmatched: 0,
-        skipped: 0,
-        backfilled: 0,
-      };
-      let rowErrors: UploadActionState["rowErrors"] = [];
-
-      for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
-        const batchIndex = Math.floor(offset / BATCH_SIZE);
-        const batch = rows
-          .slice(offset, offset + BATCH_SIZE)
-          .map((row) => serializeRow(row));
-        setProgress({
-          status: "processing",
-          step: `Important dades i actualitzant duplicats (${batchIndex + 1}/${batches})`,
-          processed: offset,
-          total: rows.length,
-        });
-
-        const result: UploadBatchResult = await uploadBatchAction({
-          rows: batch,
-          sourceFile,
-          validateHeader: offset === 0,
-        });
-
-        if (result.headerErrors) {
-          setState({
-            error: result.error ?? "La capcalera del fitxer no coincideix.",
-            headerErrors: result.headerErrors,
-          });
-          return;
-        }
-
-        if (result.error || !result.summary) {
-          setState({ error: result.error ?? "No s'ha pogut processar el fitxer." });
-          return;
-        }
-
-        summary = {
-          ...summary,
-          imported: summary.imported + result.summary.imported,
-          assigned: summary.assigned + result.summary.assigned,
-          unmatched: summary.unmatched + result.summary.unmatched,
-          skipped: summary.skipped + result.summary.skipped,
-        };
-
-        const adjustedErrors =
-          result.rowErrors?.map((error) => ({
-            ...error,
-            row: error.row + offset,
-          })) ?? [];
-        rowErrors = [...(rowErrors ?? []), ...adjustedErrors].slice(0, MAX_ERRORS);
-
-        setProgress({
-          status: "processing",
-          step: `Important dades i actualitzant duplicats (${batchIndex + 1}/${batches})`,
-          processed: Math.min(rows.length, offset + batch.length),
-          total: rows.length,
-        });
-
-        router.refresh();
-      }
-
-      setProgress({
-        status: "finalizing",
-        step: "Assignant gestors",
-        processed: rows.length,
-        total: rows.length,
-      });
-
-      const { backfilled } = await finalizeUploadAction();
-      summary = { ...summary, backfilled };
-
-      setState({
-        summary,
-        rowErrors,
-      });
-      router.refresh();
     } catch (error) {
       console.error(error);
       setState({ error: "No s'ha pogut processar el fitxer." });
-    } finally {
       setIsProcessing(false);
       resetProgress();
+    } finally {
+      // status updates are handled by polling
     }
   };
 

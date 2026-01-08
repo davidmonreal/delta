@@ -66,14 +66,50 @@ describe("summaryUtils", () => {
     ).toHaveLength(1);
   });
 
-  it("sorts missing to the end and orders by delta", () => {
-    const sorted = sortSummaries([
-      { deltaPrice: -5, isMissing: false },
-      { deltaPrice: 2, isMissing: false },
-      { deltaPrice: 0, isMissing: true },
-    ]);
+  it("sorts missing first and orders by delta", () => {
+    const filters: ResolvedFilters = {
+      year: 2024,
+      month: 1,
+      previousYear: 2023,
+      show: "neg",
+      showNegative: true,
+      showEqual: false,
+      showPositive: false,
+      showMissing: false,
+    };
+    const sorted = sortSummaries(
+      [
+        { deltaPrice: -5, isMissing: false },
+        { deltaPrice: 2, isMissing: false },
+        { deltaPrice: 0, isMissing: true },
+      ],
+      filters,
+    );
 
     expect(sorted[0].isMissing).toBe(true);
     expect(sorted[1].deltaPrice).toBe(-5);
+  });
+
+  it("sorts positives by percent delta", () => {
+    const filters: ResolvedFilters = {
+      year: 2024,
+      month: 1,
+      previousYear: 2023,
+      show: "pos",
+      showNegative: false,
+      showEqual: false,
+      showPositive: true,
+      showMissing: false,
+    };
+    const sorted = sortSummaries(
+      [
+        { deltaPrice: 2, isMissing: false, percentDelta: 10 },
+        { deltaPrice: 1, isMissing: false, percentDelta: 25 },
+        { deltaPrice: 3, isMissing: false, percentDelta: 5 },
+      ],
+      filters,
+    );
+
+    expect(sorted[0].percentDelta).toBe(25);
   });
 });

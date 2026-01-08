@@ -22,14 +22,6 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return 0;
   }
 
-  async listDuplicates() {
-    return [];
-  }
-
-  async deleteDuplicates() {
-    return 0;
-  }
-
   async backfillManagers() {
     return 0;
   }

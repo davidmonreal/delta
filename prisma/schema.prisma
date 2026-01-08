@@ -96,3 +96,17 @@ model ComparisonComment {
   @@index([userId])
   @@index([clientId, serviceId, year, month])
 }
+
+model UploadJob {
+  id            String   @id @default(uuid())
+  fileName      String
+  blobUrl       String?
+  status        String
+  progress      Int      @default(0)
+  processedRows Int      @default(0)
+  totalRows     Int      @default(0)
+  summary       Json?
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

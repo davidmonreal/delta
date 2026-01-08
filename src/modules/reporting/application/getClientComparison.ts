@@ -130,6 +130,7 @@ export async function getClientComparison({
       Array.from(rows.values()).map((row) => applySummaryMetrics(row)),
       filters,
     ),
+    filters,
   );
 
   const sumDeltaVisible = summaries.reduce(

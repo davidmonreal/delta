@@ -6,7 +6,6 @@ import { requireAdminSession } from "@/lib/require-auth";
 import { normalizeName } from "@/lib/normalize";
 import { assignManager } from "@/modules/invoices/application/assignManager";
 import { backfillManagers } from "@/modules/invoices/application/backfillManagers";
-import { deleteDuplicates } from "@/modules/invoices/application/deleteDuplicates";
 import { importRowsWithSummary, type ImportRowError } from "@/modules/ingestion/application/importInvoiceLines";
 import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/headerUtils";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
@@ -68,13 +67,6 @@ export async function assignManagerAction(formData: FormData): Promise<void> {
     userId: parsed.data.userId,
   });
 
-  revalidatePath("/admin/upload");
-}
-
-export async function deleteDuplicatesAction(): Promise<void> {
-  await requireAdminSession();
-  const repo = new PrismaInvoiceRepository();
-  await deleteDuplicates({ repo });
   revalidatePath("/admin/upload");
 }
 
