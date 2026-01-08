@@ -48,7 +48,7 @@ export async function processUploadJob(jobId: string) {
       processedRows: 0,
       totalRows: 0,
       errorMessage: null,
-      summary: null,
+      summary: undefined,
     },
   });
 
