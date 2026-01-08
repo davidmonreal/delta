@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { requireAdminSession } from "@/lib/require-auth";
+import { requireAdminSessionApi } from "@/lib/require-auth";
 import { processUploadJob } from "@/modules/ingestion/application/processUploadJob";
 
 const CompleteSchema = z.object({
@@ -11,7 +11,10 @@ const CompleteSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  await requireAdminSession();
+  const session = await requireAdminSessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
+  }
   const payload = CompleteSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: "Dades de carrega invalides." }, { status: 400 });

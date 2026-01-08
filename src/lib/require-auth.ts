@@ -29,3 +29,16 @@ export async function requireAdminSession(): Promise<Session> {
   }
   return session;
 }
+
+export async function requireAdminSessionApi(): Promise<Session | null> {
+  if (process.env.E2E_AUTH_BYPASS === "1") {
+    return {
+      user: { id: "1", role: "ADMIN" },
+    } as Session;
+  }
+  const session = await getServerSession(authOptions);
+  if (!session || !isAdminRole(session.user.role)) {
+    return null;
+  }
+  return session;
+}

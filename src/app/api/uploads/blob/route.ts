@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { handleUpload } from "@vercel/blob/client";
 
 import { prisma } from "@/lib/db";
+import { requireAdminSessionApi } from "@/lib/require-auth";
 import { processUploadJob } from "@/modules/ingestion/application/processUploadJob";
 
 type ClientPayload = {
@@ -9,6 +10,10 @@ type ClientPayload = {
 };
 
 export async function POST(request: Request) {
+  const session = await requireAdminSessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
+  }
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
       { error: "Falta la variable BLOB_READ_WRITE_TOKEN a l'entorn." },

@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { requireAdminSession } from "@/lib/require-auth";
+import { requireAdminSessionApi } from "@/lib/require-auth";
 
 const StartSchema = z.object({
   fileName: z.string().min(1),
 });
 
 export async function POST(request: Request) {
-  const session = await requireAdminSession();
+  const session = await requireAdminSessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
+  }
   const payload = StartSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: "Nom del fitxer invalid." }, { status: 400 });

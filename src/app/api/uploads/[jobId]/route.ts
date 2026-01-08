@@ -1,13 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { requireAdminSession } from "@/lib/require-auth";
+import { requireAdminSessionApi } from "@/lib/require-auth";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
 ) {
-  const session = await requireAdminSession();
+  const session = await requireAdminSessionApi();
+  if (!session) {
+    return NextResponse.json({ error: "No autoritzat." }, { status: 401 });
+  }
   const userId = Number.parseInt(session.user.id, 10);
   const { jobId } = await params;
   const job = await prisma.uploadJob.findUnique({
