@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { matchUserId } from "@/lib/match-user";
 import { normalizeName } from "@/lib/normalize";
 
 import type {
@@ -135,11 +136,11 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     }
 
     let updated = 0;
-    const userMap = new Map(userCandidates.map((user) => [user.nameNormalized, user.id]));
     let processed = 0;
     for (const line of lines) {
       const normalized = normalizeName(line.managerNormalized ?? line.manager);
-      const userId = userMap.get(normalized) ?? null;
+      const match = matchUserId(line.manager, userCandidates);
+      const userId = match.userId ?? null;
       await prisma.invoiceLine.update({
         where: { id: line.id },
         data: {
