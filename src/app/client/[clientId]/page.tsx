@@ -54,8 +54,17 @@ export default async function ClientPage({
     clientId,
     managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
   });
-  const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
-    filters;
+  const {
+    year,
+    month,
+    previousYear,
+    show,
+    showEqual,
+    showNegative,
+    showPositive,
+    showMissing,
+    showNew,
+  } = filters;
   const monthLabels = [
     "Gener",
     "Febrer",
@@ -125,6 +134,9 @@ export default async function ClientPage({
           year={year}
           month={month}
           showPositive={showPositive}
+          showEqual={showEqual}
+          showMissing={showMissing}
+          showNew={showNew}
           firstColumnLabel="Servei"
         />
         <ComparisonSummaryRow

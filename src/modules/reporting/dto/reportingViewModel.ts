@@ -1,6 +1,6 @@
 import type { MonthlyComparisonResult } from "../application/getMonthlyComparison";
 
-type ComparisonRowViewModel = {
+export type ComparisonRowViewModel = {
   id: string;
   clientId: number;
   serviceId: number;

@@ -74,6 +74,9 @@ export default async function Home({
           year={year}
           month={month}
           showPositive={showPositive}
+          showEqual={showEqual}
+          showMissing={filters.showMissing}
+          showNew={filters.showNew}
           firstColumnLabel="Client"
         />
         <ComparisonSummaryRow
