@@ -205,6 +205,48 @@ export async function buildInvoiceLines({
     }
   };
 
+  const readRequiredText = (row: Row, rowNumber: number, key: string, message: string) => {
+    const value = String(getValue(row, headerMap, key) ?? "").trim();
+    if (!value) {
+      recordError(rowNumber, message);
+      return null;
+    }
+    return value;
+  };
+
+  const readOptionalText = (row: Row, rowNumber: number, key: string, message: string) => {
+    const value = toOptionalString(getValue(row, headerMap, key));
+    if (!value) {
+      recordError(rowNumber, message);
+      return null;
+    }
+    return value;
+  };
+
+  const readNumberValue = (row: Row, rowNumber: number, key: string, message: string) => {
+    const value = strict
+      ? toNumberOrNull(getValue(row, headerMap, key))
+      : toNumber(getValue(row, headerMap, key));
+    if (strict && value === null) {
+      recordError(rowNumber, message);
+      return null;
+    }
+    return value ?? 0;
+  };
+
+  const resolveId = async (
+    map: Map<string, number>,
+    normalized: string,
+    upsert: () => Promise<number>,
+  ) => {
+    let id = map.get(normalized);
+    if (!id) {
+      id = await upsert();
+      map.set(normalized, id);
+    }
+    return id;
+  };
+
   for (const [index, row] of rows.entries()) {
     const rowNumber = index + 2;
     const dateValue = getValue(row, headerMap, "FECHA");
@@ -214,45 +256,34 @@ export async function buildInvoiceLines({
       continue;
     }
 
-    const clientRaw = String(getValue(row, headerMap, "CLIENTE") ?? "").trim();
+    const clientRaw = readRequiredText(row, rowNumber, "CLIENTE", "Falta el client.");
     if (!clientRaw) {
-      recordError(rowNumber, "Falta el client.");
       continue;
     }
 
-    const conceptRaw = String(getValue(row, headerMap, "CONCEPTO") ?? "").trim();
+    const conceptRaw = readRequiredText(row, rowNumber, "CONCEPTO", "Falta el concepte.");
     if (!conceptRaw) {
-      recordError(rowNumber, "Falta el concepte.");
       continue;
     }
 
-    const unitsValue = strict
-      ? toNumberOrNull(getValue(row, headerMap, "UNIDADES"))
-      : toNumber(getValue(row, headerMap, "UNIDADES"));
-    if (strict && unitsValue === null) {
-      recordError(rowNumber, "Unitats invalides.");
+    const unitsValue = readNumberValue(row, rowNumber, "UNIDADES", "Unitats invalides.");
+    if (unitsValue === null) {
       continue;
     }
 
-    const priceValue = strict
-      ? toNumberOrNull(getValue(row, headerMap, "PRECIO"))
-      : toNumber(getValue(row, headerMap, "PRECIO"));
-    if (strict && priceValue === null) {
-      recordError(rowNumber, "Preu invalid.");
+    const priceValue = readNumberValue(row, rowNumber, "PRECIO", "Preu invalid.");
+    if (priceValue === null) {
       continue;
     }
 
-    const totalValue = strict
-      ? toNumberOrNull(getValue(row, headerMap, "TOTAL"))
-      : toNumber(getValue(row, headerMap, "TOTAL"));
-    if (strict && totalValue === null) {
-      recordError(rowNumber, "Total invalid.");
+    const totalValue = readNumberValue(row, rowNumber, "TOTAL", "Total invalid.");
+    if (totalValue === null) {
       continue;
     }
 
-    const units = unitsValue ?? 0;
-    const price = priceValue ?? 0;
-    const total = totalValue ?? 0;
+    const units = unitsValue;
+    const price = priceValue;
+    const total = totalValue;
     if (total < 0) {
       recordError(rowNumber, "Total negatiu.");
       continue;
@@ -260,28 +291,22 @@ export async function buildInvoiceLines({
 
     const clientNormalized = normalizeValue(clientRaw);
     const serviceNormalized = normalizeValue(conceptRaw);
-    let clientId = clientIdMap.get(clientNormalized);
-    if (!clientId) {
-      clientId = await repo.upsertClient(clientRaw, clientNormalized);
-      clientIdMap.set(clientNormalized, clientId);
-    }
-    let serviceId = serviceIdMap.get(serviceNormalized);
-    if (!serviceId) {
-      serviceId = await repo.upsertService(conceptRaw, serviceNormalized);
-      serviceIdMap.set(serviceNormalized, serviceId);
-    }
+    const clientId = await resolveId(clientIdMap, clientNormalized, () =>
+      repo.upsertClient(clientRaw, clientNormalized),
+    );
+    const serviceId = await resolveId(serviceIdMap, serviceNormalized, () =>
+      repo.upsertService(conceptRaw, serviceNormalized),
+    );
 
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
     const managerNormalized = manager.length ? normalizeName(manager) : null;
-    const series = toOptionalString(getValue(row, headerMap, "SERIE"));
+    const series = readOptionalText(row, rowNumber, "SERIE", "Falta la serie.");
     if (!series) {
-      recordError(rowNumber, "Falta la serie.");
       continue;
     }
 
-    const albaran = toOptionalString(getValue(row, headerMap, "ALBARAN"));
+    const albaran = readOptionalText(row, rowNumber, "ALBARAN", "Falta l'albara.");
     if (!albaran) {
-      recordError(rowNumber, "Falta l'albara.");
       continue;
     }
     const numero = toOptionalString(getValue(row, headerMap, "NUMERO"));

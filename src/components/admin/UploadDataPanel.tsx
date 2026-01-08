@@ -1,62 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { upload } from "@vercel/blob/client";
 
-const initialState: UploadActionState = {};
-const POLL_INTERVAL_MS = 3000;
-
-type UploadProgress = {
-  status: "idle" | "uploading" | "processing" | "finalizing";
-  step: string;
-  processed: number;
-  total: number;
-};
-
-type UploadJobSummary = {
-  fileName: string;
-  imported: number;
-  assigned: number;
-  unmatched: number;
-  skipped: number;
-  backfilled: number;
-  rowErrors?: UploadActionState["rowErrors"];
-  headerErrors?: UploadActionState["headerErrors"];
-};
-
-type UploadJobStatus =
-  | "pending"
-  | "uploading"
-  | "processing"
-  | "finalizing"
-  | "retrying"
-  | "done"
-  | "error";
-
-type UploadJob = {
-  id: string;
-  fileName: string;
-  status: UploadJobStatus;
-  progress: number;
-  processedRows: number;
-  totalRows: number;
-  summary?: UploadJobSummary | null;
-  errorMessage?: string | null;
-};
-
-type UploadActionState = {
-  error?: string;
-  headerErrors?: { missing: string[]; extra: string[] };
-  rowErrors?: { row: number; message: string }[];
-  summary?: {
-    fileName: string;
-    imported: number;
-    assigned: number;
-    unmatched: number;
-    skipped: number;
-    backfilled: number;
-  };
-};
+import {
+  POLL_INTERVAL_MS,
+  buildActionStateFromJob,
+  getProgressUpdate,
+  initialUploadActionState,
+  isProcessingStatus,
+  shouldClearJobId,
+  shouldResetForStatus,
+  type UploadActionState,
+  type UploadJob,
+  type UploadProgress,
+} from "@/components/admin/uploadDataModel";
+import {
+  completeUploadJob,
+  fetchLatestUploadJob,
+  fetchUploadJob,
+  startUploadJob,
+  uploadFileToBlob,
+} from "@/components/admin/uploadGateway";
 
 function ProgressPanel({ progress }: { progress: UploadProgress }) {
   if (progress.status === "idle") return null;
@@ -93,7 +57,7 @@ function ProgressPanel({ progress }: { progress: UploadProgress }) {
 
 export default function UploadDataPanel() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [state, setState] = useState<UploadActionState>(initialState);
+  const [state, setState] = useState<UploadActionState>(initialUploadActionState);
   const [progress, setProgress] = useState<UploadProgress>({
     status: "idle",
     step: "",
@@ -112,40 +76,14 @@ export default function UploadDataPanel() {
 
   const updateFromJob = (nextJob: UploadJob) => {
     setJob(nextJob);
-    setIsProcessing(
-      [
-        "pending",
-        "uploading",
-        "processing",
-        "finalizing",
-        "retrying",
-      ].includes(
-        nextJob.status,
-      ),
-    );
-    if (nextJob.status === "processing") {
-      setProgress({
-        status: "processing",
-        step: "Important dades",
-        processed: nextJob.processedRows,
-        total: nextJob.totalRows,
-      });
-    } else if (nextJob.status === "retrying") {
-      setProgress({
-        status: "processing",
-        step: "Reintentant processament",
-        processed: nextJob.processedRows,
-        total: nextJob.totalRows,
-      });
-    } else if (nextJob.status === "finalizing") {
-      setProgress({
-        status: "finalizing",
-        step: "Assignant gestors (coincidencia exacta)",
-        processed: nextJob.processedRows,
-        total: nextJob.totalRows,
-      });
-    } else if (nextJob.status === "done" || nextJob.status === "error") {
-      resetProgress();
+    setIsProcessing(isProcessingStatus(nextJob.status));
+
+    const nextProgress = getProgressUpdate(nextJob);
+    if (nextProgress) {
+      setProgress(nextProgress);
+    }
+
+    if (shouldResetForStatus(nextJob.status)) {
       setHasFile(false);
       setSelectedFileName(null);
       if (fileInputRef.current) {
@@ -153,26 +91,12 @@ export default function UploadDataPanel() {
       }
     }
 
-    if (nextJob.summary) {
-      const summary = nextJob.summary;
-      setState({
-        summary: {
-          fileName: summary.fileName,
-          imported: summary.imported,
-          assigned: summary.assigned,
-          unmatched: summary.unmatched,
-          skipped: summary.skipped,
-          backfilled: summary.backfilled,
-        },
-        rowErrors: summary.rowErrors,
-        headerErrors: summary.headerErrors,
-        error: nextJob.errorMessage ?? undefined,
-      });
-    } else if (nextJob.errorMessage) {
-      setState({ error: nextJob.errorMessage });
+    const nextState = buildActionStateFromJob(nextJob);
+    if (nextState) {
+      setState(nextState);
     }
 
-    if (nextJob.status === "done" || nextJob.status === "error") {
+    if (shouldClearJobId(nextJob.status)) {
       setJobId(null);
     }
   };
@@ -180,13 +104,11 @@ export default function UploadDataPanel() {
   useEffect(() => {
     let active = true;
     const fetchLatest = async () => {
-      const response = await fetch("/api/uploads/latest", { cache: "no-store" });
-      if (!response.ok) return;
-      const data = (await response.json()) as { job: UploadJob | null };
+      const latestJob = await fetchLatestUploadJob();
       if (!active) return;
-      if (data.job) {
-        setJobId(data.job.id);
-        updateFromJob(data.job);
+      if (latestJob) {
+        setJobId(latestJob.id);
+        updateFromJob(latestJob);
       }
     };
     fetchLatest();
@@ -201,19 +123,18 @@ export default function UploadDataPanel() {
     let active = true;
 
     const fetchJob = async () => {
-      const response = await fetch(`/api/uploads/${jobId}`, { cache: "no-store" });
-      if (response.status === 404) {
+      const result = await fetchUploadJob(jobId);
+      if (result.status === "not_found") {
         setJobId(null);
         setJob(null);
         setIsProcessing(false);
         resetProgress();
         return;
       }
-      if (!response.ok) return;
-      const data = (await response.json()) as { job: UploadJob };
+      if (result.status !== "ok") return;
       if (!active) return;
-      updateFromJob(data.job);
-      if (data.job.status === "done" || data.job.status === "error") {
+      updateFromJob(result.job);
+      if (result.job.status === "done" || result.job.status === "error") {
         if (interval) clearInterval(interval);
         interval = null;
       }
@@ -232,7 +153,7 @@ export default function UploadDataPanel() {
     event.preventDefault();
     if (isProcessing) return;
 
-    setState(initialState);
+    setState(initialUploadActionState);
     setIsProcessing(true);
     setJob(null);
 
@@ -270,32 +191,14 @@ export default function UploadDataPanel() {
 
     try {
       const safeFileName = file.name.replace(/\s+/g, "_");
-      const startResponse = await fetch("/api/uploads/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name }),
-      });
-
-      if (!startResponse.ok) {
-        const startBody = await startResponse.json().catch(() => ({}));
-        const message =
-          typeof startBody.error === "string"
-            ? startBody.error
-            : "No s'ha pogut iniciar la carrega.";
-        setState({ error: message });
-        setIsProcessing(false);
-        return;
-      }
-
-      const { jobId: newJobId } = (await startResponse.json()) as { jobId: string };
+      const { jobId: newJobId } = await startUploadJob(file.name);
       setJobId(newJobId);
       setIsProcessing(true);
 
-      const blob = await upload(`uploads/${newJobId}/${safeFileName}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/uploads/blob",
-        clientPayload: JSON.stringify({ jobId: newJobId }),
-        contentType: file.type || undefined,
+      const blob = await uploadFileToBlob({
+        jobId: newJobId,
+        file,
+        safeFileName,
         onUploadProgress: ({ loaded, total }) => {
           setProgress({
             status: "uploading",
@@ -306,23 +209,7 @@ export default function UploadDataPanel() {
         },
       });
 
-      const completeResponse = await fetch("/api/uploads/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: newJobId, blobUrl: blob.url }),
-      });
-
-      if (!completeResponse.ok) {
-        const completeBody = await completeResponse.json().catch(() => ({}));
-        const message =
-          typeof completeBody.error === "string"
-            ? completeBody.error
-            : "No s'ha pogut iniciar el processament del fitxer.";
-        setState({ error: message });
-        setIsProcessing(false);
-        resetProgress();
-        return;
-      }
+      await completeUploadJob(newJobId, blob.url);
 
       setProgress({
         status: "processing",
