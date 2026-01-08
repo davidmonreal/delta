@@ -52,13 +52,13 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     );
 
     const mapped = lines.map((line) => {
-      const normalized = line.managerNormalized ?? normalizeName(line.manager);
+      const normalized = normalizeName(line.managerNormalized ?? line.manager);
       const exactUserId = userMap.get(normalized) ?? null;
       return {
         id: line.id,
         date: line.date,
         manager: line.manager,
-        managerNormalized: line.managerNormalized,
+        managerNormalized: normalized,
         clientName: line.client.nameRaw,
         serviceName: line.service.conceptRaw,
         total: line.total,
@@ -153,7 +153,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     const userMap = new Map(userCandidates.map((user) => [user.nameNormalized, user.id]));
     let processed = 0;
     for (const line of lines) {
-      const normalized = line.managerNormalized ?? normalizeName(line.manager);
+      const normalized = normalizeName(line.managerNormalized ?? line.manager);
       const userId = userMap.get(normalized) ?? null;
       await prisma.invoiceLine.update({
         where: { id: line.id },

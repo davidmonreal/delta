@@ -103,6 +103,7 @@ export default function UploadDataPanel() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [job, setJob] = useState<UploadJob | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [hasFile, setHasFile] = useState(false);
 
   const resetProgress = () => {
     setProgress({ status: "idle", step: "", processed: 0, total: 0 });
@@ -144,6 +145,10 @@ export default function UploadDataPanel() {
       });
     } else if (nextJob.status === "done" || nextJob.status === "error") {
       resetProgress();
+      setHasFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
 
     if (nextJob.summary) {
@@ -233,11 +238,13 @@ export default function UploadDataPanel() {
     if (!file) {
       setState({ error: "Selecciona un fitxer per pujar." });
       setIsProcessing(false);
+      setHasFile(false);
       return;
     }
     if (!file.name || file.size === 0) {
       setState({ error: "El fitxer esta buit." });
       setIsProcessing(false);
+      setHasFile(false);
       return;
     }
 
@@ -245,6 +252,7 @@ export default function UploadDataPanel() {
     if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".csv")) {
       setState({ error: "El fitxer ha de ser Excel o CSV." });
       setIsProcessing(false);
+      setHasFile(false);
       return;
     }
 
@@ -326,6 +334,10 @@ export default function UploadDataPanel() {
       setState({ error: message });
       setIsProcessing(false);
       resetProgress();
+      setHasFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } finally {
       // status updates are handled by polling
     }
@@ -350,11 +362,14 @@ export default function UploadDataPanel() {
             required
             disabled={isProcessing}
             ref={fileInputRef}
+            onChange={(event) => {
+              setHasFile(Boolean(event.target.files?.[0]));
+            }}
             className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-slate-200 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-300"
           />
           <button
             type="submit"
-            disabled={isProcessing}
+            disabled={isProcessing || !hasFile}
             className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
           >
             {isProcessing ? "Processant..." : "Carregar dades"}

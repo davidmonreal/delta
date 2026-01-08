@@ -3,7 +3,6 @@ import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prism
 import { listUnmatched } from "@/modules/invoices/application/listUnmatched";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { formatCurrency } from "@/lib/format";
-import Link from "next/link";
 import { assignManagerAction } from "./actions";
 import ManagerAssignForm from "@/components/admin/ManagerAssignForm";
 import UploadDataPanel from "@/components/admin/UploadDataPanel";
@@ -35,14 +34,6 @@ export default async function UploadPage() {
         <p className="mt-2 text-base text-slate-500">
           Carrega fitxers nous i revisa duplicats o factures sense responsable.
         </p>
-        <div className="mt-4">
-          <Link
-            href="/admin/users"
-            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-          >
-            Tornar a usuaris
-          </Link>
-        </div>
       </header>
 
       <UploadDataPanel />
