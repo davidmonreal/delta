@@ -29,6 +29,7 @@ type UploadJobStatus =
   | "uploading"
   | "processing"
   | "finalizing"
+  | "retrying"
   | "done"
   | "error";
 
@@ -110,12 +111,21 @@ export default function UploadDataPanel() {
   const updateFromJob = (nextJob: UploadJob) => {
     setJob(nextJob);
     setIsProcessing(
-      ["pending", "uploading", "processing", "finalizing"].includes(nextJob.status),
+      ["pending", "uploading", "processing", "finalizing", "retrying"].includes(
+        nextJob.status,
+      ),
     );
     if (nextJob.status === "processing") {
       setProgress({
         status: "processing",
         step: "Important dades",
+        processed: nextJob.processedRows,
+        total: nextJob.totalRows,
+      });
+    } else if (nextJob.status === "retrying") {
+      setProgress({
+        status: "processing",
+        step: "Reintentant processament",
         processed: nextJob.processedRows,
         total: nextJob.totalRows,
       });

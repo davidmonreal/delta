@@ -16,7 +16,7 @@ export async function GET() {
   const job = await prisma.uploadJob.findFirst({
     where: {
       userId,
-      status: { in: ["pending", "uploading", "processing", "finalizing"] },
+      status: { in: ["pending", "uploading", "processing", "finalizing", "retrying"] },
     },
     orderBy: { createdAt: "desc" },
   });

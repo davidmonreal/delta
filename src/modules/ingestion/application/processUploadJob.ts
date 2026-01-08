@@ -9,7 +9,7 @@ import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/head
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 200;
 const MAX_ERRORS = 50;
 
 type UploadJobSummary = {
@@ -124,7 +124,29 @@ export async function processUploadJob(jobId: string) {
     };
     let rowErrors: ImportRowError[] = [];
 
-    for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
+    const startOffset = Math.min(job.processedRows ?? 0, totalRows);
+    if (startOffset >= totalRows) {
+      await prisma.uploadJob.update({
+        where: { id: jobId },
+        data: {
+          status: "done",
+          progress: 100,
+          processedRows: totalRows,
+          summary,
+        },
+      });
+      return;
+    }
+
+    for (let offset = startOffset; offset < rows.length; offset += BATCH_SIZE) {
+      const jobCheck = await prisma.uploadJob.findUnique({
+        where: { id: jobId },
+        select: { status: true },
+      });
+      if (jobCheck?.status === "error") {
+        return;
+      }
+
       const batch = rows.slice(offset, offset + BATCH_SIZE);
       const result = await importRowsWithSummary({
         rows: batch,
