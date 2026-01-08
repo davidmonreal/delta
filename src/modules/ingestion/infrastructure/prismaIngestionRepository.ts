@@ -27,6 +27,32 @@ export class PrismaIngestionRepository implements IngestionRepository {
     return service.id;
   }
 
+  async findClientsByNormalized(names: string[]) {
+    if (names.length === 0) return [];
+    return prisma.client.findMany({
+      where: { nameNormalized: { in: names } },
+      select: { id: true, nameNormalized: true },
+    });
+  }
+
+  async findServicesByNormalized(names: string[]) {
+    if (names.length === 0) return [];
+    return prisma.service.findMany({
+      where: { conceptNormalized: { in: names } },
+      select: { id: true, conceptNormalized: true },
+    });
+  }
+
+  async createClients(entries: { nameRaw: string; nameNormalized: string }[]) {
+    if (entries.length === 0) return;
+    await prisma.client.createMany({ data: entries, skipDuplicates: true });
+  }
+
+  async createServices(entries: { conceptRaw: string; conceptNormalized: string }[]) {
+    if (entries.length === 0) return;
+    await prisma.service.createMany({ data: entries, skipDuplicates: true });
+  }
+
   async deleteInvoiceLinesBySourceFile(sourceFile: string) {
     await prisma.invoiceLine.deleteMany({ where: { sourceFile } });
   }

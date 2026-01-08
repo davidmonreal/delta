@@ -191,10 +191,13 @@ export async function processUploadJob(jobId: string) {
       data: { status: "finalizing" },
     });
 
-    summary.backfilled = await backfillManagers({
+    const assignedByName = await backfillManagers({
       repo: invoiceRepo,
       userCandidates,
     });
+    summary.assigned += assignedByName;
+    summary.unmatched = Math.max(0, summary.imported - summary.assigned);
+    summary.backfilled = assignedByName;
     summary.rowErrors = rowErrors;
 
     await prisma.uploadJob.update({

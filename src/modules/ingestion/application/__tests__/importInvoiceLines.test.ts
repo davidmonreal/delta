@@ -56,13 +56,12 @@ describe("importRowsWithSummary", () => {
       sourceFile: "file.xlsx",
       reset: false,
       repo,
-      userCandidates: [{ id: 1, nameNormalized: "MGR" }],
       strict: true,
     });
 
     expect(result.imported).toBe(1);
-    expect(result.assigned).toBe(1);
-    expect(result.unmatched).toBe(0);
+    expect(result.assigned).toBe(0);
+    expect(result.unmatched).toBe(1);
   });
 
   it("flags missing serie or albara values", async () => {

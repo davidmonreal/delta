@@ -23,6 +23,42 @@ export class InMemoryIngestionRepository implements IngestionRepository {
     return id;
   }
 
+  async findClientsByNormalized(names: string[]) {
+    return names
+      .map((nameNormalized) => {
+        const id = this.clients.get(nameNormalized);
+        return id ? { id, nameNormalized } : null;
+      })
+      .filter((entry): entry is { id: number; nameNormalized: string } => entry !== null);
+  }
+
+  async findServicesByNormalized(names: string[]) {
+    return names
+      .map((conceptNormalized) => {
+        const id = this.services.get(conceptNormalized);
+        return id ? { id, conceptNormalized } : null;
+      })
+      .filter(
+        (entry): entry is { id: number; conceptNormalized: string } => entry !== null,
+      );
+  }
+
+  async createClients(entries: { nameRaw: string; nameNormalized: string }[]) {
+    for (const entry of entries) {
+      if (!this.clients.has(entry.nameNormalized)) {
+        this.clients.set(entry.nameNormalized, this.clientId++);
+      }
+    }
+  }
+
+  async createServices(entries: { conceptRaw: string; conceptNormalized: string }[]) {
+    for (const entry of entries) {
+      if (!this.services.has(entry.conceptNormalized)) {
+        this.services.set(entry.conceptNormalized, this.serviceId++);
+      }
+    }
+  }
+
   async deleteInvoiceLinesBySourceFile(sourceFile: string) {
     this.invoiceLines = this.invoiceLines.filter(
       (line) => line.sourceFile !== sourceFile,

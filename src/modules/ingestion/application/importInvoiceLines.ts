@@ -13,7 +13,6 @@ import {
   type HeaderValidationResult,
 } from "../domain/headerUtils";
 import { normalizeName } from "@/lib/normalize";
-import { matchUserId } from "@/lib/match-user";
 
 type Row = Record<string, unknown>;
 
@@ -111,22 +110,70 @@ function getValue(row: Row, headerMap: Map<string, string>, key: string) {
   return row[resolvedKey];
 }
 
-async function getClientId(nameRaw: string, cache: Map<string, number>, repo: IngestionRepository) {
-  const normalized = normalizeValue(nameRaw);
-  const cached = cache.get(normalized);
-  if (cached) return cached;
-  const clientId = await repo.upsertClient(nameRaw, normalized);
-  cache.set(normalized, clientId);
-  return clientId;
-}
+async function buildReferenceMaps(rows: Row[], headerMap: Map<string, string>, repo: IngestionRepository) {
+  const clientRawByNormalized = new Map<string, string>();
+  const serviceRawByNormalized = new Map<string, string>();
 
-async function getServiceId(conceptRaw: string, cache: Map<string, number>, repo: IngestionRepository) {
-  const normalized = normalizeValue(conceptRaw);
-  const cached = cache.get(normalized);
-  if (cached) return cached;
-  const serviceId = await repo.upsertService(conceptRaw, normalized);
-  cache.set(normalized, serviceId);
-  return serviceId;
+  for (const row of rows) {
+    const clientRaw = String(getValue(row, headerMap, "CLIENTE") ?? "").trim();
+    if (clientRaw) {
+      const normalized = normalizeValue(clientRaw);
+      if (!clientRawByNormalized.has(normalized)) {
+        clientRawByNormalized.set(normalized, clientRaw);
+      }
+    }
+
+    const conceptRaw = String(getValue(row, headerMap, "CONCEPTO") ?? "").trim();
+    if (conceptRaw) {
+      const normalized = normalizeValue(conceptRaw);
+      if (!serviceRawByNormalized.has(normalized)) {
+        serviceRawByNormalized.set(normalized, conceptRaw);
+      }
+    }
+  }
+
+  const clientNames = [...clientRawByNormalized.keys()];
+  const serviceNames = [...serviceRawByNormalized.keys()];
+
+  const [existingClients, existingServices] = await Promise.all([
+    repo.findClientsByNormalized(clientNames),
+    repo.findServicesByNormalized(serviceNames),
+  ]);
+
+  const clientIdMap = new Map(existingClients.map((client) => [client.nameNormalized, client.id]));
+  const serviceIdMap = new Map(
+    existingServices.map((service) => [service.conceptNormalized, service.id]),
+  );
+
+  const missingClients = clientNames.filter((name) => !clientIdMap.has(name));
+  if (missingClients.length) {
+    await repo.createClients(
+      missingClients.map((nameNormalized) => ({
+        nameRaw: clientRawByNormalized.get(nameNormalized) ?? nameNormalized,
+        nameNormalized,
+      })),
+    );
+    const createdClients = await repo.findClientsByNormalized(missingClients);
+    for (const client of createdClients) {
+      clientIdMap.set(client.nameNormalized, client.id);
+    }
+  }
+
+  const missingServices = serviceNames.filter((name) => !serviceIdMap.has(name));
+  if (missingServices.length) {
+    await repo.createServices(
+      missingServices.map((conceptNormalized) => ({
+        conceptRaw: serviceRawByNormalized.get(conceptNormalized) ?? conceptNormalized,
+        conceptNormalized,
+      })),
+    );
+    const createdServices = await repo.findServicesByNormalized(missingServices);
+    for (const service of createdServices) {
+      serviceIdMap.set(service.conceptNormalized, service.id);
+    }
+  }
+
+  return { clientIdMap, serviceIdMap };
 }
 
 export async function buildInvoiceLines({
@@ -146,8 +193,7 @@ export async function buildInvoiceLines({
   }
 
   const headerMap = buildHeaderMap(rows[0]);
-  const clientCache = new Map<string, number>();
-  const serviceCache = new Map<string, number>();
+  const { clientIdMap, serviceIdMap } = await buildReferenceMaps(rows, headerMap, repo);
   const lines: InvoiceLineInput[] = [];
   const errors: ImportRowError[] = [];
   let skipped = 0;
@@ -212,15 +258,21 @@ export async function buildInvoiceLines({
       continue;
     }
 
-    const clientId = await getClientId(clientRaw, clientCache, repo);
-    const serviceId = await getServiceId(conceptRaw, serviceCache, repo);
+    const clientNormalized = normalizeValue(clientRaw);
+    const serviceNormalized = normalizeValue(conceptRaw);
+    let clientId = clientIdMap.get(clientNormalized);
+    if (!clientId) {
+      clientId = await repo.upsertClient(clientRaw, clientNormalized);
+      clientIdMap.set(clientNormalized, clientId);
+    }
+    let serviceId = serviceIdMap.get(serviceNormalized);
+    if (!serviceId) {
+      serviceId = await repo.upsertService(conceptRaw, serviceNormalized);
+      serviceIdMap.set(serviceNormalized, serviceId);
+    }
 
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
     const managerNormalized = manager.length ? normalizeName(manager) : null;
-    const managerUserId =
-      managerNormalized && userCandidates
-        ? matchUserId(manager, userCandidates).userId
-        : null;
     const series = toOptionalString(getValue(row, headerMap, "SERIE"));
     if (!series) {
       recordError(rowNumber, "Falta la serie.");
@@ -249,7 +301,7 @@ export async function buildInvoiceLines({
       numero,
       clientId,
       serviceId,
-      managerUserId,
+      managerUserId: null,
     });
   }
 
