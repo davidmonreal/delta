@@ -9,15 +9,17 @@ const StartSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   const payload = StartSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: "Nom del fitxer invalid." }, { status: 400 });
   }
+  const userId = Number.parseInt(session.user.id, 10);
 
   const job = await prisma.uploadJob.create({
     data: {
       fileName: payload.data.fileName,
+      userId: Number.isNaN(userId) ? undefined : userId,
       status: "pending",
       progress: 0,
       processedRows: 0,

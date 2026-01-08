@@ -150,16 +150,26 @@ export default function UploadDataPanel() {
     }
 
     if (nextJob.status === "done" || nextJob.status === "error") {
-      window.localStorage.removeItem("uploadJobId");
       setJobId(null);
     }
   };
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("uploadJobId");
-    if (stored) {
-      setJobId(stored);
-    }
+    let active = true;
+    const fetchLatest = async () => {
+      const response = await fetch("/api/uploads/latest", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { job: UploadJob | null };
+      if (!active) return;
+      if (data.job) {
+        setJobId(data.job.id);
+        updateFromJob(data.job);
+      }
+    };
+    fetchLatest();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -170,7 +180,6 @@ export default function UploadDataPanel() {
     const fetchJob = async () => {
       const response = await fetch(`/api/uploads/${jobId}`, { cache: "no-store" });
       if (response.status === 404) {
-        window.localStorage.removeItem("uploadJobId");
         setJobId(null);
         setJob(null);
         setIsProcessing(false);
@@ -250,7 +259,6 @@ export default function UploadDataPanel() {
       }
 
       const { jobId: newJobId } = (await startResponse.json()) as { jobId: string };
-      window.localStorage.setItem("uploadJobId", newJobId);
       setJobId(newJobId);
       setIsProcessing(true);
 

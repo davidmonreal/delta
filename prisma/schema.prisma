@@ -107,6 +107,10 @@ model UploadJob {
   totalRows     Int      @default(0)
   summary       Json?
   errorMessage  String?
+  userId        Int?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }
