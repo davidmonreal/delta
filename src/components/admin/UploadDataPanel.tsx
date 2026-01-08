@@ -148,6 +148,11 @@ export default function UploadDataPanel() {
     } else if (nextJob.errorMessage) {
       setState({ error: nextJob.errorMessage });
     }
+
+    if (nextJob.status === "done" || nextJob.status === "error") {
+      window.localStorage.removeItem("uploadJobId");
+      setJobId(null);
+    }
   };
 
   useEffect(() => {
@@ -164,6 +169,14 @@ export default function UploadDataPanel() {
 
     const fetchJob = async () => {
       const response = await fetch(`/api/uploads/${jobId}`, { cache: "no-store" });
+      if (response.status === 404) {
+        window.localStorage.removeItem("uploadJobId");
+        setJobId(null);
+        setJob(null);
+        setIsProcessing(false);
+        resetProgress();
+        return;
+      }
       if (!response.ok) return;
       const data = (await response.json()) as { job: UploadJob };
       if (!active) return;
