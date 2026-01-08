@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { requireAdminSession } from "@/lib/require-auth";
 
-type RouteContext = {
-  params: { jobId: string };
-};
-
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ jobId: string }> },
+) {
   await requireAdminSession();
+  const { jobId } = await params;
   const job = await prisma.uploadJob.findUnique({
-    where: { id: context.params.jobId },
+    where: { id: jobId },
   });
 
   if (!job) {
