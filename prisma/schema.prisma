@@ -33,6 +33,7 @@ model User {
   updatedAt    DateTime @updatedAt
   managedLines InvoiceLine[]
   comparisonComments ComparisonComment[]
+  uploadJobs   UploadJob[]
 }
 
 model Client {
