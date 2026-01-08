@@ -3,7 +3,8 @@ import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prism
 import { listUnmatched } from "@/modules/invoices/application/listUnmatched";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { formatCurrency } from "@/lib/format";
-import { assignManagerAction, suggestManagersAction } from "./actions";
+import Link from "next/link";
+import { assignManagerAction } from "./actions";
 import ManagerAssignForm from "@/components/admin/ManagerAssignForm";
 import UploadDataPanel from "@/components/admin/UploadDataPanel";
 
@@ -57,15 +58,17 @@ export default async function UploadPage({
               {unmatchedLines.length} linies pendents de casar.
             </p>
           </div>
-          <form action={suggestManagersAction}>
-            <button
-              type="submit"
-              disabled={suggestionsEnabled || unmatchedLines.length === 0}
-              className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-            >
-              {suggestionsEnabled ? "Suggeriments actius" : "Suggerir gestors"}
-            </button>
-          </form>
+          <Link
+            href={suggestionsEnabled ? "/admin/upload" : "/admin/upload?suggest=1"}
+            aria-disabled={unmatchedLines.length === 0}
+            className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${
+              unmatchedLines.length === 0
+                ? "pointer-events-none bg-slate-200 text-slate-500"
+                : "bg-emerald-700 hover:bg-emerald-800"
+            }`}
+          >
+            {suggestionsEnabled ? "Amagar suggeriments" : "Suggerir gestors"}
+          </Link>
         </div>
         <div className="grid gap-3">
           <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_auto] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">

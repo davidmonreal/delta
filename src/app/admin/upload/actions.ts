@@ -1,6 +1,5 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAdminSession } from "@/lib/require-auth";
@@ -167,32 +166,4 @@ export async function finalizeUploadAction(): Promise<{ backfilled: number }> {
     await invoiceRepo.disconnect?.();
     await userRepo.disconnect?.();
   }
-}
-
-export async function suggestManagersAction(): Promise<void> {
-  await requireAdminSession();
-  const invoiceRepo = new PrismaInvoiceRepository();
-  const userRepo = new PrismaUserRepository();
-
-  try {
-    const users = await userRepo.listAll();
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
-
-    await backfillManagers({
-      repo: invoiceRepo,
-      userCandidates,
-    });
-
-    revalidatePath("/admin/upload");
-  } finally {
-    await invoiceRepo.disconnect?.();
-    await userRepo.disconnect?.();
-  }
-
-  redirect("/admin/upload?suggest=1");
 }

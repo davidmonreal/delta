@@ -24,17 +24,6 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       },
     });
 
-    const users = await prisma.user.findMany({
-      select: { id: true, name: true, nameNormalized: true },
-    });
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
-    const userMap = new Map(userCandidates.map((user) => [user.nameNormalized, user.id]));
-
     const clientIds = Array.from(new Set(lines.map((line) => line.clientId)));
     const suggested = clientIds.length
       ? await prisma.invoiceLine.findMany({
@@ -51,20 +40,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       suggested.map((row) => [row.clientId, row.managerUserId]),
     );
 
-    const mapped = lines.map((line) => {
-      const normalized = normalizeName(line.managerNormalized ?? line.manager);
-      const exactUserId = userMap.get(normalized) ?? null;
-      return {
-        id: line.id,
-        date: line.date,
-        manager: line.manager,
-        managerNormalized: normalized,
-        clientName: line.client.nameRaw,
-        serviceName: line.service.conceptRaw,
-        total: line.total,
-        suggestedUserId: exactUserId ?? suggestedByClient.get(line.clientId) ?? null,
-      };
-    });
+    const mapped = lines.map((line) => ({
+      id: line.id,
+      date: line.date,
+      manager: line.manager,
+      managerNormalized: line.managerNormalized,
+      clientName: line.client.nameRaw,
+      serviceName: line.service.conceptRaw,
+      total: line.total,
+      suggestedUserId: suggestedByClient.get(line.clientId) ?? null,
+    }));
 
     return mapped.sort((a, b) => {
       const aEmpty = a.manager.trim().length === 0;
