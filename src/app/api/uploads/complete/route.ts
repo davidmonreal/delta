@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdminSessionApi } from "@/lib/require-auth";
 import { processUploadJob } from "@/modules/ingestion/application/processUploadJob";
+import { waitUntil } from "@vercel/functions";
 
 const CompleteSchema = z.object({
   jobId: z.string().min(1),
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
     data: { blobUrl, status: "processing" },
   });
 
-  void processUploadJob(jobId).catch(() => {});
+  waitUntil(processUploadJob(jobId));
 
   return NextResponse.json({ ok: true });
 }
+
+export const maxDuration = 300;

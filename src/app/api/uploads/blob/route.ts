@@ -4,6 +4,7 @@ import { handleUpload } from "@vercel/blob/client";
 import { prisma } from "@/lib/db";
 import { requireAdminSessionApi } from "@/lib/require-auth";
 import { processUploadJob } from "@/modules/ingestion/application/processUploadJob";
+import { waitUntil } from "@vercel/functions";
 
 type ClientPayload = {
   jobId?: string;
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
           },
         });
 
-        void processUploadJob(jobId).catch(() => {});
+        waitUntil(processUploadJob(jobId));
       },
     });
 
@@ -78,3 +79,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const maxDuration = 300;
