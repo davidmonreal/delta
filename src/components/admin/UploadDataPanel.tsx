@@ -226,7 +226,12 @@ export default function UploadDataPanel() {
       });
 
       if (!startResponse.ok) {
-        setState({ error: "No s'ha pogut iniciar la carrega." });
+        const startBody = await startResponse.json().catch(() => ({}));
+        const message =
+          typeof startBody.error === "string"
+            ? startBody.error
+            : "No s'ha pogut iniciar la carrega.";
+        setState({ error: message });
         setIsProcessing(false);
         return;
       }
@@ -258,7 +263,12 @@ export default function UploadDataPanel() {
       });
 
       if (!completeResponse.ok) {
-        setState({ error: "No s'ha pogut iniciar el processament del fitxer." });
+        const completeBody = await completeResponse.json().catch(() => ({}));
+        const message =
+          typeof completeBody.error === "string"
+            ? completeBody.error
+            : "No s'ha pogut iniciar el processament del fitxer.";
+        setState({ error: message });
         setIsProcessing(false);
         resetProgress();
         return;
@@ -272,7 +282,11 @@ export default function UploadDataPanel() {
       });
     } catch (error) {
       console.error(error);
-      setState({ error: "No s'ha pogut processar el fitxer." });
+      const message =
+        error instanceof Error
+          ? error.message
+          : "No s'ha pogut processar el fitxer.";
+      setState({ error: message });
       setIsProcessing(false);
       resetProgress();
     } finally {

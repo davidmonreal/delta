@@ -9,6 +9,13 @@ type ClientPayload = {
 };
 
 export async function POST(request: Request) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { error: "Falta la variable BLOB_READ_WRITE_TOKEN a l'entorn." },
+      { status: 500 },
+    );
+  }
+
   const body = await request.json();
 
   try {
