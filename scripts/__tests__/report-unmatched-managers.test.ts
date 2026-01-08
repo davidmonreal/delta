@@ -15,8 +15,6 @@ describe("report-unmatched-managers script", () => {
       assignManager: vi.fn(),
       assignManagersForUser: vi.fn(),
       countUnassignedByManagerName: vi.fn(),
-      listDuplicates: vi.fn(),
-      deleteDuplicates: vi.fn(),
       backfillManagers: vi.fn(),
       disconnect: vi.fn(),
     };

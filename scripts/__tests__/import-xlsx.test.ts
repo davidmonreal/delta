@@ -13,6 +13,10 @@ describe("import-xlsx script", () => {
     const ingestRepo: IngestionRepository = {
       upsertClient: vi.fn(),
       upsertService: vi.fn(),
+      findClientsByNormalized: vi.fn(),
+      findServicesByNormalized: vi.fn(),
+      createClients: vi.fn(),
+      createServices: vi.fn(),
       deleteInvoiceLinesBySourceFile: vi.fn(),
       createInvoiceLines: vi.fn(),
       getImportSummary: vi.fn(),
@@ -45,6 +49,10 @@ describe("import-xlsx script", () => {
     const ingestRepo: IngestionRepository = {
       upsertClient: vi.fn(),
       upsertService: vi.fn(),
+      findClientsByNormalized: vi.fn(),
+      findServicesByNormalized: vi.fn(),
+      createClients: vi.fn(),
+      createServices: vi.fn(),
       deleteInvoiceLinesBySourceFile: vi.fn(),
       createInvoiceLines: vi.fn(),
       getImportSummary: vi.fn(),
