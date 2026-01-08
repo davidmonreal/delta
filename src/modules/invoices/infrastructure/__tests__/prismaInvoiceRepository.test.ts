@@ -175,4 +175,89 @@ describeDb("PrismaInvoiceRepository", () => {
       await repo.disconnect?.();
     }
   });
+
+  it("prefers manager match over client suggestion", async () => {
+    const repo = new PrismaInvoiceRepository();
+    const runId = Date.now();
+    const sourceFile = `__test__match__${runId}`;
+    const clientName = `Client ${runId}`;
+    const serviceName = `Service ${runId}`;
+    const assignedEmail = `test-assigned-${runId}@example.com`;
+    const matchEmail = `test-match-${runId}@example.com`;
+
+    const client = await prisma.client.create({
+      data: {
+        nameRaw: clientName,
+        nameNormalized: normalizeName(clientName),
+      },
+    });
+    const service = await prisma.service.create({
+      data: {
+        conceptRaw: serviceName,
+        conceptNormalized: normalizeName(serviceName),
+      },
+    });
+    const assignedUser = await prisma.user.create({
+      data: {
+        email: assignedEmail,
+        name: "Vanesa Lopez",
+        nameNormalized: normalizeName("Vanesa Lopez"),
+        role: "USER",
+        passwordHash: "hashed",
+      },
+    });
+    const matchUser = await prisma.user.create({
+      data: {
+        email: matchEmail,
+        name: "Maite Villagrasa",
+        nameNormalized: normalizeName("Maite Villagrasa"),
+        role: "USER",
+        passwordHash: "hashed",
+      },
+    });
+
+    try {
+      await prisma.invoiceLine.createMany({
+        data: [
+          {
+            date: new Date(),
+            year: 2025,
+            month: 1,
+            units: 1,
+            price: 100,
+            total: 100,
+            manager: "Maite Villagrasa",
+            managerNormalized: normalizeName("Maite Villagrasa"),
+            sourceFile,
+            clientId: client.id,
+            serviceId: service.id,
+          },
+          {
+            date: new Date(),
+            year: 2025,
+            month: 1,
+            units: 1,
+            price: 100,
+            total: 100,
+            manager: "Assigned Manager",
+            managerNormalized: normalizeName("Assigned Manager"),
+            sourceFile,
+            clientId: client.id,
+            serviceId: service.id,
+            managerUserId: assignedUser.id,
+          },
+        ],
+      });
+
+      const result = await repo.listUnmatched();
+      const line = result.find((entry) => entry.manager === "Maite Villagrasa");
+      expect(line?.suggestedUserId).toBe(matchUser.id);
+    } finally {
+      await prisma.invoiceLine.deleteMany({ where: { sourceFile } });
+      await prisma.user.deleteMany({ where: { id: { in: [assignedUser.id, matchUser.id] } } });
+      await prisma.client.deleteMany({ where: { id: client.id } });
+      await prisma.service.deleteMany({ where: { id: service.id } });
+      await repo.disconnect?.();
+    }
+  });
 });

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
-import { matchUserId } from "@/lib/match-user";
 
 import type {
   BackfillProgress,
@@ -25,6 +24,17 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       },
     });
 
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, nameNormalized: true },
+    });
+    const userCandidates = users
+      .filter((user) => user.name)
+      .map((user) => ({
+        id: user.id,
+        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
+      }));
+    const userMap = new Map(userCandidates.map((user) => [user.nameNormalized, user.id]));
+
     const clientIds = Array.from(new Set(lines.map((line) => line.clientId)));
     const suggested = clientIds.length
       ? await prisma.invoiceLine.findMany({
@@ -41,16 +51,20 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       suggested.map((row) => [row.clientId, row.managerUserId]),
     );
 
-    const mapped = lines.map((line) => ({
-      id: line.id,
-      date: line.date,
-      manager: line.manager,
-      managerNormalized: line.managerNormalized,
-      clientName: line.client.nameRaw,
-      serviceName: line.service.conceptRaw,
-      total: line.total,
-      suggestedUserId: suggestedByClient.get(line.clientId) ?? null,
-    }));
+    const mapped = lines.map((line) => {
+      const normalized = line.managerNormalized ?? normalizeName(line.manager);
+      const exactUserId = userMap.get(normalized) ?? null;
+      return {
+        id: line.id,
+        date: line.date,
+        manager: line.manager,
+        managerNormalized: line.managerNormalized,
+        clientName: line.client.nameRaw,
+        serviceName: line.service.conceptRaw,
+        total: line.total,
+        suggestedUserId: exactUserId ?? suggestedByClient.get(line.clientId) ?? null,
+      };
+    });
 
     return mapped.sort((a, b) => {
       const aEmpty = a.manager.trim().length === 0;
@@ -130,18 +144,17 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       select: { id: true, manager: true, managerNormalized: true, managerUserId: true },
     });
 
-    const total = lines.length;
     const progressBatch = 100;
     if (onProgress) {
-      await onProgress({ processed: 0, total });
+      await onProgress({ processed: 0, total: lines.length });
     }
 
     let updated = 0;
+    const userMap = new Map(userCandidates.map((user) => [user.nameNormalized, user.id]));
     let processed = 0;
     for (const line of lines) {
       const normalized = line.managerNormalized ?? normalizeName(line.manager);
-      const match = matchUserId(line.manager, userCandidates);
-      const userId = match.userId;
+      const userId = userMap.get(normalized) ?? null;
       await prisma.invoiceLine.update({
         where: { id: line.id },
         data: {
@@ -153,8 +166,8 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         updated += 1;
       }
       processed += 1;
-      if (onProgress && (processed % progressBatch === 0 || processed === total)) {
-        await onProgress({ processed, total });
+      if (onProgress && (processed % progressBatch === 0 || processed === lines.length)) {
+        await onProgress({ processed, total: lines.length });
       }
     }
 

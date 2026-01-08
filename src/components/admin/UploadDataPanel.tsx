@@ -111,7 +111,13 @@ export default function UploadDataPanel() {
   const updateFromJob = (nextJob: UploadJob) => {
     setJob(nextJob);
     setIsProcessing(
-      ["pending", "uploading", "processing", "finalizing", "retrying"].includes(
+      [
+        "pending",
+        "uploading",
+        "processing",
+        "finalizing",
+        "retrying",
+      ].includes(
         nextJob.status,
       ),
     );
@@ -132,7 +138,7 @@ export default function UploadDataPanel() {
     } else if (nextJob.status === "finalizing") {
       setProgress({
         status: "finalizing",
-        step: "Assignant gestors",
+        step: "Assignant gestors (coincidencia exacta)",
         processed: nextJob.processedRows,
         total: nextJob.totalRows,
       });
