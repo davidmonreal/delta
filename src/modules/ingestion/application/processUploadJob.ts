@@ -1,13 +1,9 @@
 import * as XLSX from "xlsx";
 
 import { prisma } from "@/lib/db";
-import { normalizeName } from "@/lib/normalize";
-import { backfillManagers } from "@/modules/invoices/application/backfillManagers";
-import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
 import { importRowsWithSummary, type ImportRowError } from "@/modules/ingestion/application/importInvoiceLines";
 import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/headerUtils";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
-import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 
 const BATCH_SIZE = 200;
 const MAX_ERRORS = 50;
@@ -53,9 +49,6 @@ export async function processUploadJob(jobId: string) {
   });
 
   const ingestRepo = new PrismaIngestionRepository();
-  const userRepo = new PrismaUserRepository();
-  const invoiceRepo = new PrismaInvoiceRepository();
-
   try {
     const response = await fetch(job.blobUrl);
     if (!response.ok) {
@@ -98,14 +91,6 @@ export async function processUploadJob(jobId: string) {
       });
       return;
     }
-
-    const users = await userRepo.listAll();
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
 
     const totalRows = rows.length;
     await prisma.uploadJob.update({
@@ -153,7 +138,6 @@ export async function processUploadJob(jobId: string) {
         sourceFile,
         reset: false,
         repo: ingestRepo,
-        userCandidates,
         strict: true,
       });
 
@@ -186,31 +170,6 @@ export async function processUploadJob(jobId: string) {
       });
     }
 
-    await prisma.uploadJob.update({
-      where: { id: jobId },
-      data: { status: "finalizing", progress: 0, processedRows: 0, totalRows: 0 },
-    });
-
-    const assignedByName = await backfillManagers({
-      repo: invoiceRepo,
-      userCandidates,
-      onProgress: async ({ processed, total }) => {
-        const progress = total
-          ? Math.min(100, Math.round((processed / total) * 100))
-          : 0;
-        await prisma.uploadJob.update({
-          where: { id: jobId },
-          data: {
-            processedRows: processed,
-            totalRows: total,
-            progress,
-          },
-        });
-      },
-    });
-    summary.assigned += assignedByName;
-    summary.unmatched = Math.max(0, summary.imported - summary.assigned);
-    summary.backfilled = assignedByName;
     summary.rowErrors = rowErrors;
 
     await prisma.uploadJob.update({
@@ -231,7 +190,5 @@ export async function processUploadJob(jobId: string) {
     });
   } finally {
     await ingestRepo.disconnect?.();
-    await userRepo.disconnect?.();
-    await invoiceRepo.disconnect?.();
   }
 }

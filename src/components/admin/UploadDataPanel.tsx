@@ -104,6 +104,7 @@ export default function UploadDataPanel() {
   const [job, setJob] = useState<UploadJob | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [hasFile, setHasFile] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const resetProgress = () => {
     setProgress({ status: "idle", step: "", processed: 0, total: 0 });
@@ -146,6 +147,7 @@ export default function UploadDataPanel() {
     } else if (nextJob.status === "done" || nextJob.status === "error") {
       resetProgress();
       setHasFile(false);
+      setSelectedFileName(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -239,12 +241,14 @@ export default function UploadDataPanel() {
       setState({ error: "Selecciona un fitxer per pujar." });
       setIsProcessing(false);
       setHasFile(false);
+      setSelectedFileName(null);
       return;
     }
     if (!file.name || file.size === 0) {
       setState({ error: "El fitxer esta buit." });
       setIsProcessing(false);
       setHasFile(false);
+      setSelectedFileName(null);
       return;
     }
 
@@ -253,6 +257,7 @@ export default function UploadDataPanel() {
       setState({ error: "El fitxer ha de ser Excel o CSV." });
       setIsProcessing(false);
       setHasFile(false);
+      setSelectedFileName(null);
       return;
     }
 
@@ -335,6 +340,7 @@ export default function UploadDataPanel() {
       setIsProcessing(false);
       resetProgress();
       setHasFile(false);
+      setSelectedFileName(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -355,18 +361,36 @@ export default function UploadDataPanel() {
       </div>
       <form className="mt-4 flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            name="file"
-            accept=".xlsx,.csv"
-            required
-            disabled={isProcessing}
-            ref={fileInputRef}
-            onChange={(event) => {
-              setHasFile(Boolean(event.target.files?.[0]));
-            }}
-            className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-slate-200 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-300"
-          />
+          <div className="flex w-full max-w-sm items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <label
+              htmlFor="upload-file"
+              className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${
+                isProcessing
+                  ? "cursor-not-allowed bg-slate-300"
+                  : "bg-emerald-700 hover:bg-emerald-800"
+              }`}
+            >
+              Choose file
+            </label>
+            <span className="truncate text-sm text-slate-600">
+              {selectedFileName ?? "Cap fitxer seleccionat"}
+            </span>
+            <input
+              id="upload-file"
+              type="file"
+              name="file"
+              accept=".xlsx,.csv"
+              required
+              disabled={isProcessing}
+              ref={fileInputRef}
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setHasFile(Boolean(file));
+                setSelectedFileName(file?.name ?? null);
+              }}
+              className="sr-only"
+            />
+          </div>
           <button
             type="submit"
             disabled={isProcessing || !hasFile}
