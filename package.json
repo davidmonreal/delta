@@ -14,6 +14,7 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
+    "db:clear": "tsx scripts/clear-data.ts",
     "import:xlsx": "tsx scripts/import-xlsx.ts",
     "user:create": "tsx scripts/create-user.ts",
     "managers:reconcile": "tsx scripts/reconcile-managers.ts",

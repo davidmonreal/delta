@@ -9,6 +9,11 @@ export type UnmatchedInvoiceLine = {
   suggestedUserId?: number | null;
 };
 
+export type BackfillProgress = {
+  processed: number;
+  total: number;
+};
+
 export interface InvoiceRepository {
   listUnmatched(): Promise<UnmatchedInvoiceLine[]>;
   assignManager(lineId: number, userId: number): Promise<void>;
@@ -19,6 +24,7 @@ export interface InvoiceRepository {
   countUnassignedByManagerName(params: { nameNormalized: string }): Promise<number>;
   backfillManagers(params: {
     userCandidates: { id: number; nameNormalized: string }[];
+    onProgress?: (progress: BackfillProgress) => Promise<void> | void;
   }): Promise<number>;
   disconnect?: () => Promise<void>;
 }

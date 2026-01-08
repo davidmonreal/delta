@@ -188,12 +188,25 @@ export async function processUploadJob(jobId: string) {
 
     await prisma.uploadJob.update({
       where: { id: jobId },
-      data: { status: "finalizing" },
+      data: { status: "finalizing", progress: 0, processedRows: 0, totalRows: 0 },
     });
 
     const assignedByName = await backfillManagers({
       repo: invoiceRepo,
       userCandidates,
+      onProgress: async ({ processed, total }) => {
+        const progress = total
+          ? Math.min(100, Math.round((processed / total) * 100))
+          : 0;
+        await prisma.uploadJob.update({
+          where: { id: jobId },
+          data: {
+            processedRows: processed,
+            totalRows: total,
+            progress,
+          },
+        });
+      },
     });
     summary.assigned += assignedByName;
     summary.unmatched = Math.max(0, summary.imported - summary.assigned);

@@ -2,7 +2,11 @@ import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
 import { matchUserId } from "@/lib/match-user";
 
-import type { InvoiceRepository, UnmatchedInvoiceLine } from "../ports/invoiceRepository";
+import type {
+  BackfillProgress,
+  InvoiceRepository,
+  UnmatchedInvoiceLine,
+} from "../ports/invoiceRepository";
 
 export class PrismaInvoiceRepository implements InvoiceRepository {
   async listUnmatched(): Promise<UnmatchedInvoiceLine[]> {
@@ -114,8 +118,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
 
   async backfillManagers({
     userCandidates,
+    onProgress,
   }: {
     userCandidates: { id: number; nameNormalized: string }[];
+    onProgress?: (progress: BackfillProgress) => Promise<void> | void;
   }) {
     const lines = await prisma.invoiceLine.findMany({
       where: {
@@ -124,7 +130,14 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       select: { id: true, manager: true, managerNormalized: true, managerUserId: true },
     });
 
+    const total = lines.length;
+    const progressBatch = 100;
+    if (onProgress) {
+      await onProgress({ processed: 0, total });
+    }
+
     let updated = 0;
+    let processed = 0;
     for (const line of lines) {
       const normalized = line.managerNormalized ?? normalizeName(line.manager);
       const match = matchUserId(line.manager, userCandidates);
@@ -138,6 +151,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       });
       if (line.managerUserId == null && userId) {
         updated += 1;
+      }
+      processed += 1;
+      if (onProgress && (processed % progressBatch === 0 || processed === total)) {
+        await onProgress({ processed, total });
       }
     }
 

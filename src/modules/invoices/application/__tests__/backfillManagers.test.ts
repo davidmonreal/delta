@@ -29,6 +29,7 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     userCandidates,
   }: {
     userCandidates: { id: number; nameNormalized: string }[];
+    onProgress?: (progress: { processed: number; total: number }) => Promise<void> | void;
   }) {
     let updated = 0;
     for (const line of this.lines) {
