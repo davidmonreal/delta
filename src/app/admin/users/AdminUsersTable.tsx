@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User } from "lucide-react";
 
 import { EditIconButton, IconButton } from "@/components/common/IconButton";
 import { deleteUserAction, updateUserAction } from "@/app/admin/users/actions";
 import type { UserRowDto } from "@/modules/users/dto/userDto";
 import AdminUserFormModal from "@/app/admin/users/AdminUserFormModal";
+import PaginationControls from "@/components/common/PaginationControls";
 
 type AdminUsersTableProps = {
   users: UserRowDto[];
@@ -18,6 +19,24 @@ export default function AdminUsersTable({
   allowSuperadmin,
 }: AdminUsersTableProps) {
   const [editingUser, setEditingUser] = useState<UserRowDto | null>(null);
+  const pageSize = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = users.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [users]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <>
@@ -29,7 +48,7 @@ export default function AdminUsersTable({
           <span>Data</span>
           <span className="text-right">Accions</span>
         </div>
-        {users.map((user) => (
+        {pagedUsers.map((user) => (
           <div
             key={user.id}
             className="grid grid-cols-[1.4fr_2fr_1fr_1fr_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
@@ -53,6 +72,12 @@ export default function AdminUsersTable({
             </div>
           </div>
         ))}
+        <PaginationControls
+          page={currentPage}
+          totalItems={users.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
       </div>
       <AdminUserFormModal
         isOpen={Boolean(editingUser)}

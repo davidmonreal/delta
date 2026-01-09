@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { UnmatchedInvoiceLine } from "@/modules/invoices/ports/invoiceRepository";
 import { formatCurrency } from "@/lib/format";
 import ManagerAssignForm from "@/components/admin/ManagerAssignForm";
+import PaginationControls from "@/components/common/PaginationControls";
 
 type UserOption = {
   id: number;
@@ -28,6 +29,8 @@ export default function UnmatchedInvoiceTable({
   action,
 }: UnmatchedInvoiceTableProps) {
   const [direction, setDirection] = useState<SortDirection>("asc");
+  const pageSize = 20;
+  const [page, setPage] = useState(1);
 
   const sortedLines = useMemo(() => {
     const withIndex = lines.map((line, index) => ({ line, index }));
@@ -40,6 +43,23 @@ export default function UnmatchedInvoiceTable({
       })
       .map(({ line }) => line);
   }, [lines, direction]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedLines.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedLines = sortedLines.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [lines, direction]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const arrow = direction === "asc" ? "↑" : "↓";
 
@@ -61,7 +81,7 @@ export default function UnmatchedInvoiceTable({
         <span className="text-right">Total</span>
         <span className="text-right">Assignar</span>
       </div>
-      {sortedLines.map((line) => (
+      {pagedLines.map((line) => (
         <div
           key={line.id}
           className={`grid ${gridClass} items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800`}
@@ -84,6 +104,12 @@ export default function UnmatchedInvoiceTable({
           </div>
         </div>
       ))}
+      <PaginationControls
+        page={currentPage}
+        totalItems={sortedLines.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

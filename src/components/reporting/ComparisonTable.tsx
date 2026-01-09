@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { formatCurrency, formatPercent, formatUnits } from "@/lib/format";
 import type { ComparisonRowViewModel } from "@/modules/reporting/dto/reportingViewModel";
 import ComparisonRowComment from "@/components/reporting/ComparisonRowComment";
 import { useComparisonSort } from "@/components/reporting/useComparisonSort";
 import type { SortKey } from "@/components/reporting/sortComparisonRows";
+import PaginationControls from "@/components/common/PaginationControls";
 
 type ComparisonTableProps = {
   rows: ComparisonRowViewModel[];
@@ -32,10 +34,28 @@ export default function ComparisonTable({
   firstColumnLabel,
 }: ComparisonTableProps) {
   const { sortState, sortedRows, handleSort } = useComparisonSort(rows);
+  const pageSize = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = sortedRows.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
   const gridClass = showPositive
     ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))_90px]"
     : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))_90px]";
   const disableDeltaSort = showEqual || showMissing || showNew;
+
+  useEffect(() => {
+    setPage(1);
+  }, [rows, sortState?.key, sortState?.direction]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const renderSubtitle = (subtitle?: string) => {
     if (!subtitle) return null;
@@ -101,7 +121,7 @@ export default function ComparisonTable({
         ) : null}
         <span className="text-right">Comentari</span>
       </div>
-      {sortedRows.map((row) => (
+      {pagedRows.map((row) => (
         <div
           key={row.id}
           className={`grid items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 ${gridClass}`}
@@ -147,6 +167,12 @@ export default function ComparisonTable({
           </div>
         </div>
       ))}
+      <PaginationControls
+        page={currentPage}
+        totalItems={sortedRows.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

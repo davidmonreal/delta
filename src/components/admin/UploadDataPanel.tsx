@@ -21,6 +21,7 @@ import {
   startUploadJob,
   uploadFileToBlob,
 } from "@/components/admin/uploadGateway";
+import PaginationControls from "@/components/common/PaginationControls";
 
 function ProgressPanel({ progress }: { progress: UploadProgress }) {
   if (progress.status === "idle") return null;
@@ -69,6 +70,8 @@ export default function UploadDataPanel() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [hasFile, setHasFile] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const pageSize = 20;
+  const [errorsPage, setErrorsPage] = useState(1);
 
   const resetProgress = () => {
     setProgress({ status: "idle", step: "", processed: 0, total: 0 });
@@ -148,6 +151,10 @@ export default function UploadDataPanel() {
       if (interval) clearInterval(interval);
     };
   }, [jobId]);
+
+  useEffect(() => {
+    setErrorsPage(1);
+  }, [state.rowErrors]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -335,12 +342,24 @@ export default function UploadDataPanel() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             <p className="font-semibold">Errors detectats:</p>
             <ul className="mt-2 space-y-1">
-              {state.rowErrors.map((error) => (
+              {state.rowErrors
+                .slice(
+                  (errorsPage - 1) * pageSize,
+                  errorsPage * pageSize,
+                )
+                .map((error) => (
                 <li key={`${error.row}-${error.message}`}>
                   Linia {error.row}: {error.message}
                 </li>
               ))}
             </ul>
+            <PaginationControls
+              page={errorsPage}
+              totalItems={state.rowErrors.length}
+              pageSize={pageSize}
+              onPageChange={setErrorsPage}
+              className="mt-3"
+            />
           </div>
         ) : null}
       </form>

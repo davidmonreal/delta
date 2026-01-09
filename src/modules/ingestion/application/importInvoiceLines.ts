@@ -234,19 +234,6 @@ export async function buildInvoiceLines({
     return value ?? 0;
   };
 
-  const resolveId = async (
-    map: Map<string, number>,
-    normalized: string,
-    upsert: () => Promise<number>,
-  ) => {
-    let id = map.get(normalized);
-    if (!id) {
-      id = await upsert();
-      map.set(normalized, id);
-    }
-    return id;
-  };
-
   for (const [index, row] of rows.entries()) {
     const rowNumber = index + 2;
     const dateValue = getValue(row, headerMap, "FECHA");
@@ -291,12 +278,16 @@ export async function buildInvoiceLines({
 
     const clientNormalized = normalizeValue(clientRaw);
     const serviceNormalized = normalizeValue(conceptRaw);
-    const clientId = await resolveId(clientIdMap, clientNormalized, () =>
-      repo.upsertClient(clientRaw, clientNormalized),
-    );
-    const serviceId = await resolveId(serviceIdMap, serviceNormalized, () =>
-      repo.upsertService(conceptRaw, serviceNormalized),
-    );
+    const clientId = clientIdMap.get(clientNormalized);
+    if (!clientId) {
+      recordError(rowNumber, "Client desconegut.");
+      continue;
+    }
+    const serviceId = serviceIdMap.get(serviceNormalized);
+    if (!serviceId) {
+      recordError(rowNumber, "Servei desconegut.");
+      continue;
+    }
 
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
     const managerNormalized = manager.length ? normalizeName(manager) : null;

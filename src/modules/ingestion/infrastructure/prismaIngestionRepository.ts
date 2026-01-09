@@ -59,8 +59,14 @@ export class PrismaIngestionRepository implements IngestionRepository {
 
   async createInvoiceLines(lines: InvoiceLineInput[]) {
     if (lines.length === 0) return 0;
-    const result = await prisma.invoiceLine.createMany({ data: lines });
-    return result.count;
+    const chunkSize = 1000;
+    let inserted = 0;
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      const chunk = lines.slice(i, i + chunkSize);
+      const result = await prisma.invoiceLine.createMany({ data: chunk });
+      inserted += result.count;
+    }
+    return inserted;
   }
 
   async getImportSummary(sourceFile: string) {

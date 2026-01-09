@@ -103,15 +103,17 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       select: { id: true, manager: true },
     });
 
-    let updated = direct.count;
-    for (const line of needsNormalization) {
-      if (normalizeName(line.manager) !== nameNormalized) continue;
-      await prisma.invoiceLine.update({
-        where: { id: line.id },
+    const idsToNormalize = needsNormalization
+      .filter((line) => normalizeName(line.manager) === nameNormalized)
+      .map((line) => line.id);
+    if (idsToNormalize.length) {
+      await prisma.invoiceLine.updateMany({
+        where: { id: { in: idsToNormalize } },
         data: { managerUserId: userId, managerNormalized: nameNormalized },
       });
-      updated += 1;
     }
+
+    const updated = direct.count + idsToNormalize.length;
 
     return updated;
   }
@@ -150,21 +152,61 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
 
     let updated = 0;
     let processed = 0;
-    for (const line of lines) {
-      const normalized = normalizeName(line.managerNormalized ?? line.manager);
-      const match = matchUserId(line.manager, userCandidates);
-      const userId = match.userId ?? null;
-      await prisma.invoiceLine.update({
-        where: { id: line.id },
-        data: {
-          managerUserId: line.managerUserId ?? userId ?? null,
-          managerNormalized: normalized,
-        },
-      });
-      if (line.managerUserId == null && userId) {
-        updated += 1;
+    const matchCache = new Map<string, number | null>();
+    const updateBatchSize = 200;
+    for (let start = 0; start < lines.length; start += updateBatchSize) {
+      const batch = lines.slice(start, start + updateBatchSize);
+      const updatesByKey = new Map<
+        string,
+        { ids: number[]; managerUserId: number | null; managerNormalized: string }
+      >();
+      const normalizeOnlyByValue = new Map<string, number[]>();
+
+      for (const line of batch) {
+        const normalized = normalizeName(line.managerNormalized ?? line.manager);
+        if (line.managerUserId == null) {
+          let userId = matchCache.get(normalized);
+          if (userId === undefined) {
+            const match = matchUserId(normalized, userCandidates);
+            userId = match.userId ?? null;
+            matchCache.set(normalized, userId);
+          }
+          if (userId) {
+            updated += 1;
+          }
+          const key = `${normalized}::${userId ?? "null"}`;
+          const entry = updatesByKey.get(key) ?? {
+            ids: [],
+            managerUserId: userId,
+            managerNormalized: normalized,
+          };
+          entry.ids.push(line.id);
+          updatesByKey.set(key, entry);
+        } else if (line.managerNormalized !== normalized) {
+          const ids = normalizeOnlyByValue.get(normalized) ?? [];
+          ids.push(line.id);
+          normalizeOnlyByValue.set(normalized, ids);
+        }
       }
-      processed += 1;
+
+      for (const entry of updatesByKey.values()) {
+        await prisma.invoiceLine.updateMany({
+          where: { id: { in: entry.ids } },
+          data: {
+            managerUserId: entry.managerUserId,
+            managerNormalized: entry.managerNormalized,
+          },
+        });
+      }
+
+      for (const [normalized, ids] of normalizeOnlyByValue.entries()) {
+        await prisma.invoiceLine.updateMany({
+          where: { id: { in: ids } },
+          data: { managerNormalized: normalized },
+        });
+      }
+
+      processed += batch.length;
       if (onProgress && (processed % progressBatch === 0 || processed === lines.length)) {
         await onProgress({ processed, total: lines.length });
       }

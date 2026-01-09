@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 
 import { requireSession } from "@/lib/require-auth";
-import { formatCurrency, formatUnits } from "@/lib/format";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
@@ -12,6 +11,7 @@ import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
 import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
 import PercentFilterForm from "@/components/reporting/PercentFilterForm";
+import ClientInvoiceGroups from "@/components/reporting/ClientInvoiceGroups";
 
 type SearchParams = {
   year?: string;
@@ -186,43 +186,7 @@ export default async function ClientPage({
         {invoiceGroups.length === 0 ? (
           <p className="text-sm text-slate-500">No hi ha línies per mostrar.</p>
         ) : (
-          <div className="grid gap-6">
-            {invoiceGroups.map((group) => (
-              <div key={`${group.year}-${group.month}`} className="space-y-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  {monthLabels[group.month - 1] ?? group.month}/{group.year}
-                </div>
-                <div className="grid gap-2">
-                  {group.lines.map((line) => (
-                    <div
-                      key={line.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {line.serviceName}
-                        </p>
-                        {line.managerName ? (
-                          <p className="text-xs text-slate-500">{line.managerName}</p>
-                        ) : null}
-                        <p className="text-xs text-slate-500">
-                          {[line.series, line.albaran, line.numero].filter(Boolean).join("-")}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          {formatCurrency(line.total)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {formatUnits(line.units)} unitats
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ClientInvoiceGroups groups={invoiceGroups} monthLabels={monthLabels} />
         )}
       </section>
     </div>
