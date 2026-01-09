@@ -252,7 +252,7 @@ export async function buildInvoiceLines({
     const dateValue = getValue(row, headerMap, "FECHA");
     const date = parseDate(dateValue);
     if (!date) {
-      recordError(rowNumber, "Data invalida.");
+      recordError(rowNumber, "Data invàlida.");
       continue;
     }
 
@@ -266,17 +266,17 @@ export async function buildInvoiceLines({
       continue;
     }
 
-    const unitsValue = readNumberValue(row, rowNumber, "UNIDADES", "Unitats invalides.");
+    const unitsValue = readNumberValue(row, rowNumber, "UNIDADES", "Unitats invàlides.");
     if (unitsValue === null) {
       continue;
     }
 
-    const priceValue = readNumberValue(row, rowNumber, "PRECIO", "Preu invalid.");
+    const priceValue = readNumberValue(row, rowNumber, "PRECIO", "Preu invàlid.");
     if (priceValue === null) {
       continue;
     }
 
-    const totalValue = readNumberValue(row, rowNumber, "TOTAL", "Total invalid.");
+    const totalValue = readNumberValue(row, rowNumber, "TOTAL", "Total invàlid.");
     if (totalValue === null) {
       continue;
     }
@@ -300,12 +300,12 @@ export async function buildInvoiceLines({
 
     const manager = String(getValue(row, headerMap, "FACTURA") ?? "").trim();
     const managerNormalized = manager.length ? normalizeName(manager) : null;
-    const series = readOptionalText(row, rowNumber, "SERIE", "Falta la serie.");
+    const series = readOptionalText(row, rowNumber, "SERIE", "Falta la sèrie.");
     if (!series) {
       continue;
     }
 
-    const albaran = readOptionalText(row, rowNumber, "ALBARAN", "Falta l'albara.");
+    const albaran = readOptionalText(row, rowNumber, "ALBARAN", "Falta l'albarà.");
     if (!albaran) {
       continue;
     }

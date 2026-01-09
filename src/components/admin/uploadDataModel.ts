@@ -96,7 +96,7 @@ export function getProgressUpdate(job: UploadJob): UploadProgress | null {
   if (job.status === "finalizing") {
     return {
       status: "finalizing",
-      step: "Assignant gestors (coincidencia exacta)",
+      step: "Assignant gestors (coincidència exacta)",
       processed: job.processedRows,
       total: job.totalRows,
     };

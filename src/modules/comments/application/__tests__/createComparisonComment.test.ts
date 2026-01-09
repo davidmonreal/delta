@@ -31,7 +31,7 @@ describe("createComparisonComment", () => {
       repo,
     });
 
-    expect(result.error).toBe("Usuari invalid.");
+    expect(result.error).toBe("Usuari invàlid.");
     expect(repo.created).toHaveLength(0);
   });
 

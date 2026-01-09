@@ -55,10 +55,10 @@ export async function createUser({
   });
 
   if (assigned > 0) {
-    return { success: `Usuari creat correctament. ${assigned} linies assignades.` };
+    return { success: `Usuari creat correctament. ${assigned} línies assignades.` };
   }
 
   return {
-    success: "Usuari creat correctament. No te cap linia assignada encara.",
+    success: "Usuari creat correctament. No té cap línia assignada encara.",
   };
 }

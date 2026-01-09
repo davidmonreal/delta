@@ -5,6 +5,9 @@ type ShowLinksProps = {
   year: number;
   month: number;
   activeShow: string;
+  showPercentUnder: boolean;
+  showPercentEqual: boolean;
+  showPercentOver: boolean;
 };
 
 export default function ShowLinks({
@@ -12,48 +15,54 @@ export default function ShowLinks({
   year,
   month,
   activeShow,
+  showPercentUnder,
+  showPercentEqual,
+  showPercentOver,
 }: ShowLinksProps) {
   const linkClass = (value: string) =>
     value === activeShow
-      ? "rounded-full bg-emerald-200 px-2 py-0.5 font-semibold text-emerald-900"
-      : "text-emerald-800";
+      ? "rounded-full bg-emerald-700 px-3 py-1 text-white shadow-sm"
+      : "rounded-full border border-emerald-200 bg-white px-3 py-1 text-emerald-800 hover:bg-emerald-50";
+  const percentParams = new URLSearchParams({
+    ...(showPercentUnder ? { pctUnder: "1" } : {}),
+    ...(showPercentEqual ? { pctEqual: "1" } : {}),
+    ...(showPercentOver ? { pctOver: "1" } : {}),
+  });
+  const percentSuffix = percentParams.toString();
+  const percentQuery = percentSuffix ? `&${percentSuffix}` : "";
 
   return (
-    <span className="rounded-full bg-emerald-50 px-4 py-1 text-xs font-semibold text-emerald-800">
+    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
       <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=neg`}
+        href={`${baseHref}?year=${year}&month=${month}&show=neg${percentQuery}`}
         className={linkClass("neg")}
       >
-        Nomes negatives
+        Només negatives
       </Link>
-      {" | "}
       <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=eq`}
+        href={`${baseHref}?year=${year}&month=${month}&show=eq${percentQuery}`}
         className={linkClass("eq")}
       >
         Iguals
       </Link>
-      {" | "}
       <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=pos`}
+        href={`${baseHref}?year=${year}&month=${month}&show=pos${percentQuery}`}
         className={linkClass("pos")}
       >
-        Mes altes
+        Més altes
       </Link>
-      {" | "}
       <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=miss`}
+        href={`${baseHref}?year=${year}&month=${month}&show=miss${percentQuery}`}
         className={linkClass("miss")}
       >
         No fets
       </Link>
-      {" | "}
       <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=new`}
+        href={`${baseHref}?year=${year}&month=${month}&show=new${percentQuery}`}
         className={linkClass("new")}
       >
         Nous
       </Link>
-    </span>
+    </div>
   );
 }

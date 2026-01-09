@@ -122,7 +122,7 @@ export default function ComparisonRowComment({
                 {label}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Explica per que hi ha aquesta diferencia.
+                Explica per què hi ha aquesta diferència.
               </p>
             </div>
             <div className="mt-5 space-y-4">
@@ -170,7 +170,7 @@ export default function ComparisonRowComment({
                 onClick={() => handleSubmit("VALIDATE_DIFFERENCE")}
                 className="rounded-full bg-emerald-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
-                Validar diferencia
+                Validar diferència
               </button>
             </div>
           </div>

@@ -40,16 +40,29 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     const suggestedByClient = new Map(
       suggested.map((row) => [row.clientId, row.managerUserId]),
     );
+    const recentManagers = clientIds.length
+      ? await prisma.invoiceLine.findMany({
+          where: { clientId: { in: clientIds } },
+          orderBy: [{ date: "desc" }],
+          distinct: ["clientId"],
+          select: { clientId: true, manager: true },
+        })
+      : [];
+    const recentManagerByClient = new Map(
+      recentManagers.map((row) => [row.clientId, row.manager]),
+    );
 
     const mapped = lines.map((line) => ({
       id: line.id,
       date: line.date,
       manager: line.manager,
       managerNormalized: line.managerNormalized,
+      clientId: line.clientId,
       clientName: line.client.nameRaw,
       serviceName: line.service.conceptRaw,
       total: line.total,
       suggestedUserId: suggestedByClient.get(line.clientId) ?? null,
+      recentManagerName: recentManagerByClient.get(line.clientId) ?? null,
     }));
 
     return mapped.sort((a, b) => {

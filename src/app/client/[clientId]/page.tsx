@@ -11,11 +11,15 @@ import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
 import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
+import PercentFilterForm from "@/components/reporting/PercentFilterForm";
 
 type SearchParams = {
   year?: string;
   month?: string;
   show?: string;
+  pctUnder?: string;
+  pctEqual?: string;
+  pctOver?: string;
 };
 
 export default async function ClientPage({
@@ -39,6 +43,9 @@ export default async function ClientPage({
         year: resolvedSearchParams.year,
         month: resolvedSearchParams.month,
         show: resolvedSearchParams.show,
+        pctUnder: resolvedSearchParams.pctUnder,
+        pctEqual: resolvedSearchParams.pctEqual,
+        pctOver: resolvedSearchParams.pctOver,
       },
       rawClientId: resolvedParams.clientId,
       managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
@@ -64,6 +71,9 @@ export default async function ClientPage({
     showPositive,
     showMissing,
     showNew,
+    showPercentUnder,
+    showPercentEqual,
+    showPercentOver,
   } = filters;
   const monthLabels = [
     "Gener",
@@ -91,27 +101,43 @@ export default async function ClientPage({
             {client.nameRaw}
           </h1>
           <p className="mt-2 text-base text-slate-500">
-            Diferencies per servei ({month}/{previousYear} vs {month}/{year})
+            Diferències per servei ({month}/{previousYear} vs {month}/{year})
           </p>
         </div>
         <FiltersForm year={year} month={month} show={show} />
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-          <span>
+        <div className="mb-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-start lg:justify-between">
+          <span className="text-base font-semibold text-slate-700">
             {showEqual
               ? "Resultats amb preu unitari igual"
               : "Resultats per preu unitari"}{" "}
             ({summaries.length})
             {showNegative ? " negatives" : ""}
           </span>
-          <ShowLinks
-            baseHref={`/client/${clientId}`}
-            year={year}
-            month={month}
-            activeShow={show}
-          />
+          <div className="flex flex-col items-end gap-2">
+            <ShowLinks
+              baseHref={`/client/${clientId}`}
+              year={year}
+              month={month}
+              activeShow={show}
+              showPercentUnder={showPercentUnder}
+              showPercentEqual={showPercentEqual}
+              showPercentOver={showPercentOver}
+            />
+            {showPositive ? (
+              <PercentFilterForm
+                baseHref={`/client/${clientId}`}
+                year={year}
+                month={month}
+                show={show}
+                showPercentUnder={showPercentUnder}
+                showPercentEqual={showPercentEqual}
+                showPercentOver={showPercentOver}
+              />
+            ) : null}
+          </div>
         </div>
         <ComparisonTable
           rows={summaries.map((row) => ({
@@ -140,7 +166,7 @@ export default async function ClientPage({
           firstColumnLabel="Servei"
         />
         <ComparisonSummaryRow
-          label="Total diferencia"
+          label="Total diferència"
           value={sumDeltaVisible}
           showPositive={showPositive}
         />
@@ -153,12 +179,12 @@ export default async function ClientPage({
               Altres factures per mes
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Detall per linia de les altres factures del client.
+              Detall per línia de les altres factures del client.
             </p>
           </div>
         </div>
         {invoiceGroups.length === 0 ? (
-          <p className="text-sm text-slate-500">No hi ha linies per mostrar.</p>
+          <p className="text-sm text-slate-500">No hi ha línies per mostrar.</p>
         ) : (
           <div className="grid gap-6">
             {invoiceGroups.map((group) => (

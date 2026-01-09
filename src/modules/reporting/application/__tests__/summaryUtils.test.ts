@@ -51,6 +51,9 @@ describe("summaryUtils", () => {
       showPositive: false,
       showMissing: false,
       showNew: false,
+      showPercentUnder: true,
+      showPercentEqual: false,
+      showPercentOver: true,
     };
 
     expect(filterSummaries(summaries, baseFilters)).toHaveLength(1);
@@ -83,6 +86,9 @@ describe("summaryUtils", () => {
       showPositive: false,
       showMissing: false,
       showNew: false,
+      showPercentUnder: true,
+      showPercentEqual: false,
+      showPercentOver: true,
     };
     const sorted = sortSummaries(
       [
@@ -108,6 +114,9 @@ describe("summaryUtils", () => {
       showPositive: true,
       showMissing: false,
       showNew: false,
+      showPercentUnder: true,
+      showPercentEqual: false,
+      showPercentOver: true,
     };
     const sorted = sortSummaries(
       [

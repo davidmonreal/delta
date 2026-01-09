@@ -8,9 +8,9 @@ describe("report-unmatched-managers script", () => {
   it("logs top unmatched managers and flags existing users", async () => {
     const invoiceRepo: InvoiceRepository = {
       listUnmatched: vi.fn().mockResolvedValue([
-        { id: 1, manager: "User A", managerNormalized: null },
-        { id: 2, manager: "User A", managerNormalized: null },
-        { id: 3, manager: "User B", managerNormalized: null },
+        { id: 1, manager: "User A", managerNormalized: null, clientId: 1 },
+        { id: 2, manager: "User A", managerNormalized: null, clientId: 1 },
+        { id: 3, manager: "User B", managerNormalized: null, clientId: 2 },
       ]),
       assignManager: vi.fn(),
       assignManagersForUser: vi.fn(),

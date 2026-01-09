@@ -138,7 +138,7 @@ export function SearchableDropdownSelect<T extends string | number>({
                 })
               ) : (
                 <div className="px-4 py-3 text-sm text-slate-400">
-                  No hi ha coincidencies
+                  No hi ha coincidències
                 </div>
               )}
             </div>

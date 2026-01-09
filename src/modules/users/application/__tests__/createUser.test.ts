@@ -80,7 +80,7 @@ describe("createUser", () => {
       invoiceRepo,
     });
 
-    expect(result.success).toBe("Usuari creat correctament. 2 linies assignades.");
+    expect(result.success).toBe("Usuari creat correctament. 2 línies assignades.");
     const created = await repo.findByEmail("user@example.com");
     expect(created?.passwordHash).toBe("hashed:secret");
     expect(created?.name).toBe("Jane Doe");

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   }
   const payload = StartSchema.safeParse(await request.json());
   if (!payload.success) {
-    return NextResponse.json({ error: "Nom del fitxer invalid." }, { status: 400 });
+    return NextResponse.json({ error: "Nom del fitxer invàlid." }, { status: 400 });
   }
   const userId = Number.parseInt(session.user.id, 10);
 

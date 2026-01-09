@@ -49,7 +49,7 @@ function ProgressPanel({ progress }: { progress: UploadProgress }) {
       <p className="mt-2 text-xs text-slate-500">
         {progress.status === "uploading"
           ? "Pugem el fitxer abans de processar-lo."
-          : "Recalculem les assignacions pendents mentre la carrega avanca."}
+          : "Recalculem les assignacions pendents mentre la càrrega avança."}
       </p>
     </div>
   );
@@ -251,16 +251,16 @@ export default function UploadDataPanel() {
           <div className="flex w-full max-w-sm items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             <label
               htmlFor="upload-file"
-              className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${
+              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold text-white shadow-sm transition ${
                 isProcessing
                   ? "cursor-not-allowed bg-slate-300"
                   : "bg-emerald-700 hover:bg-emerald-800"
               }`}
             >
-              Choose file
+              Selecciona arxiu
             </label>
             <span className="truncate text-sm text-slate-600">
-              {selectedFileName ?? "Cap fitxer seleccionat"}
+              {selectedFileName ?? "No file selected"}
             </span>
             <input
               id="upload-file"
@@ -275,7 +275,7 @@ export default function UploadDataPanel() {
                 setHasFile(Boolean(file));
                 setSelectedFileName(file?.name ?? null);
               }}
-              className="sr-only"
+              className="absolute left-0 top-0 h-0 w-0 overflow-hidden opacity-0"
             />
           </div>
           <button
@@ -292,7 +292,7 @@ export default function UploadDataPanel() {
         ) : null}
         {state.headerErrors ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            <p className="font-semibold">Capcalera incorrecta.</p>
+            <p className="font-semibold">Capçalera incorrecta.</p>
             {state.headerErrors.missing.length ? (
               <p>Falten columnes: {state.headerErrors.missing.join(", ")}.</p>
             ) : null}
@@ -303,17 +303,17 @@ export default function UploadDataPanel() {
         ) : null}
         {state.summary ? (
           <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <p className="font-semibold">Carrega finalitzada.</p>
+            <p className="font-semibold">Càrrega finalitzada.</p>
             <p className="mt-1">
               Fitxer: <span className="font-semibold">{state.summary.fileName}</span>
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-xl bg-white px-3 py-2 text-slate-700">
-                Linies importades:{" "}
+                Línies importades:{" "}
                 <span className="font-semibold">{state.summary.imported}</span>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-slate-700">
-                Assignades automaticament:{" "}
+                Assignades automàticament:{" "}
                 <span className="font-semibold">{state.summary.assigned}</span>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-slate-700">
@@ -321,7 +321,7 @@ export default function UploadDataPanel() {
                 <span className="font-semibold">{state.summary.unmatched}</span>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-slate-700">
-                Linies amb error:{" "}
+                Línies amb error:{" "}
                 <span className="font-semibold">{state.summary.skipped}</span>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-slate-700">

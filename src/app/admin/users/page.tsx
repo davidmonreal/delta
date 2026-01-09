@@ -34,7 +34,7 @@ export default async function AdminUsersPage({
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-            Administracio
+            Administració
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-900">
             Gestio d'usuaris
@@ -42,7 +42,7 @@ export default async function AdminUsersPage({
           <p className="mt-2 text-base text-slate-500">
             {allowSuperadmin
               ? "Pots veure tots els rols."
-              : "Nomes admins i users."}
+              : "Només admins i users."}
           </p>
         </div>
         <AdminUsersCreateModal allowSuperadmin={allowSuperadmin} />

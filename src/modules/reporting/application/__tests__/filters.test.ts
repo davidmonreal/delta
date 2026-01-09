@@ -13,6 +13,9 @@ describe("resolveFilters", () => {
     expect(result.month).toBe(2);
     expect(result.previousYear).toBe(2023);
     expect(result.showNegative).toBe(true);
+    expect(result.showPercentUnder).toBe(true);
+    expect(result.showPercentEqual).toBe(false);
+    expect(result.showPercentOver).toBe(true);
   });
 
   it("sets flags for each show filter", () => {

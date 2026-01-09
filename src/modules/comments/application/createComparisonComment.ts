@@ -13,7 +13,7 @@ export async function createComparisonComment({
 }) {
   const userId = Number.parseInt(sessionUser.id, 10);
   if (Number.isNaN(userId)) {
-    return { error: "Usuari invalid." };
+    return { error: "Usuari invàlid." };
   }
 
   await repo.createComparisonComment({

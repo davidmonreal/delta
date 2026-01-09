@@ -3,10 +3,12 @@ export type UnmatchedInvoiceLine = {
   date: Date;
   manager: string;
   managerNormalized: string | null;
+  clientId: number;
   clientName: string;
   serviceName: string;
   total: number;
   suggestedUserId?: number | null;
+  recentManagerName?: string | null;
 };
 
 export type BackfillProgress = {

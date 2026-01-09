@@ -37,6 +37,31 @@ export default function ComparisonTable({
     : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))_90px]";
   const disableDeltaSort = showEqual || showMissing || showNew;
 
+  const renderSubtitle = (subtitle?: string) => {
+    if (!subtitle) return null;
+    const parts = subtitle.split(" - ").map((part) => part.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      return (
+        <>
+          <span className="mt-1 block text-xs text-slate-500">{parts[0]}</span>
+          <span className="mt-1 block text-xs text-slate-400">{parts[1]}</span>
+        </>
+      );
+    }
+    return <span className="mt-1 block text-xs text-slate-500">{subtitle}</span>;
+  };
+
+  const renderUnitsInfo = (units: number, unitPrice: number, ref: string | null) => {
+    const unitLabel = units === 1 ? "1 unitat" : `${formatUnits(units)} unitats`;
+    return (
+      <div className="text-right tabular-nums">
+        <span className="block">{formatCurrency(unitPrice)}</span>
+        <span className="mt-1 block text-xs text-slate-400">{ref ?? "-"}</span>
+        <span className="mt-1 block text-xs text-slate-500">{unitLabel}</span>
+      </div>
+    );
+  };
+
   function renderSortLabel(label: string, key: SortKey) {
     const isActive = sortState?.key === key;
     const arrow = isActive ? (sortState?.direction === "asc" ? "↑" : "↓") : "↕";
@@ -92,28 +117,10 @@ export default function ComparisonTable({
             ) : (
               <span className="block font-medium">{row.title}</span>
             )}
-            {row.subtitle ? (
-              <span className="mt-1 block text-xs text-slate-500">
-                {row.subtitle}
-              </span>
-            ) : null}
+            {renderSubtitle(row.subtitle)}
           </div>
-          <span className="text-right tabular-nums">
-            <span className="block">
-              {formatUnits(row.previousUnits)} - {formatCurrency(row.previousUnitPrice)}
-            </span>
-            <span className="mt-1 block text-xs text-slate-400">
-              {row.previousRef ?? "-"}
-            </span>
-          </span>
-          <span className="text-right tabular-nums">
-            <span className="block">
-              {formatUnits(row.currentUnits)} - {formatCurrency(row.currentUnitPrice)}
-            </span>
-            <span className="mt-1 block text-xs text-slate-400">
-              {row.currentRef ?? "-"}
-            </span>
-          </span>
+          {renderUnitsInfo(row.previousUnits, row.previousUnitPrice, row.previousRef)}
+          {renderUnitsInfo(row.currentUnits, row.currentUnitPrice, row.currentRef)}
           <span
             className={`text-right font-semibold tabular-nums ${
               row.isMissing || row.deltaPrice < 0

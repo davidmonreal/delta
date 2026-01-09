@@ -32,12 +32,12 @@ export async function POST(request: Request) {
         const payload = clientPayload ? (JSON.parse(clientPayload) as ClientPayload) : {};
         const jobId = payload.jobId;
         if (!jobId) {
-          throw new Error("Falta l'identificador de la carrega.");
+          throw new Error("Falta l'identificador de la càrrega.");
         }
 
         const job = await prisma.uploadJob.findUnique({ where: { id: jobId } });
         if (!job) {
-          throw new Error("No s'ha trobat la carrega.");
+          throw new Error("No s'ha trobat la càrrega.");
         }
 
         await prisma.uploadJob.update({
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No s'ha pogut iniciar la carrega.";
+    const message = error instanceof Error ? error.message : "No s'ha pogut iniciar la càrrega.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -18,7 +18,7 @@ export async function getLatestComparisonComment({
 }) {
   const userId = Number.parseInt(sessionUser.id, 10);
   if (Number.isNaN(userId)) {
-    return { error: "Usuari invalid." };
+    return { error: "Usuari invàlid." };
   }
 
   const comment = await repo.findLatestByContext({

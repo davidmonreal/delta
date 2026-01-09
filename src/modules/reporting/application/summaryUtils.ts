@@ -49,16 +49,44 @@ export function filterSummaries<T extends SummaryFilterShape>(
   summaries: T[],
   filters: ResolvedFilters,
 ) {
+  const percentFlags = [
+    filters.showPercentUnder,
+    filters.showPercentEqual,
+    filters.showPercentOver,
+  ];
+  const applyPercentFilter =
+    filters.showPositive &&
+    percentFlags.some(Boolean) &&
+    !percentFlags.every(Boolean);
+  const percentThreshold = 3;
+  const percentTolerance = 0.1;
+
   return summaries.filter((row) => {
     if (filters.showMissing) return row.isMissing;
     if (filters.showNew) return row.isNew;
-    if (filters.showNegative)
-      return !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
-    if (filters.showEqual)
-      return !row.isMissing && !row.isNew && Math.abs(row.deltaPrice) <= 0.001;
-    if (filters.showPositive)
-      return !row.isMissing && !row.isNew && row.deltaPrice > 0.001;
-    return !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
+    const matchesShow =
+      filters.showNegative
+        ? !row.isMissing && !row.isNew && row.deltaPrice < -0.001
+        : filters.showEqual
+          ? !row.isMissing && !row.isNew && Math.abs(row.deltaPrice) <= 0.001
+          : filters.showPositive
+            ? !row.isMissing && !row.isNew && row.deltaPrice > 0.001
+            : !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
+
+    if (!matchesShow) return false;
+    if (!applyPercentFilter) return true;
+    if (row.percentDelta === undefined || Number.isNaN(row.percentDelta)) return false;
+
+    const absPercent = Math.abs(row.percentDelta);
+    const isUnder = absPercent < percentThreshold - percentTolerance;
+    const isOver = absPercent > percentThreshold + percentTolerance;
+    const isEqual = !isUnder && !isOver;
+
+    return (
+      (filters.showPercentUnder && isUnder) ||
+      (filters.showPercentEqual && isEqual) ||
+      (filters.showPercentOver && isOver)
+    );
   });
 }
 

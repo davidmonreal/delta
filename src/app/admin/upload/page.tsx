@@ -3,10 +3,12 @@ import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prism
 import { listUnmatched } from "@/modules/invoices/application/listUnmatched";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { formatCurrency } from "@/lib/format";
+import { normalizeName } from "@/lib/normalize";
 import Link from "next/link";
 import { assignManagerAction } from "./actions";
-import ManagerAssignForm from "@/components/admin/ManagerAssignForm";
+import UnmatchedInvoiceTable from "@/components/admin/UnmatchedInvoiceTable";
 import UploadDataPanel from "@/components/admin/UploadDataPanel";
+import { suggestManagers } from "@/modules/invoices/application/suggestManagers";
 
 export const dynamic = "force-dynamic";
 
@@ -28,17 +30,31 @@ export default async function UploadPage({
     name: user.name,
     email: user.email,
   }));
+  const userCandidates = users.reduce(
+    (acc, user) => {
+      const normalized =
+        user.nameNormalized ?? (user.name ? normalizeName(user.name) : null);
+      if (normalized) {
+        acc.push({ id: user.id, nameNormalized: normalized });
+      }
+      return acc;
+    },
+    [] as { id: number; nameNormalized: string }[],
+  );
 
   const suggestionsEnabled = searchParams?.suggest === "1";
   const unmatchedLines = suggestionsEnabled
-    ? unmatched
+    ? suggestManagers({
+        lines: unmatched,
+        userCandidates,
+      })
     : unmatched.map((line) => ({ ...line, suggestedUserId: null }));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       <header className="mb-8">
         <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-          Administracio
+          Administració
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-slate-900">Upload</h1>
         <p className="mt-2 text-base text-slate-500">
@@ -55,7 +71,7 @@ export default async function UploadPage({
               Factures sense responsable
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              {unmatchedLines.length} linies pendents de casar.
+              {unmatchedLines.length} línies pendents de casar.
             </p>
           </div>
           <Link
@@ -70,36 +86,11 @@ export default async function UploadPage({
             {suggestionsEnabled ? "Suggeriments actius" : "Suggerir gestors"}
           </Link>
         </div>
-        <div className="grid gap-3">
-          <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_auto] items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            <span>Gestor</span>
-            <span>Client</span>
-            <span>Servei</span>
-            <span className="text-right">Total</span>
-            <span className="text-right">Assignar</span>
-          </div>
-          {unmatchedLines.map((line) => (
-            <div
-              key={line.id}
-              className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
-            >
-              <div>
-                <span className="block font-medium">{line.manager}</span>
-              </div>
-              <span>{line.clientName}</span>
-              <span>{line.serviceName}</span>
-              <span className="text-right tabular-nums">
-                {formatCurrency(line.total)}
-              </span>
-              <ManagerAssignForm
-                lineId={line.id}
-                users={userOptions}
-                suggestedUserId={line.suggestedUserId}
-                action={assignManagerAction}
-              />
-            </div>
-          ))}
-        </div>
+        <UnmatchedInvoiceTable
+          lines={unmatchedLines}
+          users={userOptions}
+          action={assignManagerAction}
+        />
       </section>
     </div>
   );

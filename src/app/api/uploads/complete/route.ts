@@ -18,13 +18,13 @@ export async function POST(request: Request) {
   }
   const payload = CompleteSchema.safeParse(await request.json());
   if (!payload.success) {
-    return NextResponse.json({ error: "Dades de carrega invalides." }, { status: 400 });
+    return NextResponse.json({ error: "Dades de càrrega invàlides." }, { status: 400 });
   }
 
   const { jobId, blobUrl } = payload.data;
   const job = await prisma.uploadJob.findUnique({ where: { id: jobId } });
   if (!job) {
-    return NextResponse.json({ error: "No s'ha trobat la carrega." }, { status: 404 });
+    return NextResponse.json({ error: "No s'ha trobat la càrrega." }, { status: 404 });
   }
 
   if (job.status === "processing" || job.status === "done") {

@@ -10,6 +10,9 @@ export type ResolvedFilters = {
   showPositive: boolean;
   showMissing: boolean;
   showNew: boolean;
+  showPercentUnder: boolean;
+  showPercentEqual: boolean;
+  showPercentOver: boolean;
 };
 
 export function resolveFilters({
@@ -30,6 +33,9 @@ export function resolveFilters({
   const showPositive = show === "pos";
   const showMissing = show === "miss";
   const showNew = show === "new";
+  const showPercentUnder = data.pctUnder ?? true;
+  const showPercentEqual = data.pctEqual ?? false;
+  const showPercentOver = data.pctOver ?? true;
 
   return {
     year,
@@ -41,5 +47,8 @@ export function resolveFilters({
     showPositive,
     showMissing,
     showNew,
+    showPercentUnder,
+    showPercentEqual,
+    showPercentOver,
   };
 }

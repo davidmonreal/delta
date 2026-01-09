@@ -20,10 +20,10 @@ export async function GET(
   });
 
   if (!job) {
-    return NextResponse.json({ error: "No s'ha trobat la carrega." }, { status: 404 });
+    return NextResponse.json({ error: "No s'ha trobat la càrrega." }, { status: 404 });
   }
   if (job.userId && !Number.isNaN(userId) && job.userId !== userId) {
-    return NextResponse.json({ error: "No s'ha trobat la carrega." }, { status: 404 });
+    return NextResponse.json({ error: "No s'ha trobat la càrrega." }, { status: 404 });
   }
 
   if (
@@ -35,7 +35,7 @@ export async function GET(
       where: { id: jobId },
       data: {
         status: "error",
-        errorMessage: "La carrega ha expirat. Torna-ho a intentar.",
+        errorMessage: "La càrrega ha expirat. Torna-ho a intentar.",
       },
     });
     return NextResponse.json({

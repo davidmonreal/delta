@@ -95,7 +95,7 @@ export async function uploadBatchAction(params: {
     const headerErrors = validateHeaders(headerMap);
     if (headerErrors.missing.length || headerErrors.extra.length) {
       return {
-        error: "La capcalera del fitxer no coincideix amb el format esperat.",
+        error: "La capçalera del fitxer no coincideix amb el format esperat.",
         headerErrors,
       };
     }

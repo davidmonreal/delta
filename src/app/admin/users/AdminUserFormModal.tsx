@@ -155,7 +155,7 @@ export default function AdminUserFormModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-              Administracio
+              Administració
             </p>
             <h3 className="mt-2 text-xl font-semibold text-slate-900">{title}</h3>
           </div>
@@ -229,10 +229,10 @@ export default function AdminUserFormModal({
           ) : showMatchPreview && matchCount !== null ? (
             <p className="text-sm font-semibold text-slate-600">
               {isChecking
-                ? "Comprovant coincidencies..."
+                ? "Comprovant coincidències..."
                 : matchCount > 0
-                  ? `Aquest usuari s'assignara a ${matchCount} linies.`
-                  : "Aquest usuari no apareix en cap linia encara."}
+                  ? `Aquest usuari s'assignarà a ${matchCount} línies.`
+                  : "Aquest usuari no apareix en cap línia encara."}
             </p>
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-3">

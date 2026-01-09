@@ -83,7 +83,7 @@ export async function processUploadJob(jobId: string) {
         where: { id: jobId },
         data: {
           status: "error",
-          errorMessage: "La capcalera del fitxer no coincideix amb el format esperat.",
+          errorMessage: "La capçalera del fitxer no coincideix amb el format esperat.",
           summary: {
             fileName: job.fileName,
             imported: 0,

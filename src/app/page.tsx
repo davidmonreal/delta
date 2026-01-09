@@ -6,11 +6,15 @@ import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
 import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
+import PercentFilterForm from "@/components/reporting/PercentFilterForm";
 
 type SearchParams = {
   year?: string;
   month?: string;
   show?: string;
+  pctUnder?: string;
+  pctEqual?: string;
+  pctOver?: string;
 };
 
 export default async function Home({
@@ -31,11 +35,24 @@ export default async function Home({
         year: resolvedSearchParams.year,
         month: resolvedSearchParams.month,
         show: resolvedSearchParams.show,
+        pctUnder: resolvedSearchParams.pctUnder,
+        pctEqual: resolvedSearchParams.pctEqual,
+        pctOver: resolvedSearchParams.pctOver,
       },
       managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
     });
-  const { year, month, previousYear, show, showEqual, showNegative, showPositive } =
-    filters;
+  const {
+    year,
+    month,
+    previousYear,
+    show,
+    showEqual,
+    showNegative,
+    showPositive,
+    showPercentUnder,
+    showPercentEqual,
+    showPercentOver,
+  } = filters;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -48,7 +65,7 @@ export default async function Home({
             </p>
           </div>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900">
-            Diferencies per client i servei
+            Diferències per client i servei
           </h1>
           <p className="mt-2 text-base text-slate-500">
             Comparant {month}/{previousYear} amb {month}/{year}
@@ -58,15 +75,36 @@ export default async function Home({
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-          <span>
+        <div className="mb-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-start lg:justify-between">
+          <span className="text-base font-semibold text-slate-700">
             {showEqual
               ? "Resultats amb preu unitari igual"
               : "Resultats per preu unitari"}{" "}
             ({summariesCount})
             {showNegative ? " negatives" : ""}
           </span>
-          <ShowLinks baseHref="/" year={year} month={month} activeShow={show} />
+          <div className="flex flex-col items-end gap-2">
+            <ShowLinks
+              baseHref="/"
+              year={year}
+              month={month}
+              activeShow={show}
+              showPercentUnder={showPercentUnder}
+              showPercentEqual={showPercentEqual}
+              showPercentOver={showPercentOver}
+            />
+            {showPositive ? (
+              <PercentFilterForm
+                baseHref="/"
+                year={year}
+                month={month}
+                show={show}
+                showPercentUnder={showPercentUnder}
+                showPercentEqual={showPercentEqual}
+                showPercentOver={showPercentOver}
+              />
+            ) : null}
+          </div>
         </div>
         <ComparisonTable
           rows={rows}
@@ -80,7 +118,7 @@ export default async function Home({
           firstColumnLabel="Client"
         />
         <ComparisonSummaryRow
-          label="Total diferencia (preu unitari)"
+          label="Total diferència (preu unitari)"
           value={sumDeltaVisible}
           showPositive={showPositive}
         />

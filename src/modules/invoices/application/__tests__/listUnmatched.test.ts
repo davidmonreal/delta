@@ -11,10 +11,12 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
         date: new Date(),
         manager: "User",
         managerNormalized: "USER",
+        clientId: 1,
         clientName: "Client",
         serviceName: "Service",
         total: 100,
         suggestedUserId: null,
+        recentManagerName: null,
       },
     ];
   }

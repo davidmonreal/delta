@@ -52,7 +52,7 @@ export async function startUploadJob(fileName: string): Promise<{ jobId: string 
     const body = await response.json().catch(() => ({}));
     const message = resolveApiErrorMessage(
       body,
-      "No s'ha pogut iniciar la carrega.",
+      "No s'ha pogut iniciar la càrrega.",
     );
     throw new Error(message);
   }
