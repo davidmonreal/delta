@@ -36,7 +36,7 @@ describe("summaryUtils", () => {
     const summaries = [
       { deltaPrice: -1.5, isMissing: false, isNew: false },
       { deltaPrice: 0, isMissing: false, isNew: false },
-      { deltaPrice: 2, isMissing: false, isNew: false },
+      { deltaPrice: 2, isMissing: false, isNew: false, percentDelta: 5 },
       { deltaPrice: 0, isMissing: true, isNew: false },
       { deltaPrice: 1, isMissing: false, isNew: true },
     ];

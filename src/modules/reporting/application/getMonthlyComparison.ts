@@ -36,7 +36,14 @@ export async function getMonthlyComparison({
   managerUserId,
 }: {
   repo: ReportingRepository;
-  rawFilters: { year?: string; month?: string; show?: string };
+  rawFilters: {
+    year?: string;
+    month?: string;
+    show?: string;
+    pctUnder?: string;
+    pctEqual?: string;
+    pctOver?: string;
+  };
   managerUserId?: number;
 }): Promise<MonthlyComparisonResult> {
   const latestEntry = await repo.getLatestEntry({ managerUserId });

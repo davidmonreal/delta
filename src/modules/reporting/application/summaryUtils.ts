@@ -43,6 +43,7 @@ export type SummaryFilterShape = {
   deltaPrice: number;
   isMissing: boolean;
   isNew: boolean;
+  percentDelta?: number;
 };
 
 export function filterSummaries<T extends SummaryFilterShape>(

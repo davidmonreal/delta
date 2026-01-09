@@ -8,7 +8,14 @@ export async function getMonthlyComparisonPage({
   managerUserId,
 }: {
   repo: ReportingRepository;
-  rawFilters: { year?: string; month?: string; show?: string };
+  rawFilters: {
+    year?: string;
+    month?: string;
+    show?: string;
+    pctUnder?: string;
+    pctEqual?: string;
+    pctOver?: string;
+  };
   managerUserId?: number;
 }) {
   const result = await getMonthlyComparison({
