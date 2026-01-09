@@ -27,6 +27,8 @@ export function pairLines<T extends PairingLine>({
   metric: PairingMetric;
   tolerance: number;
 }): PairingResult<T> {
+  // Business rule: pair lines by closest unit price (or total) within tolerance,
+  // so small differences do not create false "new/missing" lines.
   const available = new Set(current.map((_, index) => index));
   const matches: Array<{ previous: T; current: T }> = [];
   const unmatchedPrevious: T[] = [];

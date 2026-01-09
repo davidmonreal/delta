@@ -59,6 +59,8 @@ export function filterSummaries<T extends SummaryFilterShape>(
     filters.showPositive &&
     percentFlags.some(Boolean) &&
     !percentFlags.every(Boolean);
+  // Business rule: 3% is the expected annual increase; we treat it as "equal"
+  // with a small tolerance to avoid rounding noise.
   const percentThreshold = 3;
   const percentTolerance = 0.1;
 

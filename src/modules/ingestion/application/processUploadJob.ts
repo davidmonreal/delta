@@ -1,13 +1,13 @@
 import * as XLSX from "xlsx";
 
 import { prisma } from "@/lib/db";
-import { normalizeName } from "@/lib/normalize";
 import { backfillManagers } from "@/modules/invoices/application/backfillManagers";
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
 import { importRowsWithSummary, type ImportRowError } from "@/modules/ingestion/application/importInvoiceLines";
 import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/headerUtils";
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { buildUserCandidates } from "@/modules/users/application/buildUserCandidates";
 
 const BATCH_SIZE = 200;
 const MAX_ERRORS = 50;
@@ -52,6 +52,8 @@ export async function processUploadJob(jobId: string) {
     },
   });
 
+  // Business rule: process in batches to keep uploads responsive while allowing
+  // managers to continue browsing other areas of the app.
   const ingestRepo = new PrismaIngestionRepository();
   const userRepo = new PrismaUserRepository();
   const invoiceRepo = new PrismaInvoiceRepository();
@@ -99,12 +101,7 @@ export async function processUploadJob(jobId: string) {
     }
 
     const users = await userRepo.listAll();
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
+    const userCandidates = buildUserCandidates(users);
 
     const totalRows = rows.length;
     await prisma.uploadJob.update({

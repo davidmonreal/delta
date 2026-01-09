@@ -1,14 +1,11 @@
 import { requireAdminSession } from "@/lib/require-auth";
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
-import { listUnmatched } from "@/modules/invoices/application/listUnmatched";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
-import { formatCurrency } from "@/lib/format";
-import { normalizeName } from "@/lib/normalize";
 import Link from "next/link";
 import { assignManagerAction } from "./actions";
 import UnmatchedInvoiceTable from "@/components/admin/UnmatchedInvoiceTable";
 import UploadDataPanel from "@/components/admin/UploadDataPanel";
-import { suggestManagers } from "@/modules/invoices/application/suggestManagers";
+import { getUnmatchedAssignments } from "@/modules/invoices/application/getUnmatchedAssignments";
 
 export const dynamic = "force-dynamic";
 
@@ -21,34 +18,17 @@ export default async function UploadPage({
   const invoiceRepo = new PrismaInvoiceRepository();
   const userRepo = new PrismaUserRepository();
 
-  const [unmatched, users] = await Promise.all([
-    listUnmatched({ repo: invoiceRepo }),
-    userRepo.listAll(),
-  ]);
+  const suggestionsEnabled = searchParams?.suggest === "1";
+  const { lines: unmatchedLines, users } = await getUnmatchedAssignments({
+    invoiceRepo,
+    userRepo,
+    suggestionsEnabled,
+  });
   const userOptions = users.map((user) => ({
     id: user.id,
     name: user.name,
     email: user.email,
   }));
-  const userCandidates = users.reduce(
-    (acc, user) => {
-      const normalized =
-        user.nameNormalized ?? (user.name ? normalizeName(user.name) : null);
-      if (normalized) {
-        acc.push({ id: user.id, nameNormalized: normalized });
-      }
-      return acc;
-    },
-    [] as { id: number; nameNormalized: string }[],
-  );
-
-  const suggestionsEnabled = searchParams?.suggest === "1";
-  const unmatchedLines = suggestionsEnabled
-    ? suggestManagers({
-        lines: unmatched,
-        userCandidates,
-      })
-    : unmatched.map((line) => ({ ...line, suggestedUserId: null }));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">

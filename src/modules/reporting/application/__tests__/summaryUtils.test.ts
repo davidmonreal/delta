@@ -129,4 +129,34 @@ describe("summaryUtils", () => {
 
     expect(sorted[0].percentDelta).toBe(25);
   });
+
+  it("filters by percent buckets around 3%", () => {
+    const summaries = [
+      { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 2.5 },
+      { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 3 },
+      { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 4.2 },
+    ];
+    const filters: ResolvedFilters = {
+      year: 2024,
+      month: 1,
+      previousYear: 2023,
+      show: "pos",
+      showNegative: false,
+      showEqual: false,
+      showPositive: true,
+      showMissing: false,
+      showNew: false,
+      showPercentUnder: true,
+      showPercentEqual: false,
+      showPercentOver: false,
+    };
+
+    expect(filterSummaries(summaries, filters)).toHaveLength(1);
+    expect(
+      filterSummaries(summaries, { ...filters, showPercentUnder: false, showPercentEqual: true }),
+    ).toHaveLength(1);
+    expect(
+      filterSummaries(summaries, { ...filters, showPercentUnder: false, showPercentOver: true }),
+    ).toHaveLength(1);
+  });
 });

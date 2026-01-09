@@ -46,6 +46,8 @@ export async function getMonthlyComparison({
   };
   managerUserId?: number;
 }): Promise<MonthlyComparisonResult> {
+  // Business rule: compare the same month across consecutive years and classify
+  // items as missing/new/changed for manager review.
   const latestEntry = await repo.getLatestEntry({ managerUserId });
   const defaults = {
     year: latestEntry?.year ?? new Date().getFullYear(),

@@ -22,6 +22,8 @@ export function resolveFilters({
   raw: { year?: string; month?: string; show?: string };
   defaults: { year: number; month: number };
 }): ResolvedFilters {
+  // Business rule: compare the selected month against the same month of the previous year,
+  // defaulting to the latest available data for the current user.
   const parsed = ComparisonFiltersSchema.safeParse(raw);
   const data = parsed.success ? parsed.data : {};
   const year = data.year ?? defaults.year;
@@ -34,6 +36,7 @@ export function resolveFilters({
   const showMissing = show === "miss";
   const showNew = show === "new";
   const showPercentUnder = data.pctUnder ?? true;
+  // Business rule: by default we hide "equal to 3%" because it is the expected annual update.
   const showPercentEqual = data.pctEqual ?? false;
   const showPercentOver = data.pctOver ?? true;
 

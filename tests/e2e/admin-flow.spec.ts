@@ -245,4 +245,14 @@ test.describe("admin flows", () => {
     await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
   });
+
+  test("shows monthly comparison on the home page", async ({ page }) => {
+    await login(page);
+    await page.goto(`/?show=neg&year=2025&month=1`);
+    await expect(page.getByText(`Client ${runId}`)).toBeVisible();
+    await expect(page.getByText(serviceNames.negative)).toBeVisible();
+    await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+  });
 });

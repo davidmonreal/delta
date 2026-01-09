@@ -11,6 +11,7 @@ export async function createComparisonComment({
   sessionUser: CurrentUser;
   repo: CommentRepository;
 }) {
+  // Business rule: comments must be attributed to a valid user for auditability.
   const userId = Number.parseInt(sessionUser.id, 10);
   if (Number.isNaN(userId)) {
     return { error: "Usuari invàlid." };

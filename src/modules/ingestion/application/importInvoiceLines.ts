@@ -188,6 +188,8 @@ export async function buildInvoiceLines({
   skipped: number;
   errors: ImportRowError[];
 }> {
+  // Business rule: reject rows with missing required data or invalid totals
+  // to avoid corrupting month-to-month comparisons.
   if (rows.length === 0) {
     return { lines: [], skipped: 0, errors: [] };
   }

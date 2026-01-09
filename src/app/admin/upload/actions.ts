@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdminSession } from "@/lib/require-auth";
-import { normalizeName } from "@/lib/normalize";
 import { assignManager } from "@/modules/invoices/application/assignManager";
 import { backfillManagers } from "@/modules/invoices/application/backfillManagers";
 import { importRowsWithSummary, type ImportRowError } from "@/modules/ingestion/application/importInvoiceLines";
@@ -11,6 +10,7 @@ import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/head
 import { PrismaIngestionRepository } from "@/modules/ingestion/infrastructure/prismaIngestionRepository";
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { buildUserCandidates } from "@/modules/users/application/buildUserCandidates";
 
 const AssignSchema = z.object({
   lineId: z.coerce.number().int().positive(),
@@ -106,12 +106,7 @@ export async function uploadBatchAction(params: {
 
   try {
     const users = await userRepo.listAll();
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
+    const userCandidates = buildUserCandidates(users);
 
     const summary = await importRowsWithSummary({
       rows,
@@ -147,12 +142,7 @@ export async function finalizeUploadAction(): Promise<{ backfilled: number }> {
 
   try {
     const users = await userRepo.listAll();
-    const userCandidates = users
-      .filter((user) => user.name)
-      .map((user) => ({
-        id: user.id,
-        nameNormalized: user.nameNormalized ?? normalizeName(user.name ?? ""),
-      }));
+    const userCandidates = buildUserCandidates(users);
 
     const backfilled = await backfillManagers({
       repo: invoiceRepo,

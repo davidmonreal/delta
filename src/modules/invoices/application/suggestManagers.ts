@@ -14,6 +14,8 @@ export function suggestManagers({
   lines: UnmatchedInvoiceLine[];
   userCandidates: UserCandidate[];
 }) {
+  // Business rule: suggest the most recent manager on the client line when possible,
+  // but never auto-assign; the admin must confirm.
   if (userCandidates.length === 0) return lines;
 
   return lines.map((line) => {
