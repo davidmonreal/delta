@@ -77,6 +77,11 @@ model InvoiceLine {
   @@index([year, month])
   @@index([clientId, serviceId])
   @@index([managerUserId])
+  @@index([managerUserId, date])
+  @@index([clientId, managerUserId, date])
+  @@index([clientId, year, month, managerUserId])
+  @@index([clientId, year, month, date])
+  @@index([sourceFile])
 }
 
 model ComparisonComment {
