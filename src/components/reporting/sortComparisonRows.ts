@@ -22,7 +22,7 @@ const comparators: Record<SortKey, Comparator> = {
   client: (a, b) => a.title.localeCompare(b.title, "ca"),
   delta: (a, b) => a.deltaPrice - b.deltaPrice,
   percent: (a, b) => (a.percentDelta ?? Number.NaN) - (b.percentDelta ?? Number.NaN),
-  comment: (a, b) => Number(a.hasComment) - Number(b.hasComment),
+  comment: (a, b) => Number(Boolean(a.hasComment)) - Number(Boolean(b.hasComment)),
 };
 
 export function sortComparisonRows(

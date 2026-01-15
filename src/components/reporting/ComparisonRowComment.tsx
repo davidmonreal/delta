@@ -45,7 +45,9 @@ export default function ComparisonRowComment({
   );
 
   useEffect(() => {
-    setIsHighlighted(hasComment);
+    if (hasComment) {
+      setIsHighlighted(true);
+    }
   }, [hasComment]);
 
   useEffect(() => {
