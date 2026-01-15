@@ -57,8 +57,8 @@ export async function assignManagerAction(formData: FormData): Promise<void> {
   const parsed = AssignSchema.safeParse({
     lineId: formData.get("lineId"),
     userId: formData.get("userId"),
-    clientId: formData.get("clientId"),
-    bulk: formData.get("bulk"),
+    clientId: formData.get("clientId") ?? undefined,
+    bulk: formData.get("bulk") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -66,11 +66,12 @@ export async function assignManagerAction(formData: FormData): Promise<void> {
   }
 
   const repo = new PrismaInvoiceRepository();
-  const wantsBulk = parsed.data.bulk === "1" && parsed.data.clientId;
+  const clientId = parsed.data.clientId;
+  const wantsBulk = parsed.data.bulk === "1" && typeof clientId === "number";
   if (wantsBulk) {
     await assignManagerForClient({
       repo,
-      clientId: parsed.data.clientId,
+      clientId,
       userId: parsed.data.userId,
     });
   } else {

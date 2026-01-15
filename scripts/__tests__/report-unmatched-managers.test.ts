@@ -13,6 +13,7 @@ describe("report-unmatched-managers script", () => {
         { id: 3, manager: "User B", managerNormalized: null, clientId: 2 },
       ]),
       assignManager: vi.fn(),
+      assignManagerForClient: vi.fn(),
       assignManagersForUser: vi.fn(),
       countUnassignedByManagerName: vi.fn(),
       backfillManagers: vi.fn(),

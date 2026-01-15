@@ -24,6 +24,7 @@ describe("reconcile-managers script", () => {
     const invoiceRepo: InvoiceRepository = {
       listUnmatched: vi.fn(),
       assignManager: vi.fn(),
+      assignManagerForClient: vi.fn(),
       assignManagersForUser: vi.fn(),
       countUnassignedByManagerName: vi.fn(),
       backfillManagers: vi.fn(),
