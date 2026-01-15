@@ -119,7 +119,7 @@ describeDb("PrismaCommentRepository", () => {
       });
 
       const latest = await repo.findLatestByContext({
-        userId: user.id,
+        viewer: { userId: user.id, role: "USER" },
         clientId: client.id,
         serviceId: service.id,
         year: 2025,

@@ -10,6 +10,7 @@ export type ClientSummaryRow = {
   serviceId: number;
   serviceName: string;
   managerName?: string | null;
+  managerUserId?: number | null;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;
@@ -124,6 +125,8 @@ export async function getClientComparison({
         id: `${serviceId}-${rowCounter++}`,
         ...baseRow,
         managerName: match.current.managerName ?? match.previous.managerName ?? null,
+        managerUserId:
+          match.current.managerUserId ?? match.previous.managerUserId ?? null,
         previousRef: formatRef(
           match.previous.series,
           match.previous.albaran,
@@ -150,6 +153,7 @@ export async function getClientComparison({
         id: `${serviceId}-${rowCounter++}`,
         ...baseRow,
         managerName: prev.managerName ?? null,
+        managerUserId: prev.managerUserId ?? null,
         previousRef: formatRef(prev.series, prev.albaran, prev.numero),
         currentRef: null,
         previousTotal: prev.total,
@@ -168,6 +172,7 @@ export async function getClientComparison({
         id: `${serviceId}-${rowCounter++}`,
         ...baseRow,
         managerName: curr.managerName ?? null,
+        managerUserId: curr.managerUserId ?? null,
         previousRef: null,
         currentRef: formatRef(curr.series, curr.albaran, curr.numero),
         previousTotal: 0,

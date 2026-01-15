@@ -6,6 +6,9 @@ import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/pr
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
 import { getClientInvoiceLines } from "@/modules/reporting/application/getClientInvoiceLines";
 import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
+import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prismaCommentRepository";
+import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
+import { monthLabels } from "@/modules/reporting/domain/monthLabels";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
@@ -75,20 +78,38 @@ export default async function ClientPage({
     showPercentEqual,
     showPercentOver,
   } = filters;
-  const monthLabels = [
-    "Gener",
-    "Febrer",
-    "Marc",
-    "Abril",
-    "Maig",
-    "Juny",
-    "Juliol",
-    "Agost",
-    "Setembre",
-    "Octubre",
-    "Novembre",
-    "Desembre",
-  ];
+  const commentRepo = new PrismaCommentRepository();
+  const serviceIds = Array.from(new Set(summaries.map((row) => row.serviceId)));
+  const { keys: commentKeys } = await getCommentedContexts({
+    repo: commentRepo,
+    sessionUser: session.user,
+    year,
+    month,
+    clientIds: [clientId],
+    serviceIds,
+  });
+  await commentRepo.disconnect?.();
+  const commentSet = new Set(
+    commentKeys.map((key) => `${key.clientId}-${key.serviceId}`),
+  );
+  const rowsWithComments = summaries.map((row) => ({
+    id: row.id,
+    clientId,
+    serviceId: row.serviceId,
+    title: row.serviceName,
+    subtitle: row.managerName ?? undefined,
+    managerUserId: row.managerUserId ?? null,
+    previousUnits: row.previousUnits,
+    currentUnits: row.currentUnits,
+    previousUnitPrice: row.previousUnitPrice,
+    currentUnitPrice: row.currentUnitPrice,
+    previousRef: row.previousRef,
+    currentRef: row.currentRef,
+    deltaPrice: row.deltaPrice,
+    isMissing: row.isMissing,
+    percentDelta: row.percentDelta,
+    hasComment: commentSet.has(`${clientId}-${row.serviceId}`),
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -140,22 +161,7 @@ export default async function ClientPage({
           </div>
         </div>
         <ComparisonTable
-          rows={summaries.map((row) => ({
-            id: row.id,
-            clientId,
-            serviceId: row.serviceId,
-            title: row.serviceName,
-            subtitle: row.managerName ?? undefined,
-            previousUnits: row.previousUnits,
-            currentUnits: row.currentUnits,
-            previousUnitPrice: row.previousUnitPrice,
-            currentUnitPrice: row.currentUnitPrice,
-            previousRef: row.previousRef,
-            currentRef: row.currentRef,
-            deltaPrice: row.deltaPrice,
-            isMissing: row.isMissing,
-            percentDelta: row.percentDelta,
-          }))}
+          rows={rowsWithComments}
           previousYear={previousYear}
           year={year}
           month={month}

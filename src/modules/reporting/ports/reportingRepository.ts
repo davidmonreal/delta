@@ -48,6 +48,7 @@ export type MonthlyLineRow = {
   series: string | null;
   albaran: string | null;
   numero: string | null;
+  managerUserId: number | null;
   managerName: string | null;
 };
 
@@ -67,6 +68,7 @@ export type ClientLineRow = {
   series: string | null;
   albaran: string | null;
   numero: string | null;
+  managerUserId: number | null;
   managerName: string | null;
 };
 export type ClientRefRow = {

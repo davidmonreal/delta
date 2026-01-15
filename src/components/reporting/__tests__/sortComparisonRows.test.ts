@@ -20,6 +20,7 @@ const baseRows: ComparisonRowViewModel[] = [
     deltaPrice: -1,
     isMissing: false,
     percentDelta: 5,
+    hasComment: false,
   },
   {
     id: "2",
@@ -37,6 +38,7 @@ const baseRows: ComparisonRowViewModel[] = [
     deltaPrice: Number.NaN,
     isMissing: false,
     percentDelta: undefined,
+    hasComment: true,
   },
   {
     id: "3",
@@ -54,6 +56,7 @@ const baseRows: ComparisonRowViewModel[] = [
     deltaPrice: 2,
     isMissing: false,
     percentDelta: 12,
+    hasComment: false,
   },
 ];
 
@@ -72,6 +75,11 @@ describe("sortComparisonRows", () => {
     const result = sortComparisonRows(baseRows, { key: "percent", direction: "desc" });
     expect(result.map((row) => row.id)).toEqual(["3", "1", "2"]);
   });
+
+  it("sorts by comment status with commented rows first", () => {
+    const result = sortComparisonRows(baseRows, { key: "comment", direction: "desc" });
+    expect(result.map((row) => row.id)).toEqual(["2", "1", "3"]);
+  });
 });
 
 describe("toggleSort", () => {
@@ -79,6 +87,7 @@ describe("toggleSort", () => {
     expect(toggleSort(null, "client")).toEqual({ key: "client", direction: "asc" });
     expect(toggleSort(null, "delta")).toEqual({ key: "delta", direction: "desc" });
     expect(toggleSort(null, "percent")).toEqual({ key: "percent", direction: "desc" });
+    expect(toggleSort(null, "comment")).toEqual({ key: "comment", direction: "desc" });
   });
 
   it("toggles direction when clicking same key", () => {

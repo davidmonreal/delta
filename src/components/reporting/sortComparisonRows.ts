@@ -2,7 +2,7 @@
 
 import type { ComparisonRowViewModel } from "@/modules/reporting/dto/reportingViewModel";
 
-export type SortKey = "client" | "delta" | "percent";
+export type SortKey = "client" | "delta" | "percent" | "comment";
 export type SortDirection = "asc" | "desc";
 export type SortState = { key: SortKey; direction: SortDirection } | null;
 
@@ -22,6 +22,7 @@ const comparators: Record<SortKey, Comparator> = {
   client: (a, b) => a.title.localeCompare(b.title, "ca"),
   delta: (a, b) => a.deltaPrice - b.deltaPrice,
   percent: (a, b) => (a.percentDelta ?? Number.NaN) - (b.percentDelta ?? Number.NaN),
+  comment: (a, b) => Number(a.hasComment) - Number(b.hasComment),
 };
 
 export function sortComparisonRows(

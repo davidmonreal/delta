@@ -43,8 +43,8 @@ export default function ComparisonTable({
     currentPage * pageSize,
   );
   const gridClass = showPositive
-    ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))_90px]"
-    : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))_90px]";
+    ? "grid-cols-[2fr_repeat(4,minmax(140px,1fr))_110px]"
+    : "grid-cols-[2fr_repeat(3,minmax(140px,1fr))_110px]";
   const disableDeltaSort = showEqual || showMissing || showNew;
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function ComparisonTable({
             {renderSortLabel("Augment %", "percent")}
           </span>
         ) : null}
-        <span className="text-right">Comentari</span>
+        <span className="flex justify-end">{renderSortLabel("Comentari", "comment")}</span>
       </div>
       {pagedRows.map((row) => (
         <div
@@ -163,6 +163,7 @@ export default function ComparisonTable({
               month={month}
               title={row.title}
               subtitle={row.subtitle}
+              hasComment={row.hasComment}
             />
           </div>
         </div>

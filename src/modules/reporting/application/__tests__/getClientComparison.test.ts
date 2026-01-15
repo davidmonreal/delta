@@ -25,6 +25,7 @@ function buildRepo() {
             series: "A",
             albaran: null,
             numero: "1",
+            managerUserId: null,
             managerName: null,
           },
           {
@@ -36,6 +37,7 @@ function buildRepo() {
             series: "B",
             albaran: null,
             numero: "2",
+            managerUserId: null,
             managerName: null,
           },
         ],

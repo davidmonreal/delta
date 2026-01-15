@@ -228,6 +228,7 @@ export class PrismaReportingRepository implements ReportingRepository {
         series: true,
         albaran: true,
         numero: true,
+        managerUserId: true,
         ...managerSelect,
       },
     });
@@ -242,6 +243,7 @@ export class PrismaReportingRepository implements ReportingRepository {
       series: row.series,
       albaran: row.albaran,
       numero: row.numero,
+      managerUserId: row.managerUserId,
       managerName: resolveManagerNameRow(row),
     }));
   }
@@ -366,6 +368,7 @@ export class PrismaReportingRepository implements ReportingRepository {
         series: true,
         albaran: true,
         numero: true,
+        managerUserId: true,
         ...managerSelect,
       },
     });
@@ -379,6 +382,7 @@ export class PrismaReportingRepository implements ReportingRepository {
       series: row.series,
       albaran: row.albaran,
       numero: row.numero,
+      managerUserId: row.managerUserId,
       managerName: resolveManagerNameRow(row),
     }));
   }

@@ -14,14 +14,31 @@ export type ComparisonCommentSummary = {
   createdAt: Date;
 };
 
+export type CommentViewer = {
+  userId: number;
+  role: "SUPERADMIN" | "ADMIN" | "USER";
+};
+
+export type CommentContextKey = {
+  clientId: number;
+  serviceId: number;
+};
+
 export interface CommentRepository {
   createComparisonComment(data: CreateComparisonCommentData): Promise<void>;
   findLatestByContext(params: {
-    userId: number;
+    viewer: CommentViewer;
     clientId: number;
     serviceId: number;
     year: number;
     month: number;
   }): Promise<ComparisonCommentSummary | null>;
+  findCommentedContexts(params: {
+    viewer: CommentViewer;
+    year: number;
+    month: number;
+    clientIds: number[];
+    serviceIds: number[];
+  }): Promise<CommentContextKey[]>;
   disconnect?: () => Promise<void>;
 }

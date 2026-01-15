@@ -7,6 +7,7 @@ export type ComparisonRowViewModel = {
   title: string;
   subtitle?: string;
   href?: string;
+  managerUserId?: number | null;
   previousUnits: number;
   currentUnits: number;
   previousUnitPrice: number;
@@ -16,6 +17,7 @@ export type ComparisonRowViewModel = {
   deltaPrice: number;
   isMissing: boolean;
   percentDelta?: number;
+  hasComment: boolean;
 };
 
 export type MonthlyComparisonViewModel = {
@@ -43,6 +45,7 @@ export function toMonthlyComparisonViewModel(
         ? `${row.serviceName} - ${row.managerName}`
         : row.serviceName,
       href: `/client/${row.clientId}?year=${filters.year}&month=${filters.month}&show=${filters.show}`,
+      managerUserId: row.managerUserId ?? null,
       previousUnits: row.previousUnits,
       currentUnits: row.currentUnits,
       previousUnitPrice: row.previousUnitPrice,
@@ -52,6 +55,7 @@ export function toMonthlyComparisonViewModel(
       deltaPrice: row.deltaPrice,
       isMissing: row.isMissing,
       percentDelta: row.percentDelta,
+      hasComment: false,
     })),
   };
 }

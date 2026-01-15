@@ -21,6 +21,10 @@ class InMemoryCommentRepository implements CommentRepository {
       createdAt: new Date(),
     };
   }
+
+  async findCommentedContexts() {
+    return [];
+  }
 }
 
 describe("getLatestComparisonComment", () => {

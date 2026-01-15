@@ -1,33 +1,33 @@
 import type { CommentRepository } from "../ports/commentRepository";
 import type { CurrentUser } from "@/modules/users/application/types";
 
-export async function getLatestComparisonComment({
+export async function getCommentedContexts({
   repo,
   sessionUser,
-  clientId,
-  serviceId,
   year,
   month,
+  clientIds,
+  serviceIds,
 }: {
   repo: CommentRepository;
   sessionUser: CurrentUser;
-  clientId: number;
-  serviceId: number;
   year: number;
   month: number;
+  clientIds: number[];
+  serviceIds: number[];
 }) {
   const userId = Number.parseInt(sessionUser.id, 10);
   if (Number.isNaN(userId)) {
-    return { error: "Usuari invàlid." };
+    return { keys: [], error: "Usuari invàlid." };
   }
 
-  const comment = await repo.findLatestByContext({
+  const keys = await repo.findCommentedContexts({
     viewer: { userId, role: sessionUser.role },
-    clientId,
-    serviceId,
     year,
     month,
+    clientIds,
+    serviceIds,
   });
 
-  return { comment };
+  return { keys };
 }

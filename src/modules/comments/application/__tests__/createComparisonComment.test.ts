@@ -13,6 +13,10 @@ class InMemoryCommentRepository implements CommentRepository {
   async findLatestByContext() {
     return null;
   }
+
+  async findCommentedContexts() {
+    return [];
+  }
 }
 
 describe("createComparisonComment", () => {

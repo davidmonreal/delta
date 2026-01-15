@@ -2,11 +2,16 @@ import { requireSession } from "@/lib/require-auth";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getMonthlyComparisonPage } from "@/modules/reporting/application/getMonthlyComparisonPage";
+import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prismaCommentRepository";
+import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
+import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
+import { listUsersForFilter } from "@/modules/users/application/listUsersForFilter";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
 import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
 import PercentFilterForm from "@/components/reporting/PercentFilterForm";
+import AdminComparisonTable from "@/components/reporting/AdminComparisonTable";
 
 type SearchParams = {
   year?: string | string[];
@@ -53,6 +58,31 @@ export default async function Home({
     showPercentEqual,
     showPercentOver,
   } = filters;
+  const commentRepo = new PrismaCommentRepository();
+  const clientIds = Array.from(new Set(rows.map((row) => row.clientId)));
+  const serviceIds = Array.from(new Set(rows.map((row) => row.serviceId)));
+  const { keys: commentKeys } = await getCommentedContexts({
+    repo: commentRepo,
+    sessionUser: session.user,
+    year,
+    month,
+    clientIds,
+    serviceIds,
+  });
+  await commentRepo.disconnect?.();
+  const commentSet = new Set(
+    commentKeys.map((key) => `${key.clientId}-${key.serviceId}`),
+  );
+  const rowsWithComments = rows.map((row) => ({
+    ...row,
+    hasComment: commentSet.has(`${row.clientId}-${row.serviceId}`),
+  }));
+  const userRepo = new PrismaUserRepository();
+  const filterUsers = await listUsersForFilter({
+    sessionUser: session.user,
+    repo: userRepo,
+  });
+  await userRepo.disconnect?.();
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -106,17 +136,32 @@ export default async function Home({
             ) : null}
           </div>
         </div>
-        <ComparisonTable
-          rows={rows}
-          previousYear={previousYear}
-          year={year}
-          month={month}
-          showPositive={showPositive}
-          showEqual={showEqual}
-          showMissing={filters.showMissing}
-          showNew={filters.showNew}
-          firstColumnLabel="Client"
-        />
+        {isAdminRole(session.user.role) ? (
+          <AdminComparisonTable
+            rows={rowsWithComments}
+            users={filterUsers}
+            previousYear={previousYear}
+            year={year}
+            month={month}
+            showPositive={showPositive}
+            showEqual={showEqual}
+            showMissing={filters.showMissing}
+            showNew={filters.showNew}
+            firstColumnLabel="Client"
+          />
+        ) : (
+          <ComparisonTable
+            rows={rowsWithComments}
+            previousYear={previousYear}
+            year={year}
+            month={month}
+            showPositive={showPositive}
+            showEqual={showEqual}
+            showMissing={filters.showMissing}
+            showNew={filters.showNew}
+            firstColumnLabel="Client"
+          />
+        )}
         <ComparisonSummaryRow
           label="Total diferència (preu unitari)"
           value={sumDeltaVisible}

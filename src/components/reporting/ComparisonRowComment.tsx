@@ -13,6 +13,7 @@ type ComparisonRowCommentProps = {
   month: number;
   title: string;
   subtitle?: string;
+  hasComment?: boolean;
 };
 
 type ActionState = {
@@ -29,17 +30,23 @@ export default function ComparisonRowComment({
   month,
   title,
   subtitle,
+  hasComment = false,
 }: ComparisonRowCommentProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [state, setState] = useState<ActionState>(initialState);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(hasComment);
   const requestIdRef = useRef(0);
   const label = useMemo(
     () => (subtitle ? `${title} · ${subtitle}` : title),
     [title, subtitle],
   );
+
+  useEffect(() => {
+    setIsHighlighted(hasComment);
+  }, [hasComment]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +70,7 @@ export default function ComparisonRowComment({
         const existingMessage = data?.comment?.message?.trim() ?? "";
         if (existingMessage) {
           setMessage(existingMessage);
+          setIsHighlighted(true);
         }
       })
       .finally(() => {
@@ -91,6 +99,7 @@ export default function ComparisonRowComment({
       const result = await createComparisonCommentAction(initialState, formData);
       setState(result);
       if (result.success) {
+        setIsHighlighted(true);
         setOpen(false);
       }
     });
@@ -103,6 +112,8 @@ export default function ComparisonRowComment({
         onClick={() => setOpen(true)}
         title="Afegir comentari"
         size="sm"
+        variant={isHighlighted ? "primary" : "neutral"}
+        className={isHighlighted ? "ring-1 ring-emerald-200" : ""}
       />
       {open ? (
         <div
