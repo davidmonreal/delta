@@ -14,9 +14,11 @@ export type ComparisonCommentSummary = {
   createdAt: Date;
 };
 
+import type { UserRole } from "@/modules/users/domain/userRole";
+
 export type CommentViewer = {
   userId: number;
-  role: "SUPERADMIN" | "ADMIN" | "USER";
+  role: UserRole;
 };
 
 export type CommentContextKey = {

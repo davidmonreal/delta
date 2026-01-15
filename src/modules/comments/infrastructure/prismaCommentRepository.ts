@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
+import { Prisma, type UserRole } from "@/generated/prisma";
 
 import type {
   CommentRepository,
@@ -9,12 +10,14 @@ import type {
 } from "../ports/commentRepository";
 
 export class PrismaCommentRepository implements CommentRepository {
-  private buildVisibilityFilter(viewer: { userId: number; role: "SUPERADMIN" | "ADMIN" | "USER" }) {
+  private buildVisibilityFilter(
+    viewer: { userId: number; role: UserRole },
+  ): Prisma.ComparisonCommentWhereInput {
     if (isAdminRole(viewer.role)) {
       return {};
     }
     return {
-      OR: [{ userId: viewer.userId }, { user: { is: { role: "SUPERADMIN" } } }],
+      OR: [{ userId: viewer.userId }, { user: { role: "SUPERADMIN" } }],
     };
   }
 
@@ -31,7 +34,7 @@ export class PrismaCommentRepository implements CommentRepository {
     year,
     month,
   }: {
-    viewer: { userId: number; role: "SUPERADMIN" | "ADMIN" | "USER" };
+    viewer: { userId: number; role: UserRole };
     clientId: number;
     serviceId: number;
     year: number;
@@ -53,7 +56,7 @@ export class PrismaCommentRepository implements CommentRepository {
     clientIds,
     serviceIds,
   }: {
-    viewer: { userId: number; role: "SUPERADMIN" | "ADMIN" | "USER" };
+    viewer: { userId: number; role: UserRole };
     year: number;
     month: number;
     clientIds: number[];
