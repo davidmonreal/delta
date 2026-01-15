@@ -8,7 +8,10 @@ export const CreateComparisonCommentSchema = z.object({
   year: z.coerce.number().int().positive(),
   month: z.coerce.number().int().min(1).max(12),
   kind: CommentKindSchema,
-  message: z.string().trim().min(5, "Cal una explicacio."),
+  message: z
+    .string()
+    .trim()
+    .min(5, "Fes una explicació més detallada, si us plau."),
 });
 
 export type CreateComparisonCommentInput = z.infer<typeof CreateComparisonCommentSchema>;

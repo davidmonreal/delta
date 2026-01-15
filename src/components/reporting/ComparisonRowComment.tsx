@@ -75,7 +75,7 @@ export default function ComparisonRowComment({
   function handleSubmit(kind: "REPORT_ERROR" | "VALIDATE_DIFFERENCE") {
     const trimmed = message.trim();
     if (!trimmed) {
-      setState({ error: "Cal una explicacio." });
+      setState({ error: "Fes una explicació més detallada, si us plau." });
       return;
     }
 

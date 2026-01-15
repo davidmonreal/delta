@@ -30,7 +30,7 @@ export async function createComparisonCommentAction(
   });
 
   if (!parsed.success) {
-    return { error: "Cal una explicacio valida." };
+    return { error: "Fes una explicació més detallada, si us plau." };
   }
 
   const repo = new PrismaCommentRepository();
