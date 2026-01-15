@@ -1,24 +1,25 @@
 import { requireAdminSession } from "@/lib/require-auth";
 import { PrismaInvoiceRepository } from "@/modules/invoices/infrastructure/prismaInvoiceRepository";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
-import Link from "next/link";
 import { assignManagerAction } from "./actions";
 import UnmatchedInvoiceTable from "@/components/admin/UnmatchedInvoiceTable";
 import UploadDataPanel from "@/components/admin/UploadDataPanel";
 import { getUnmatchedAssignments } from "@/modules/invoices/application/getUnmatchedAssignments";
+import SuggestManagersButton from "@/components/admin/SuggestManagersButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function UploadPage({
   searchParams,
 }: {
-  searchParams?: { suggest?: string };
+  searchParams?: Promise<{ suggest?: string }>;
 }) {
   await requireAdminSession();
   const invoiceRepo = new PrismaInvoiceRepository();
   const userRepo = new PrismaUserRepository();
 
-  const suggestionsEnabled = searchParams?.suggest === "1";
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const suggestionsEnabled = resolvedSearchParams?.suggest === "1";
   const { lines: unmatchedLines, users } = await getUnmatchedAssignments({
     invoiceRepo,
     userRepo,
@@ -54,17 +55,11 @@ export default async function UploadPage({
               {unmatchedLines.length} línies pendents de casar.
             </p>
           </div>
-          <Link
+          <SuggestManagersButton
             href="/admin/upload?suggest=1"
-            aria-disabled={suggestionsEnabled || unmatchedLines.length === 0}
-            className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${
-              suggestionsEnabled || unmatchedLines.length === 0
-                ? "pointer-events-none bg-slate-200 text-slate-500"
-                : "bg-emerald-700 hover:bg-emerald-800"
-            }`}
-          >
-            {suggestionsEnabled ? "Suggeriments actius" : "Suggerir gestors"}
-          </Link>
+            disabled={unmatchedLines.length === 0}
+            suggestionsEnabled={suggestionsEnabled}
+          />
         </div>
         <UnmatchedInvoiceTable
           lines={unmatchedLines}

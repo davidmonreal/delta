@@ -19,6 +19,7 @@ export type BackfillProgress = {
 export interface InvoiceRepository {
   listUnmatched(): Promise<UnmatchedInvoiceLine[]>;
   assignManager(lineId: number, userId: number): Promise<void>;
+  assignManagerForClient(params: { clientId: number; userId: number }): Promise<number>;
   assignManagersForUser(params: {
     userId: number;
     nameNormalized: string;

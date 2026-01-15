@@ -18,11 +18,25 @@ export function suggestManagers({
   // but never auto-assign; the admin must confirm.
   if (userCandidates.length === 0) return lines;
 
+  const cacheByClientId = new Map<number, number | null>();
+
   return lines.map((line) => {
-    if (line.suggestedUserId) return line;
+    if (line.suggestedUserId) {
+      cacheByClientId.set(line.clientId, line.suggestedUserId);
+      return line;
+    }
+    const cached = cacheByClientId.get(line.clientId);
+    if (cached !== undefined) {
+      return cached ? { ...line, suggestedUserId: cached } : line;
+    }
+
     const candidateName = line.recentManagerName ?? line.manager;
-    if (!candidateName.trim()) return line;
+    if (!candidateName.trim()) {
+      cacheByClientId.set(line.clientId, null);
+      return line;
+    }
     const match = matchUserId(candidateName, userCandidates);
+    cacheByClientId.set(line.clientId, match.userId ?? null);
     if (!match.userId) return line;
     return { ...line, suggestedUserId: match.userId };
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { UnmatchedInvoiceLine } from "@/modules/invoices/ports/invoiceRepository";
 import { formatCurrency } from "@/lib/format";
@@ -31,6 +31,21 @@ export default function UnmatchedInvoiceTable({
   const [direction, setDirection] = useState<SortDirection>("asc");
   const pageSize = 20;
   const [page, setPage] = useState(1);
+  const [selectedUsersByLine, setSelectedUsersByLine] = useState<
+    Record<number, number | null>
+  >(() =>
+    Object.fromEntries(lines.map((line) => [line.id, line.suggestedUserId ?? null])),
+  );
+
+  useEffect(() => {
+    setSelectedUsersByLine(
+      Object.fromEntries(lines.map((line) => [line.id, line.suggestedUserId ?? null])),
+    );
+  }, [lines]);
+
+  const handleUserChange = useCallback((lineId: number, userId: number | null) => {
+    setSelectedUsersByLine((prev) => ({ ...prev, [lineId]: userId }));
+  }, []);
 
   const sortedLines = useMemo(() => {
     const withIndex = lines.map((line, index) => ({ line, index }));
@@ -50,6 +65,17 @@ export default function UnmatchedInvoiceTable({
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+  const selectionCounts = useMemo(() => {
+    const counts = new Map<number, Map<number, number>>();
+    for (const line of lines) {
+      const selectedUserId = selectedUsersByLine[line.id];
+      if (!selectedUserId) continue;
+      const byUser = counts.get(line.clientId) ?? new Map<number, number>();
+      byUser.set(selectedUserId, (byUser.get(selectedUserId) ?? 0) + 1);
+      counts.set(line.clientId, byUser);
+    }
+    return counts;
+  }, [lines, selectedUsersByLine]);
 
   useEffect(() => {
     setPage(1);
@@ -81,7 +107,12 @@ export default function UnmatchedInvoiceTable({
         <span className="text-right">Total</span>
         <span className="text-right">Assignar</span>
       </div>
-      {pagedLines.map((line) => (
+      {pagedLines.map((line) => {
+        const selectedUserId = selectedUsersByLine[line.id] ?? null;
+        const sameClientSelectedCount = selectedUserId
+          ? selectionCounts.get(line.clientId)?.get(selectedUserId) ?? 0
+          : 0;
+        return (
         <div
           key={line.id}
           className={`grid ${gridClass} items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800`}
@@ -97,13 +128,18 @@ export default function UnmatchedInvoiceTable({
           <div className="w-[320px]">
             <ManagerAssignForm
               lineId={line.id}
+              clientId={line.clientId}
+              clientName={line.clientName}
               users={users}
-              suggestedUserId={line.suggestedUserId}
+              selectedUserId={selectedUserId}
+              onSelectedUserIdChange={(userId) => handleUserChange(line.id, userId)}
+              sameClientSelectedCount={sameClientSelectedCount}
               action={action}
             />
           </div>
         </div>
-      ))}
+        );
+      })}
       <PaginationControls
         page={currentPage}
         totalItems={sortedLines.length}

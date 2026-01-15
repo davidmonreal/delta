@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireAdminSession } from "@/lib/require-auth";
 import { assignManager } from "@/modules/invoices/application/assignManager";
+import { assignManagerForClient } from "@/modules/invoices/application/assignManagerForClient";
 import { backfillManagers } from "@/modules/invoices/application/backfillManagers";
 import { importRowsWithSummary, type ImportRowError } from "@/modules/ingestion/application/importInvoiceLines";
 import { buildHeaderMap, validateHeaders } from "@/modules/ingestion/domain/headerUtils";
@@ -15,6 +16,8 @@ import { buildUserCandidates } from "@/modules/users/application/buildUserCandid
 const AssignSchema = z.object({
   lineId: z.coerce.number().int().positive(),
   userId: z.coerce.number().int().positive(),
+  clientId: z.coerce.number().int().positive().optional(),
+  bulk: z.enum(["0", "1"]).optional(),
 });
 
 export type UploadActionState = {
@@ -54,6 +57,8 @@ export async function assignManagerAction(formData: FormData): Promise<void> {
   const parsed = AssignSchema.safeParse({
     lineId: formData.get("lineId"),
     userId: formData.get("userId"),
+    clientId: formData.get("clientId"),
+    bulk: formData.get("bulk"),
   });
 
   if (!parsed.success) {
@@ -61,11 +66,20 @@ export async function assignManagerAction(formData: FormData): Promise<void> {
   }
 
   const repo = new PrismaInvoiceRepository();
-  await assignManager({
-    repo,
-    lineId: parsed.data.lineId,
-    userId: parsed.data.userId,
-  });
+  const wantsBulk = parsed.data.bulk === "1" && parsed.data.clientId;
+  if (wantsBulk) {
+    await assignManagerForClient({
+      repo,
+      clientId: parsed.data.clientId,
+      userId: parsed.data.userId,
+    });
+  } else {
+    await assignManager({
+      repo,
+      lineId: parsed.data.lineId,
+      userId: parsed.data.userId,
+    });
+  }
 
   revalidatePath("/admin/upload");
 }

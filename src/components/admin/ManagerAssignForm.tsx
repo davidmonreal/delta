@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import { SearchableDropdownSelect } from "@/components/common/SearchableDropdownSelect";
 
@@ -12,8 +12,12 @@ type UserOption = {
 
 type ManagerAssignFormProps = {
   lineId: number;
+  clientId: number;
+  clientName: string;
   users: UserOption[];
-  suggestedUserId?: number | null;
+  selectedUserId: number | null;
+  onSelectedUserIdChange: (userId: number | null) => void;
+  sameClientSelectedCount: number;
   action: (formData: FormData) => Promise<void>;
 };
 
@@ -23,16 +27,15 @@ function buildLabel(user: UserOption) {
 
 export default function ManagerAssignForm({
   lineId,
+  clientId,
+  clientName,
   users,
-  suggestedUserId,
+  selectedUserId,
+  onSelectedUserIdChange,
+  sameClientSelectedCount,
   action,
 }: ManagerAssignFormProps) {
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(
-    suggestedUserId ?? null,
-  );
-  useEffect(() => {
-    setSelectedUserId(suggestedUserId ?? null);
-  }, [suggestedUserId, lineId]);
+  const bulkInputRef = useRef<HTMLInputElement | null>(null);
   const options = useMemo(
     () =>
       [...users]
@@ -47,16 +50,41 @@ export default function ManagerAssignForm({
         })),
     [users],
   );
+  const userLabels = useMemo(
+    () => new Map(users.map((user) => [user.id, buildLabel(user)])),
+    [users],
+  );
+  const selectedUserLabel =
+    selectedUserId != null ? userLabels.get(selectedUserId) ?? "" : "";
+
+  const handleSubmit = useCallback(
+    () => {
+      if (!bulkInputRef.current) return;
+      if (!selectedUserId || sameClientSelectedCount <= 1) {
+        bulkInputRef.current.value = "0";
+        return;
+      }
+
+      const label = selectedUserLabel || "aquest usuari";
+      const wantsBulk = window.confirm(
+        `Vols assignar ${label} a totes les línies de ${clientName}?`,
+      );
+      bulkInputRef.current.value = wantsBulk ? "1" : "0";
+    },
+    [clientName, sameClientSelectedCount, selectedUserId, selectedUserLabel],
+  );
 
   return (
-    <form action={action} className="flex items-center gap-2">
+    <form action={action} className="flex items-center gap-2" onSubmit={handleSubmit}>
       <input type="hidden" name="lineId" value={lineId} />
       <input type="hidden" name="userId" value={selectedUserId ?? ""} />
+      <input type="hidden" name="clientId" value={clientId} />
+      <input ref={bulkInputRef} type="hidden" name="bulk" value="0" />
       <div className="min-w-[220px]">
         <SearchableDropdownSelect
           options={options}
           value={selectedUserId}
-          onChange={setSelectedUserId}
+          onChange={onSelectedUserIdChange}
           placeholder="Selecciona usuari"
           searchPlaceholder="Cerca usuari..."
           buttonClassName="h-10 text-sm"

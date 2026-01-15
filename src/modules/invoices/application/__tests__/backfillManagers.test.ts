@@ -17,6 +17,10 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return;
   }
 
+  async assignManagerForClient() {
+    return 0;
+  }
+
   async assignManagersForUser() {
     return 0;
   }

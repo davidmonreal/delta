@@ -1,21 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { assignManager } from "../assignManager";
+import { assignManagerForClient } from "../assignManagerForClient";
 import type { InvoiceRepository } from "../../ports/invoiceRepository";
 
 class InMemoryInvoiceRepository implements InvoiceRepository {
-  assigned: { lineId: number; userId: number } | null = null;
+  assigned: { clientId: number; userId: number } | null = null;
 
   async listUnmatched() {
     return [];
   }
 
-  async assignManager(lineId: number, userId: number) {
-    this.assigned = { lineId, userId };
+  async assignManager() {
+    return;
   }
 
-  async assignManagerForClient() {
-    return 0;
+  async assignManagerForClient({ clientId, userId }: { clientId: number; userId: number }) {
+    this.assigned = { clientId, userId };
+    return 1;
   }
 
   async assignManagersForUser() {
@@ -31,11 +32,12 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
   }
 }
 
-describe("assignManager", () => {
+describe("assignManagerForClient", () => {
   it("delegates to repository with ids", async () => {
     const repo = new InMemoryInvoiceRepository();
-    await assignManager({ repo, lineId: 10, userId: 20 });
 
-    expect(repo.assigned).toEqual({ lineId: 10, userId: 20 });
+    await assignManagerForClient({ repo, clientId: 30, userId: 50 });
+
+    expect(repo.assigned).toEqual({ clientId: 30, userId: 50 });
   });
 });

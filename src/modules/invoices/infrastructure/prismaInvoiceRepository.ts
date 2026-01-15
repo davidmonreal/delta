@@ -80,6 +80,21 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
+  async assignManagerForClient({
+    clientId,
+    userId,
+  }: {
+    clientId: number;
+    userId: number;
+  }) {
+    const result = await prisma.invoiceLine.updateMany({
+      where: { clientId, managerUserId: null },
+      data: { managerUserId: userId },
+    });
+
+    return result.count;
+  }
+
   async assignManagersForUser({
     userId,
     nameNormalized,
