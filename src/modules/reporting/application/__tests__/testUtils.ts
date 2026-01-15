@@ -70,6 +70,22 @@ export class InMemoryReportingRepository implements ReportingRepository {
     return this.latestEntryByClient.get(clientId) ?? null;
   }
 
+  async getMonthlyLinesForMonths({
+    months,
+    clientId,
+  }: {
+    months: YearMonth[];
+    clientId?: number;
+    managerUserId?: number;
+  }) {
+    const monthSet = new Set(months.map((entry) => `${entry.year}-${entry.month}`));
+    return this.monthlyLines.filter((row) => {
+      const matchesMonth = monthSet.has(`${row.year}-${row.month}`);
+      const matchesClient = clientId ? row.clientId === clientId : true;
+      return matchesMonth && matchesClient;
+    });
+  }
+
   async getMonthlyGroups({ years, month }: { years: number[]; month: number }) {
     return this.monthlyGroups.filter(
       (row) => years.includes(row.year) && row.month === month,

@@ -135,6 +135,58 @@ export class PrismaReportingRepository implements ReportingRepository {
     });
   }
 
+  async getMonthlyLinesForMonths({
+    months,
+    managerUserId,
+    clientId,
+  }: {
+    months: YearMonth[];
+    managerUserId?: number;
+    clientId?: number;
+  }): Promise<MonthlyLineRow[]> {
+    if (months.length === 0) return [];
+    const uniqueMonths = Array.from(
+      new Map(months.map((entry) => [`${entry.year}-${entry.month}`, entry])).values(),
+    );
+    const rows = await this.prismaClient.invoiceLine.findMany({
+      where: {
+        ...(clientId ? { clientId } : {}),
+        ...(managerUserId ? { managerUserId } : {}),
+        OR: uniqueMonths.map((entry) => ({
+          year: entry.year,
+          month: entry.month,
+        })),
+      },
+      select: {
+        clientId: true,
+        serviceId: true,
+        year: true,
+        month: true,
+        total: true,
+        units: true,
+        series: true,
+        albaran: true,
+        numero: true,
+        managerUserId: true,
+        ...managerSelect,
+      },
+    });
+
+    return rows.map((row) => ({
+      clientId: row.clientId,
+      serviceId: row.serviceId,
+      year: row.year,
+      month: row.month,
+      total: row.total,
+      units: row.units,
+      series: row.series,
+      albaran: row.albaran,
+      numero: row.numero,
+      managerUserId: row.managerUserId,
+      managerName: resolveManagerNameRow(row),
+    }));
+  }
+
   async getMonthlyGroups({
     years,
     month,

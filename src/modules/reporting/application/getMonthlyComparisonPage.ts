@@ -1,13 +1,19 @@
 import type { ReportingRepository } from "../ports/reportingRepository";
+import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
+import type { UserRole } from "@/modules/users/domain/userRole";
 import { toMonthlyComparisonViewModel } from "../dto/reportingViewModel";
 import { getMonthlyComparison } from "./getMonthlyComparison";
 
 export async function getMonthlyComparisonPage({
   repo,
+  linkedServiceRepo,
+  viewerRole,
   rawFilters,
   managerUserId,
 }: {
   repo: ReportingRepository;
+  linkedServiceRepo?: LinkedServiceRepository;
+  viewerRole?: UserRole;
   rawFilters: {
     year?: string | string[];
     month?: string | string[];
@@ -20,6 +26,8 @@ export async function getMonthlyComparisonPage({
 }) {
   const result = await getMonthlyComparison({
     repo,
+    linkedServiceRepo,
+    viewerRole,
     rawFilters,
     managerUserId,
   });

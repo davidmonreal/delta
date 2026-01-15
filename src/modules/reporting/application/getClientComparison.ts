@@ -1,9 +1,12 @@
 import { ClientIdSchema } from "../dto/reportingSchemas";
-import type { ReportingRepository } from "../ports/reportingRepository";
+import type { ReportingRepository, YearMonth } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
 import { applySummaryMetrics, filterSummaries, sortSummaries } from "./summaryUtils";
+import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
+import type { UserRole } from "@/modules/users/domain/userRole";
+import { isSuperadminRole } from "@/modules/users/domain/rolePolicies";
 
 export type ClientSummaryRow = {
   id: string;
@@ -39,11 +42,15 @@ export type ClientComparisonResult =
 
 export async function getClientComparison({
   repo,
+  linkedServiceRepo,
+  viewerRole,
   rawFilters,
   rawClientId,
   managerUserId,
 }: {
   repo: ReportingRepository;
+  linkedServiceRepo?: LinkedServiceRepository;
+  viewerRole?: UserRole;
   rawFilters: {
     year?: string | string[];
     month?: string | string[];
@@ -80,9 +87,43 @@ export async function getClientComparison({
     month: filters.month,
     managerUserId,
   });
+  const includeLinkedMissing =
+    filters.showMissing &&
+    viewerRole &&
+    isSuperadminRole(viewerRole) &&
+    linkedServiceRepo;
+  const linkedServices = includeLinkedMissing
+    ? await linkedServiceRepo.listLinks()
+    : [];
+  const linkedOffsets = new Set(linkedServices.map((link) => link.offsetMonths));
+  const extraOffsets = Array.from(linkedOffsets).filter(
+    (offset) => offset !== 0 && offset !== 12,
+  );
+  const offsetMonthMap = new Map<number, YearMonth>();
+  for (const offset of extraOffsets) {
+    const shifted = new Date(filters.year, filters.month - 1 - offset, 1);
+    offsetMonthMap.set(offset, {
+      year: shifted.getFullYear(),
+      month: shifted.getMonth() + 1,
+    });
+  }
+  const extraLines = includeLinkedMissing
+    ? await repo.getMonthlyLinesForMonths({
+        months: Array.from(offsetMonthMap.values()),
+        managerUserId,
+        clientId,
+      })
+    : [];
 
-  const serviceIds = Array.from(new Set(lines.map((line) => line.serviceId)));
-  const services = await repo.getServicesByIds(serviceIds);
+  const serviceIds = new Set<number>();
+  for (const line of [...lines, ...extraLines]) {
+    serviceIds.add(line.serviceId);
+  }
+  for (const link of linkedServices) {
+    serviceIds.add(link.serviceId);
+    serviceIds.add(link.linkedServiceId);
+  }
+  const services = await repo.getServicesByIds(Array.from(serviceIds));
   const serviceMap = new Map(
     services.map((service) => [service.id, service.conceptRaw]),
   );
@@ -190,6 +231,73 @@ export async function getClientComparison({
   }
 
   const flattened = Array.from(rows.values()).flat();
+  if (includeLinkedMissing) {
+    const currentLines = lines.filter((line) => line.year === filters.year);
+    const previousYearLines = lines.filter(
+      (line) => line.year === filters.previousYear,
+    );
+    const existingMissingKeys = new Set(
+      flattened
+        .filter((row) => row.previousUnits > 0 && row.currentUnits === 0)
+        .map((row) => `${row.serviceId}`),
+    );
+    const currentKeys = new Set(currentLines.map((line) => `${line.serviceId}`));
+    const linkMap = new Map<
+      number,
+      Array<{ otherServiceId: number; offsetMonths: number }>
+    >();
+    for (const link of linkedServices) {
+      const entries = linkMap.get(link.serviceId) ?? [];
+      entries.push({ otherServiceId: link.linkedServiceId, offsetMonths: link.offsetMonths });
+      linkMap.set(link.serviceId, entries);
+      if (link.linkedServiceId !== link.serviceId) {
+        const reverse = linkMap.get(link.linkedServiceId) ?? [];
+        reverse.push({ otherServiceId: link.serviceId, offsetMonths: link.offsetMonths });
+        linkMap.set(link.linkedServiceId, reverse);
+      }
+    }
+    const triggerLinesByOffset = new Map<number, typeof lines>();
+    triggerLinesByOffset.set(0, currentLines);
+    triggerLinesByOffset.set(12, previousYearLines);
+    for (const [offset, month] of offsetMonthMap.entries()) {
+      const scoped = extraLines.filter(
+        (line) => line.year === month.year && line.month === month.month,
+      );
+      triggerLinesByOffset.set(offset, scoped);
+    }
+    const linkedMissingRows: ClientSummaryRow[] = [];
+    for (const [offset, triggerLines] of triggerLinesByOffset.entries()) {
+      for (const trigger of triggerLines) {
+        const links = linkMap.get(trigger.serviceId) ?? [];
+        for (const link of links) {
+          if (link.offsetMonths !== offset) continue;
+          const key = `${link.otherServiceId}`;
+          if (currentKeys.has(key) || existingMissingKeys.has(key)) {
+            continue;
+          }
+          existingMissingKeys.add(key);
+          linkedMissingRows.push({
+            id: `${link.otherServiceId}-${rowCounter++}`,
+            serviceId: link.otherServiceId,
+            serviceName: serviceMap.get(link.otherServiceId) ?? "Unknown service",
+            managerName: trigger.managerName ?? null,
+            managerUserId: trigger.managerUserId ?? null,
+            previousRef: null,
+            currentRef: null,
+            previousTotal: 0,
+            currentTotal: 0,
+            previousUnits: 0,
+            currentUnits: 0,
+            previousUnitPrice: Number.NaN,
+            currentUnitPrice: Number.NaN,
+            deltaPrice: Number.NaN,
+            isMissing: true,
+          });
+        }
+      }
+    }
+    flattened.push(...linkedMissingRows);
+  }
   const summaries = sortSummaries(
     filterSummaries(
       flattened.map((row) => applySummaryMetrics(row)),

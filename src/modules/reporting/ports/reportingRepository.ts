@@ -111,6 +111,11 @@ export interface ReportingRepository {
     clientId: number,
     params?: { managerUserId?: number },
   ): Promise<YearMonth | null>;
+  getMonthlyLinesForMonths(params: {
+    months: YearMonth[];
+    managerUserId?: number;
+    clientId?: number;
+  }): Promise<MonthlyLineRow[]>;
   getMonthlyGroups(params: {
     years: number[];
     month: number;

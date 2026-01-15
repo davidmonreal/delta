@@ -32,6 +32,18 @@ describe("summaryUtils", () => {
     expect(result.percentDelta).toBeUndefined();
   });
 
+  it("keeps explicit missing flags even without previous units", () => {
+    const result = applySummaryMetrics({
+      previousTotal: 0,
+      previousUnits: 0,
+      currentTotal: 0,
+      currentUnits: 0,
+      isMissing: true,
+    });
+
+    expect(result.isMissing).toBe(true);
+  });
+
   it("filters summaries by show flags", () => {
     const summaries = [
       { deltaPrice: -1.5, isMissing: false, isNew: false },

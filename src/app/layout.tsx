@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import AppHeader from "@/components/layout/AppHeader";
-import { canSeeAdminNav } from "@/modules/users/domain/uiPolicies";
+import { canSeeAdminNav, canSeeLinkedServices } from "@/modules/users/domain/uiPolicies";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +19,9 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const showAdminLink = session ? canSeeAdminNav(session.user.role) : false;
   const showUploadLink = showAdminLink;
+  const showLinkedServicesLink = session
+    ? canSeeLinkedServices(session.user.role)
+    : false;
 
   return (
     <html lang="ca">
@@ -27,6 +30,7 @@ export default async function RootLayout({
           <AppHeader
             showAdminLink={showAdminLink}
             showUploadLink={showUploadLink}
+            showLinkedServicesLink={showLinkedServicesLink}
             role={session.user.role}
             name={session.user.name}
             email={session.user.email}

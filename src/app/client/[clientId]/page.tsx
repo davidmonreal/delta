@@ -9,6 +9,7 @@ import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
 import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prismaCommentRepository";
 import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
 import { monthLabels } from "@/modules/reporting/domain/monthLabels";
+import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
@@ -39,9 +40,12 @@ export default async function ClientPage({
     ? undefined
     : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
+  const linkedServiceRepo = new PrismaLinkedServiceRepository();
   const result = toClientComparisonDto(
     await getClientComparison({
       repo,
+      linkedServiceRepo,
+      viewerRole: session.user.role,
       rawFilters: {
         year: resolvedSearchParams.year,
         month: resolvedSearchParams.month,
@@ -54,6 +58,7 @@ export default async function ClientPage({
       managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
     }),
   );
+  await linkedServiceRepo.disconnect?.();
   if (result.notFound) {
     notFound();
   }

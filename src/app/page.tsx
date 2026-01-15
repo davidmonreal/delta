@@ -6,6 +6,7 @@ import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prism
 import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
 import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
 import { listUsersForFilter } from "@/modules/users/application/listUsersForFilter";
+import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
 import ComparisonTable from "@/components/reporting/ComparisonTable";
@@ -33,9 +34,12 @@ export default async function Home({
     ? undefined
     : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
+  const linkedServiceRepo = new PrismaLinkedServiceRepository();
   const { filters, rows, summariesCount, sumDeltaVisible } =
     await getMonthlyComparisonPage({
       repo,
+      linkedServiceRepo,
+      viewerRole: session.user.role,
       rawFilters: {
         year: resolvedSearchParams.year,
         month: resolvedSearchParams.month,
@@ -46,6 +50,7 @@ export default async function Home({
       },
       managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
     });
+  await linkedServiceRepo.disconnect?.();
   const {
     year,
     month,

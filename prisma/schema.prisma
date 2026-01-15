@@ -50,6 +50,8 @@ model Service {
   conceptNormalized String        @unique
   lines             InvoiceLine[]
   comparisonComments ComparisonComment[]
+  serviceLinks      ServiceLink[] @relation("ServiceLinks")
+  linkedServiceLinks ServiceLink[] @relation("LinkedServiceLinks")
 }
 
 model InvoiceLine {
@@ -101,6 +103,20 @@ model ComparisonComment {
 
   @@index([userId])
   @@index([clientId, serviceId, year, month])
+}
+
+model ServiceLink {
+  id              Int      @id @default(autoincrement())
+  service         Service  @relation("ServiceLinks", fields: [serviceId], references: [id])
+  serviceId       Int
+  linkedService   Service  @relation("LinkedServiceLinks", fields: [linkedServiceId], references: [id])
+  linkedServiceId Int
+  offsetMonths    Int
+  createdAt       DateTime @default(now())
+
+  @@unique([serviceId, linkedServiceId, offsetMonths])
+  @@index([serviceId])
+  @@index([linkedServiceId])
 }
 
 model UploadJob {

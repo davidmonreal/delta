@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 type AppHeaderProps = {
   showAdminLink: boolean;
   showUploadLink: boolean;
+  showLinkedServicesLink: boolean;
   role: string;
   name?: string | null;
   email?: string | null;
@@ -15,6 +16,7 @@ type AppHeaderProps = {
 export default function AppHeader({
   showAdminLink,
   showUploadLink,
+  showLinkedServicesLink,
   role,
   name,
   email,
@@ -26,6 +28,7 @@ export default function AppHeader({
   const isHome = pathname === "/" || pathname.startsWith("/client");
   const isUsers = pathname.startsWith("/admin/users");
   const isUpload = pathname.startsWith("/admin/upload");
+  const isLinkedServices = pathname.startsWith("/admin/linked-services");
 
   return (
     <nav className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur">
@@ -44,6 +47,14 @@ export default function AppHeader({
         {showUploadLink ? (
           <Link href="/admin/upload" className={isUpload ? activeClass : baseClass}>
             Upload
+          </Link>
+        ) : null}
+        {showLinkedServicesLink ? (
+          <Link
+            href="/admin/linked-services"
+            className={isLinkedServices ? activeClass : baseClass}
+          >
+            Serveis vinculats
           </Link>
         ) : null}
       </div>

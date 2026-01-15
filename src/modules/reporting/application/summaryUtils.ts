@@ -5,6 +5,8 @@ export type SummaryMetricsInput = {
   currentTotal: number;
   previousUnits: number;
   currentUnits: number;
+  isMissing?: boolean;
+  isNew?: boolean;
 };
 
 export type SummaryMetrics = {
@@ -23,8 +25,10 @@ export function applySummaryMetrics<T extends SummaryMetricsInput>(row: T): T & 
     row.currentUnits > 0 ? row.currentTotal / row.currentUnits : Number.NaN;
   const hasBoth = row.previousUnits > 0 && row.currentUnits > 0;
   const deltaPrice = hasBoth ? currentUnitPrice - previousUnitPrice : Number.NaN;
-  const isMissing = row.previousUnits > 0 && row.currentUnits === 0;
-  const isNew = row.previousUnits === 0 && row.currentUnits > 0;
+  const computedMissing = row.previousUnits > 0 && row.currentUnits === 0;
+  const computedNew = row.previousUnits === 0 && row.currentUnits > 0;
+  const isMissing = row.isMissing === true ? true : computedMissing;
+  const isNew = row.isNew === true ? true : computedNew;
   return {
     ...row,
     previousUnitPrice,
