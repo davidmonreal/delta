@@ -55,10 +55,9 @@ export function filterSummaries<T extends SummaryFilterShape>(
     filters.showPercentEqual,
     filters.showPercentOver,
   ];
+  const hasPercentFilter = percentFlags.some(Boolean);
   const applyPercentFilter =
-    filters.showPositive &&
-    percentFlags.some(Boolean) &&
-    !percentFlags.every(Boolean);
+    filters.showPositive && hasPercentFilter && !percentFlags.every(Boolean);
   // Business rule: 3% is the expected annual increase; we treat it as "equal"
   // with a small tolerance to avoid rounding noise.
   const percentThreshold = 3;
@@ -77,6 +76,7 @@ export function filterSummaries<T extends SummaryFilterShape>(
             : !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
 
     if (!matchesShow) return false;
+    if (filters.showPositive && !hasPercentFilter) return false;
     if (!applyPercentFilter) return true;
     if (row.percentDelta === undefined || Number.isNaN(row.percentDelta)) return false;
 

@@ -50,6 +50,7 @@ export default function PercentFilterForm({
       <input type="hidden" name="show" value={show} />
       <span className="uppercase tracking-[0.2em] text-slate-400">Variació %</span>
       <label className="flex items-center gap-2">
+        <input type="hidden" name="pctUnder" value="0" />
         <input
           type="checkbox"
           name="pctUnder"
@@ -60,6 +61,7 @@ export default function PercentFilterForm({
         Menys del 3%
       </label>
       <label className="flex items-center gap-2">
+        <input type="hidden" name="pctEqual" value="0" />
         <input
           type="checkbox"
           name="pctEqual"
@@ -70,6 +72,7 @@ export default function PercentFilterForm({
         3%
       </label>
       <label className="flex items-center gap-2">
+        <input type="hidden" name="pctOver" value="0" />
         <input
           type="checkbox"
           name="pctOver"

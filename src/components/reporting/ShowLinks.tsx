@@ -24,9 +24,9 @@ export default function ShowLinks({
       ? "rounded-full bg-emerald-700 px-3 py-1 text-white shadow-sm"
       : "rounded-full border border-emerald-200 bg-white px-3 py-1 text-emerald-800 hover:bg-emerald-50";
   const percentParams = new URLSearchParams({
-    ...(showPercentUnder ? { pctUnder: "1" } : {}),
-    ...(showPercentEqual ? { pctEqual: "1" } : {}),
-    ...(showPercentOver ? { pctOver: "1" } : {}),
+    pctUnder: showPercentUnder ? "1" : "0",
+    pctEqual: showPercentEqual ? "1" : "0",
+    pctOver: showPercentOver ? "1" : "0",
   });
   const percentSuffix = percentParams.toString();
   const percentQuery = percentSuffix ? `&${percentSuffix}` : "";

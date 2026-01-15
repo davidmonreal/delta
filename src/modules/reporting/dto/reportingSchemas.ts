@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 const CheckboxSchema = z.preprocess((value) => {
-  if (value === "1" || value === "on" || value === "true") return true;
+  const normalized = Array.isArray(value) ? value[value.length - 1] : value;
+  if (normalized === "1" || normalized === "on" || normalized === "true") return true;
+  if (normalized === "0" || normalized === "false") return false;
   return undefined;
 }, z.boolean().optional());
 

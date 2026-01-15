@@ -44,12 +44,12 @@ export async function getClientComparison({
 }: {
   repo: ReportingRepository;
   rawFilters: {
-    year?: string;
-    month?: string;
-    show?: string;
-    pctUnder?: string;
-    pctEqual?: string;
-    pctOver?: string;
+    year?: string | string[];
+    month?: string | string[];
+    show?: string | string[];
+    pctUnder?: string | string[];
+    pctEqual?: string | string[];
+    pctOver?: string | string[];
   };
   rawClientId: string;
   managerUserId?: number;

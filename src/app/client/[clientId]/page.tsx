@@ -14,12 +14,12 @@ import PercentFilterForm from "@/components/reporting/PercentFilterForm";
 import ClientInvoiceGroups from "@/components/reporting/ClientInvoiceGroups";
 
 type SearchParams = {
-  year?: string;
-  month?: string;
-  show?: string;
-  pctUnder?: string;
-  pctEqual?: string;
-  pctOver?: string;
+  year?: string | string[];
+  month?: string | string[];
+  show?: string | string[];
+  pctUnder?: string | string[];
+  pctEqual?: string | string[];
+  pctOver?: string | string[];
 };
 
 export default async function ClientPage({

@@ -19,7 +19,14 @@ export function resolveFilters({
   raw,
   defaults,
 }: {
-  raw: { year?: string; month?: string; show?: string };
+  raw: {
+    year?: string | string[];
+    month?: string | string[];
+    show?: string | string[];
+    pctUnder?: string | string[];
+    pctEqual?: string | string[];
+    pctOver?: string | string[];
+  };
   defaults: { year: number; month: number };
 }): ResolvedFilters {
   // Business rule: compare the selected month against the same month of the previous year,
