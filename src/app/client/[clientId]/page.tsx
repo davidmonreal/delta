@@ -81,6 +81,7 @@ export default async function ClientPage({
     title: row.serviceName,
     subtitle: row.managerName ?? undefined,
     managerUserId: row.managerUserId ?? null,
+    managerName: row.managerName ?? null,
     missingReason: row.missingReason,
     previousUnits: row.previousUnits,
     currentUnits: row.currentUnits,

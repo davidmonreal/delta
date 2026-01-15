@@ -60,6 +60,13 @@ export default function AdminComparisonTable({
 
   const filteredRows = useMemo(() => {
     const normalizedQuery = normalizeSearch(query.trim());
+    const selectedUser =
+      selectedUserId && selectedUserId !== "all"
+        ? users?.find((user) => String(user.id) === selectedUserId) ?? null
+        : null;
+    const selectedLabel = selectedUser?.label
+      ? normalizeSearch(selectedUser.label)
+      : null;
     return rows.filter((row) => {
       if (normalizedQuery) {
         const normalizedTitle = normalizeSearch(row.title);
@@ -69,13 +76,24 @@ export default function AdminComparisonTable({
       }
       if (selectedUserId && selectedUserId !== "all") {
         const userId = Number.parseInt(selectedUserId, 10);
-        if (Number.isNaN(userId) || row.managerUserId !== userId) {
-          return false;
+        if (!Number.isNaN(userId) && row.managerUserId === userId) {
+          return true;
         }
+        if (selectedLabel) {
+          const managerLabel = row.managerName
+            ? normalizeSearch(row.managerName)
+            : row.subtitle
+              ? normalizeSearch(row.subtitle)
+              : "";
+          if (managerLabel.includes(selectedLabel)) {
+            return true;
+          }
+        }
+        return false;
       }
       return true;
     });
-  }, [rows, query, selectedUserId]);
+  }, [rows, query, selectedUserId, users]);
 
   return (
     <div className="flex flex-col gap-4">
