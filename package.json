@@ -19,7 +19,9 @@
     "user:create": "tsx scripts/create-user.ts",
     "managers:reconcile": "tsx scripts/reconcile-managers.ts",
     "managers:report": "tsx scripts/report-unmatched-managers.ts",
-    "users:report": "tsx scripts/report-users.ts"
+    "users:report": "tsx scripts/report-users.ts",
+    "seed:linked-services": "tsx scripts/seed-linked-services-demo.ts",
+    "seed:linked-services:reset": "tsx scripts/seed-linked-services-demo.ts --reset"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

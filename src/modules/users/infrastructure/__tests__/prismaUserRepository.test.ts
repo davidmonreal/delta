@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/db";
+import { cleanupPrismaTestData } from "@/lib/prismaTestCleanup";
 import { PrismaUserRepository } from "../prismaUserRepository";
 
 const describeDb =
@@ -9,6 +10,10 @@ const describeDb =
     : describe.skip;
 
 describeDb("PrismaUserRepository", () => {
+  afterEach(async () => {
+    await cleanupPrismaTestData();
+  });
+
   it("creates, updates, and deletes a user", async () => {
     const repo = new PrismaUserRepository();
     const email = `test-${Date.now()}@example.com`;

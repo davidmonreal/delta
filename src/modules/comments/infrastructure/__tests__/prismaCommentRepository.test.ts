@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
+import { cleanupPrismaTestData } from "@/lib/prismaTestCleanup";
 import { PrismaCommentRepository } from "../prismaCommentRepository";
 
 const describeDb =
@@ -10,6 +11,10 @@ const describeDb =
     : describe.skip;
 
 describeDb("PrismaCommentRepository", () => {
+  afterEach(async () => {
+    await cleanupPrismaTestData();
+  });
+
   it("creates a comparison comment", async () => {
     const repo = new PrismaCommentRepository();
     const runId = Date.now();

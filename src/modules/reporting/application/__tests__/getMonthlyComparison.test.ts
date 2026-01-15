@@ -2,6 +2,43 @@ import { describe, expect, it } from "vitest";
 
 import { getMonthlyComparison } from "../getMonthlyComparison";
 import { InMemoryReportingRepository } from "./testUtils";
+import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
+
+class InMemoryLinkedServiceRepository implements LinkedServiceRepository {
+  constructor(
+    private links: Array<{
+      id: number;
+      serviceId: number;
+      linkedServiceId: number;
+      offsetMonths: number;
+    }>,
+  ) {}
+
+  async listServices() {
+    return [];
+  }
+
+  async listLinks() {
+    return this.links;
+  }
+
+  async findLink() {
+    return null;
+  }
+
+  async createLink() {
+    return {
+      id: 0,
+      serviceId: 0,
+      linkedServiceId: 0,
+      offsetMonths: 0,
+    };
+  }
+
+  async deleteLink() {
+    return;
+  }
+}
 
 const baseMonth = 1;
 const year = 2024;
@@ -106,5 +143,47 @@ describe("getMonthlyComparison", () => {
     expect(result.summaries).toHaveLength(1);
     expect(result.summaries[0].isMissing).toBe(true);
     expect(result.showCounts.miss).toBe(1);
+  });
+
+  it("flags missing when a linked service was present 3 months ago", async () => {
+    const repo = new InMemoryReportingRepository({
+      latestEntry: { year: 2025, month: 6 },
+      monthlyLines: [
+        {
+          clientId: 1,
+          serviceId: 10,
+          year: 2025,
+          month: 3,
+          total: 100,
+          units: 1,
+          series: "A",
+          albaran: null,
+          numero: "1",
+          managerUserId: null,
+          managerName: null,
+        },
+      ],
+      clients: [{ id: 1, nameRaw: "Client A" }],
+      services: [
+        { id: 10, conceptRaw: "Servei base" },
+        { id: 20, conceptRaw: "Servei vinculat" },
+      ],
+    });
+    const linkedServiceRepo = new InMemoryLinkedServiceRepository([
+      { id: 1, serviceId: 10, linkedServiceId: 20, offsetMonths: 3 },
+    ]);
+
+    const result = await getMonthlyComparison({
+      repo,
+      linkedServiceRepo,
+      viewerRole: "SUPERADMIN",
+      rawFilters: { year: "2025", month: "6", show: "miss" },
+    });
+
+    const missing = result.summaries.find(
+      (row) => row.clientId === 1 && row.serviceId === 20,
+    );
+    expect(missing?.isMissing).toBe(true);
+    expect(missing?.missingReason).toContain("3 mesos");
   });
 });

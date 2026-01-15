@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
+import { cleanupPrismaTestData } from "@/lib/prismaTestCleanup";
 import { PrismaInvoiceRepository } from "../prismaInvoiceRepository";
 
 const describeDb =
@@ -10,6 +11,10 @@ const describeDb =
     : describe.skip;
 
 describeDb("PrismaInvoiceRepository", () => {
+  afterEach(async () => {
+    await cleanupPrismaTestData();
+  });
+
   it("counts and assigns unassigned manager lines", async () => {
     const repo = new PrismaInvoiceRepository();
     const runId = Date.now();
