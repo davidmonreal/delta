@@ -37,7 +37,7 @@ export default async function AdminUsersPage({
             Administració
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-slate-900">
-            Gestio d'usuaris
+            Gestio d&apos;usuaris
           </h1>
           <p className="mt-2 text-base text-slate-500">
             {allowSuperadmin

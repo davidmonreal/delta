@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { requireSession } from "@/lib/require-auth";
@@ -104,6 +105,7 @@ export default async function ClientPage({
     title: row.serviceName,
     subtitle: row.managerName ?? undefined,
     managerUserId: row.managerUserId ?? null,
+    missingReason: row.missingReason,
     previousUnits: row.previousUnits,
     currentUnits: row.currentUnits,
     previousUnitPrice: row.previousUnitPrice,
@@ -121,7 +123,14 @@ export default async function ClientPage({
       <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-4">
-            <img src="/logo-busbac.png" alt="Busbac" className="h-16 w-auto" />
+            <Image
+              src="/logo-busbac.png"
+              alt="Busbac"
+              width={128}
+              height={64}
+              className="h-16 w-auto"
+              priority
+            />
           </div>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900">
             {client.nameRaw}
@@ -175,6 +184,7 @@ export default async function ClientPage({
           showMissing={showMissing}
           showNew={showNew}
           firstColumnLabel="Servei"
+          subtitleLayout="manager-only"
         />
         <ComparisonSummaryRow
           label="Total diferència"

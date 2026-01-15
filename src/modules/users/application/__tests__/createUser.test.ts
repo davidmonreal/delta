@@ -20,7 +20,7 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 0,
       countUnassignedByManagerName: async () => 0,
-      backfillManagers: async (_params) => 0,
+      backfillManagers: async () => 0,
     };
     const result = await createUser({
       input: { ...baseInput, role: "SUPERADMIN" },
@@ -50,7 +50,7 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 0,
       countUnassignedByManagerName: async () => 0,
-      backfillManagers: async (_params) => 0,
+      backfillManagers: async () => 0,
     };
     const result = await createUser({
       input: baseInput,
@@ -70,7 +70,7 @@ describe("createUser", () => {
       assignManager: async () => undefined,
       assignManagersForUser: async () => 2,
       countUnassignedByManagerName: async () => 0,
-      backfillManagers: async (_params) => 0,
+      backfillManagers: async () => 0,
     };
     const result = await createUser({
       input: baseInput,

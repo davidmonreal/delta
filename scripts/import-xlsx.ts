@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -14,7 +13,6 @@ type ImportDependencies = {
   ingestRepo?: IngestionRepository;
   userRepo?: UserRepository;
   importFile?: typeof importXlsxFile;
-  readDir?: (dir: string) => string[];
   logger?: Pick<typeof console, "log">;
 };
 
@@ -23,7 +21,6 @@ export async function main({
   ingestRepo,
   userRepo,
   importFile = importXlsxFile,
-  readDir = (dir) => fs.readdirSync(dir),
   logger = console,
 }: ImportDependencies = {}) {
   const reset = args.includes("--reset");

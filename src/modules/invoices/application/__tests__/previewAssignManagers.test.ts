@@ -20,10 +20,7 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return nameNormalized === "TONI NAVARRETE" ? 5 : 0;
   }
 
-  async backfillManagers(_: {
-    userCandidates: { id: number; nameNormalized: string }[];
-    onProgress?: (progress: { processed: number; total: number }) => Promise<void> | void;
-  }) {
+  async backfillManagers() {
     return 0;
   }
 }

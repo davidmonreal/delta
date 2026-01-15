@@ -1,20 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { getLatestComparisonComment } from "../getLatestComparisonComment";
-import type {
-  CommentRepository,
-  ComparisonCommentSummary,
-  CreateComparisonCommentData,
-} from "../../ports/commentRepository";
+import type { CommentRepository, ComparisonCommentSummary } from "../../ports/commentRepository";
 
 class InMemoryCommentRepository implements CommentRepository {
-  async createComparisonComment(_data: CreateComparisonCommentData) {
+  async createComparisonComment() {
     return;
   }
 
-  async findLatestByContext(
-    _params: Parameters<CommentRepository["findLatestByContext"]>[0],
-  ): Promise<ComparisonCommentSummary | null> {
+  async findLatestByContext(): Promise<ComparisonCommentSummary | null> {
     return {
       kind: "REPORT_ERROR",
       message: "Exemple",

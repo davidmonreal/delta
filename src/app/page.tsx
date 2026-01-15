@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { requireSession } from "@/lib/require-auth";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
@@ -94,7 +96,14 @@ export default async function Home({
       <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-4">
-            <img src="/logo-busbac.png" alt="Busbac" className="h-16 w-auto" />
+            <Image
+              src="/logo-busbac.png"
+              alt="Busbac"
+              width={128}
+              height={64}
+              className="h-16 w-auto"
+              priority
+            />
             <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
               Comparativa mensual
             </p>

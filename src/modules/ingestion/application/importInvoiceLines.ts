@@ -180,7 +180,6 @@ export async function buildInvoiceLines({
   rows,
   sourceFile,
   repo,
-  userCandidates,
   strict = true,
   maxErrors = 20,
 }: BuildLinesParams): Promise<{

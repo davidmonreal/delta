@@ -55,9 +55,7 @@ export function DropdownSelect<T extends string | number>({
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setOpen(false);
-    }
+    setOpen(false);
   }, [value]);
 
   return (

@@ -66,7 +66,6 @@ export default function UploadDataPanel() {
     total: 0,
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [job, setJob] = useState<UploadJob | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [hasFile, setHasFile] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
@@ -78,7 +77,6 @@ export default function UploadDataPanel() {
   };
 
   const updateFromJob = (nextJob: UploadJob) => {
-    setJob(nextJob);
     setIsProcessing(isProcessingStatus(nextJob.status));
 
     const nextProgress = getProgressUpdate(nextJob);
@@ -129,7 +127,6 @@ export default function UploadDataPanel() {
       const result = await fetchUploadJob(jobId);
       if (result.status === "not_found") {
         setJobId(null);
-        setJob(null);
         setIsProcessing(false);
         resetProgress();
         return;
@@ -162,7 +159,6 @@ export default function UploadDataPanel() {
 
     setState(initialUploadActionState);
     setIsProcessing(true);
-    setJob(null);
 
     const file = fileInputRef.current?.files?.[0];
     if (!file) {

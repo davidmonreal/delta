@@ -14,6 +14,7 @@ export type ClientSummaryRow = {
   serviceName: string;
   managerName?: string | null;
   managerUserId?: number | null;
+  missingReason?: string;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;
@@ -265,6 +266,10 @@ export async function getClientComparison({
       );
       triggerLinesByOffset.set(offset, scoped);
     }
+    const formatOffsetLabel = (offset: number) => {
+      if (offset === 0) return "mateix mes";
+      return offset === 1 ? "1 mes" : `${offset} mesos`;
+    };
     const linkedMissingRows: ClientSummaryRow[] = [];
     for (const [offset, triggerLines] of triggerLinesByOffset.entries()) {
       for (const trigger of triggerLines) {
@@ -276,12 +281,15 @@ export async function getClientComparison({
             continue;
           }
           existingMissingKeys.add(key);
+          const triggerLabel =
+            serviceMap.get(trigger.serviceId) ?? "Servei desconegut";
           linkedMissingRows.push({
             id: `${link.otherServiceId}-${rowCounter++}`,
             serviceId: link.otherServiceId,
             serviceName: serviceMap.get(link.otherServiceId) ?? "Unknown service",
             managerName: trigger.managerName ?? null,
             managerUserId: trigger.managerUserId ?? null,
+            missingReason: `↔ ${triggerLabel} · ${formatOffsetLabel(offset)}`,
             previousRef: null,
             currentRef: null,
             previousTotal: 0,

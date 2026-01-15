@@ -39,7 +39,9 @@ export default function LinkedServicesConfigurator({
   );
   const [linkedServiceId, setLinkedServiceId] = useState<number | null>(null);
   const [offsetMonths, setOffsetMonths] = useState(3);
+  const [searchQuery, setSearchQuery] = useState("");
   const [state, setState] = useState<ActionState>(initialState);
+  const [listState, setListState] = useState<ActionState>(initialState);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -57,31 +59,39 @@ export default function LinkedServicesConfigurator({
     [services],
   );
 
-  const selectedLinks = useMemo(() => {
-    if (!selectedServiceId) return [];
+  const filteredLinks = useMemo(() => {
+    const normalizedQuery = searchQuery
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("ca");
     return links
-      .filter(
-        (link) =>
-          link.serviceId === selectedServiceId ||
-          link.linkedServiceId === selectedServiceId,
-      )
-      .map((link) => {
-        const otherServiceId =
-          link.serviceId === selectedServiceId
-            ? link.linkedServiceId
-            : link.serviceId;
-        return {
-          id: link.id,
-          offsetMonths: link.offsetMonths,
-          otherServiceId,
-          otherLabel: serviceMap.get(otherServiceId) ?? "Servei desconegut",
-        };
+      .map((link) => ({
+        id: link.id,
+        offsetMonths: link.offsetMonths,
+        serviceId: link.serviceId,
+        linkedServiceId: link.linkedServiceId,
+        serviceLabel: serviceMap.get(link.serviceId) ?? "Servei desconegut",
+        linkedLabel: serviceMap.get(link.linkedServiceId) ?? "Servei desconegut",
+      }))
+      .filter((link) => {
+        if (!normalizedQuery) return true;
+        const haystack = `${link.serviceLabel} ${link.linkedLabel}`
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLocaleLowerCase("ca");
+        return haystack.includes(normalizedQuery);
       })
       .sort((a, b) => {
-        if (a.offsetMonths !== b.offsetMonths) return a.offsetMonths - b.offsetMonths;
-        return a.otherLabel.localeCompare(b.otherLabel, "ca");
+        if (a.serviceLabel !== b.serviceLabel) {
+          return a.serviceLabel.localeCompare(b.serviceLabel, "ca");
+        }
+        if (a.linkedLabel !== b.linkedLabel) {
+          return a.linkedLabel.localeCompare(b.linkedLabel, "ca");
+        }
+        return a.offsetMonths - b.offsetMonths;
       });
-  }, [links, selectedServiceId, serviceMap]);
+  }, [links, searchQuery, serviceMap]);
 
   function handleCreate() {
     if (!selectedServiceId || !linkedServiceId) {
@@ -97,6 +107,7 @@ export default function LinkedServicesConfigurator({
     startTransition(async () => {
       const result = await createServiceLinkAction(initialState, formData);
       setState(result);
+      setListState(initialState);
       if (result.success) {
         setLinkedServiceId(null);
         router.refresh();
@@ -109,7 +120,7 @@ export default function LinkedServicesConfigurator({
     formData.set("id", String(id));
     startTransition(async () => {
       const result = await deleteServiceLinkAction(initialState, formData);
-      setState(result);
+      setListState(result);
       if (result.success) {
         router.refresh();
       }
@@ -118,16 +129,16 @@ export default function LinkedServicesConfigurator({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 lg:grid-cols-[minmax(280px,1.2fr)_minmax(280px,1fr)]">
-        <SearchableDropdownSelect
-          label="Servei base"
-          options={serviceOptions}
-          value={selectedServiceId}
-          onChange={setSelectedServiceId}
-          placeholder="Selecciona un servei"
-          searchPlaceholder="Cerca serveis..."
-        />
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <SearchableDropdownSelect
+            label="Servei base"
+            options={serviceOptions}
+            value={selectedServiceId}
+            onChange={setSelectedServiceId}
+            placeholder="Selecciona un servei"
+            searchPlaceholder="Cerca serveis..."
+          />
           <SearchableDropdownSelect
             label="Servei vinculat"
             options={serviceOptions}
@@ -136,6 +147,8 @@ export default function LinkedServicesConfigurator({
             placeholder="Selecciona servei vinculat"
             searchPlaceholder="Cerca serveis..."
           />
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr] lg:items-end">
           <label className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
             Mesos de diferència
             <input
@@ -147,68 +160,88 @@ export default function LinkedServicesConfigurator({
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
           </label>
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={isPending}
-            className="rounded-full bg-emerald-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-          >
-            Afegir vinculació
-          </button>
-          {state.error ? (
-            <p className="text-sm font-semibold text-red-600">{state.error}</p>
-          ) : null}
-          {state.success ? (
-            <p className="text-sm font-semibold text-emerald-700">{state.success}</p>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={isPending}
+              className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+            >
+              Afegir vinculació
+            </button>
+            {state.error ? (
+              <p className="text-sm font-semibold text-red-600">{state.error}</p>
+            ) : null}
+            {state.success ? (
+              <p className="text-sm font-semibold text-emerald-700">
+                {state.success}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">
-          <span>Vinculacions</span>
-          <span className="text-xs text-slate-400">
-            {selectedLinks.length} registres
-          </span>
-        </div>
-        {selectedServiceId ? (
-          selectedLinks.length ? (
-            <div className="divide-y divide-slate-100">
-              {selectedLinks.map((link) => (
-                <div
-                  key={link.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-slate-700"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium text-slate-900">
-                      {link.otherLabel}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {link.offsetMonths === 0
-                        ? "Mateix mes"
-                        : `${link.offsetMonths} mesos`}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(link.id)}
-                    disabled={isPending}
-                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 disabled:cursor-not-allowed disabled:text-slate-300"
-                  >
-                    Esborrar
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="px-4 py-6 text-sm text-slate-500">
-              No hi ha vinculacions per aquest servei.
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-700">Vinculacions</h2>
+            <p className="text-xs text-slate-400">
+              {filteredLinks.length} registres
             </p>
-          )
+            {listState.error ? (
+              <p className="mt-2 text-sm font-semibold text-red-600">
+                {listState.error}
+              </p>
+            ) : null}
+            {listState.success ? (
+              <p className="mt-2 text-sm font-semibold text-emerald-700">
+                {listState.success}
+              </p>
+            ) : null}
+          </div>
+          <label className="flex w-full max-w-sm flex-col gap-3 pb-10 text-xs font-semibold text-slate-500">
+            Cercador
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cerca serveis vinculats..."
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+          </label>
+        </div>
+        <div className="border-b border-slate-100 mt-4" />
+        {filteredLinks.length ? (
+          <div className="mt-4 divide-y divide-slate-100">
+            {filteredLinks.map((link) => (
+              <div
+                key={link.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-slate-700"
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold text-slate-900">
+                    {link.serviceLabel}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    ↔ {link.linkedLabel} ·{" "}
+                    {link.offsetMonths === 0
+                      ? "mateix mes"
+                      : `${link.offsetMonths} mesos`}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(link.id)}
+                  disabled={isPending}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  Esborrar
+                </button>
+              </div>
+            ))}
+          </div>
         ) : (
-          <p className="px-4 py-6 text-sm text-slate-500">
-            Selecciona un servei per veure les vinculacions.
-          </p>
+          <p className="mt-6 text-sm text-slate-500">No hi ha vinculacions.</p>
         )}
       </div>
     </div>

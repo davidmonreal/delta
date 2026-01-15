@@ -21,7 +21,7 @@ export default async function LinkedServicesPage() {
             Serveis vinculats
           </h1>
           <p className="mt-2 text-base text-slate-500">
-            Defineix quins serveis s'han d'acompanyar en altres mesos.
+            Defineix quins serveis s&apos;han d&apos;acompanyar en altres mesos.
           </p>
         </div>
       </header>

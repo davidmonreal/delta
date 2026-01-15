@@ -76,9 +76,7 @@ export function SearchableDropdownSelect<T extends string | number>({
   }, [open]);
 
   useEffect(() => {
-    if (open) {
-      setOpen(false);
-    }
+    setOpen(false);
   }, [value]);
 
   return (

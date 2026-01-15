@@ -20,6 +20,7 @@ type ComparisonTableProps = {
   showMissing: boolean;
   showNew: boolean;
   firstColumnLabel: string;
+  subtitleLayout?: "service-manager" | "manager-only";
 };
 
 export default function ComparisonTable({
@@ -32,6 +33,7 @@ export default function ComparisonTable({
   showMissing,
   showNew,
   firstColumnLabel,
+  subtitleLayout = "service-manager",
 }: ComparisonTableProps) {
   const { sortState, sortedRows, handleSort } = useComparisonSort(rows);
   const pageSize = 20;
@@ -57,18 +59,41 @@ export default function ComparisonTable({
     }
   }, [page, totalPages]);
 
-  const renderSubtitle = (subtitle?: string) => {
-    if (!subtitle) return null;
-    const parts = subtitle.split(" - ").map((part) => part.trim()).filter(Boolean);
+  const renderSubtitle = (subtitle?: string, missingReason?: string) => {
+    if (!subtitle && !missingReason) return null;
+    const parts = subtitle
+      ? subtitle.split(" - ").map((part) => part.trim()).filter(Boolean)
+      : [];
     if (parts.length >= 2) {
       return (
         <>
           <span className="mt-1 block text-xs text-slate-500">{parts[0]}</span>
+          {missingReason ? (
+            <span className="mt-1 block text-xs text-slate-400">
+              {missingReason}
+            </span>
+          ) : null}
           <span className="mt-1 block text-xs text-slate-400">{parts[1]}</span>
         </>
       );
     }
-    return <span className="mt-1 block text-xs text-slate-500">{subtitle}</span>;
+    return (
+      <>
+        {subtitleLayout === "manager-only" && missingReason ? (
+          <span className="mt-1 block text-xs text-slate-400">
+            {missingReason}
+          </span>
+        ) : null}
+        {subtitle ? (
+          <span className="mt-1 block text-xs text-slate-500">{subtitle}</span>
+        ) : null}
+        {subtitleLayout === "service-manager" && missingReason ? (
+          <span className="mt-1 block text-xs text-slate-400">
+            {missingReason}
+          </span>
+        ) : null}
+      </>
+    );
   };
 
   const renderUnitsInfo = (units: number, unitPrice: number, ref: string | null) => {
@@ -137,7 +162,7 @@ export default function ComparisonTable({
             ) : (
               <span className="block font-medium">{row.title}</span>
             )}
-            {renderSubtitle(row.subtitle)}
+            {renderSubtitle(row.subtitle, row.missingReason)}
           </div>
           {renderUnitsInfo(row.previousUnits, row.previousUnitPrice, row.previousRef)}
           {renderUnitsInfo(row.currentUnits, row.currentUnitPrice, row.currentRef)}

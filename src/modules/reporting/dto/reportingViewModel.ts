@@ -8,6 +8,7 @@ export type ComparisonRowViewModel = {
   subtitle?: string;
   href?: string;
   managerUserId?: number | null;
+  missingReason?: string;
   previousUnits: number;
   currentUnits: number;
   previousUnitPrice: number;
@@ -46,6 +47,7 @@ export function toMonthlyComparisonViewModel(
         : row.serviceName,
       href: `/client/${row.clientId}?year=${filters.year}&month=${filters.month}&show=${filters.show}`,
       managerUserId: row.managerUserId ?? null,
+      missingReason: row.missingReason,
       previousUnits: row.previousUnits,
       currentUnits: row.currentUnits,
       previousUnitPrice: row.previousUnitPrice,
