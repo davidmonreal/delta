@@ -21,6 +21,7 @@ export default function PaginationControls({
   const end = Math.min(clampedPage * pageSize, totalItems);
   const isFirst = clampedPage <= 1;
   const isLast = clampedPage >= totalPages;
+  const showControls = totalPages > 1;
 
   return (
     <div
@@ -28,32 +29,34 @@ export default function PaginationControls({
         className ?? ""
       }`}
     >
-      <span>
-        {totalItems === 0
-          ? "No hi ha elements."
-          : `Mostrant ${start}-${end} de ${totalItems}`}
-      </span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onPageChange(clampedPage - 1)}
-          disabled={isFirst}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-        >
-          Anterior
-        </button>
-        <span className="text-xs text-slate-400">
-          {clampedPage}/{totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={() => onPageChange(clampedPage + 1)}
-          disabled={isLast}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-        >
-          Seguent
-        </button>
-      </div>
+      {showControls ? (
+        <span>{`Mostrant ${start}-${end} de ${totalItems}`}</span>
+      ) : (
+        <span>{totalItems === 0 ? "No hi ha elements." : null}</span>
+      )}
+      {showControls ? (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPageChange(clampedPage - 1)}
+            disabled={isFirst}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Anterior
+          </button>
+          <span className="text-xs text-slate-400">
+            {clampedPage}/{totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(clampedPage + 1)}
+            disabled={isLast}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Seguent
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
