@@ -3,7 +3,13 @@ import type { ReportingRepository, YearMonth } from "../ports/reportingRepositor
 import { formatRef } from "./formatRef";
 import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
-import { applySummaryMetrics, filterSummaries, sortSummaries } from "./summaryUtils";
+import {
+  applySummaryMetrics,
+  buildShowCounts,
+  filterSummaries,
+  sortSummaries,
+  type ShowCounts,
+} from "./summaryUtils";
 import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
 import type { UserRole } from "@/modules/users/domain/userRole";
 import { isSuperadminRole } from "@/modules/users/domain/rolePolicies";
@@ -38,6 +44,7 @@ export type ClientComparisonResult =
       client: { id: number; nameRaw: string };
       filters: ReturnType<typeof resolveFilters>;
       summaries: ClientSummaryRow[];
+      showCounts: ShowCounts;
       sumDeltaVisible: number;
     };
 
@@ -306,11 +313,10 @@ export async function getClientComparison({
     }
     flattened.push(...linkedMissingRows);
   }
+  const metricRows = flattened.map((row) => applySummaryMetrics(row));
+  const showCounts = buildShowCounts(metricRows, filters);
   const summaries = sortSummaries(
-    filterSummaries(
-      flattened.map((row) => applySummaryMetrics(row)),
-      filters,
-    ),
+    filterSummaries(metricRows, filters),
     filters,
   );
 
@@ -325,6 +331,7 @@ export async function getClientComparison({
     client,
     filters,
     summaries,
+    showCounts,
     sumDeltaVisible,
   };
 }

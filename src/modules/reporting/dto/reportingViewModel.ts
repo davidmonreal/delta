@@ -24,6 +24,7 @@ export type ComparisonRowViewModel = {
 export type MonthlyComparisonViewModel = {
   filters: MonthlyComparisonResult["filters"];
   summariesCount: number;
+  showCounts: MonthlyComparisonResult["showCounts"];
   rows: ComparisonRowViewModel[];
   sumDeltaVisible: number;
 };
@@ -36,6 +37,7 @@ export function toMonthlyComparisonViewModel(
   return {
     filters,
     summariesCount: summaries.length,
+    showCounts: result.showCounts,
     sumDeltaVisible,
     rows: summaries.map((row) => ({
       id: row.id,

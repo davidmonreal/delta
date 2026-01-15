@@ -64,7 +64,7 @@ export default async function ClientPage({
     notFound();
   }
 
-  const { clientId, client, filters, summaries, sumDeltaVisible } = result;
+  const { clientId, client, filters, summaries, showCounts, sumDeltaVisible } = result;
   const invoiceGroups = await getClientInvoiceLines({
     repo,
     clientId,
@@ -147,8 +147,7 @@ export default async function ClientPage({
           <span className="text-base font-semibold text-slate-700">
             {showEqual
               ? "Resultats amb preu unitari igual"
-              : "Resultats per preu unitari"}{" "}
-            ({summaries.length})
+              : "Resultats per preu unitari"}
             {showNegative ? " negatives" : ""}
           </span>
           <div className="flex flex-col items-end gap-2">
@@ -160,6 +159,7 @@ export default async function ClientPage({
               showPercentUnder={showPercentUnder}
               showPercentEqual={showPercentEqual}
               showPercentOver={showPercentOver}
+              showCounts={showCounts}
             />
             {showPositive ? (
               <PercentFilterForm

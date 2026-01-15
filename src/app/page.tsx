@@ -37,7 +37,7 @@ export default async function Home({
     : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
   const linkedServiceRepo = new PrismaLinkedServiceRepository();
-  const { filters, rows, summariesCount, sumDeltaVisible } =
+  const { filters, rows, showCounts, sumDeltaVisible } =
     await getMonthlyComparisonPage({
       repo,
       linkedServiceRepo,
@@ -123,8 +123,7 @@ export default async function Home({
           <span className="text-base font-semibold text-slate-700">
             {showEqual
               ? "Resultats amb preu unitari igual"
-              : "Resultats per preu unitari"}{" "}
-            ({summariesCount})
+              : "Resultats per preu unitari"}
             {showNegative ? " negatives" : ""}
           </span>
           <div className="flex flex-col items-end gap-2">
@@ -136,6 +135,7 @@ export default async function Home({
               showPercentUnder={showPercentUnder}
               showPercentEqual={showPercentEqual}
               showPercentOver={showPercentOver}
+              showCounts={showCounts}
             />
             {showPositive ? (
               <PercentFilterForm

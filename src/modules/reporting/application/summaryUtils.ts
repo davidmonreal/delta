@@ -50,6 +50,39 @@ export type SummaryFilterShape = {
   percentDelta?: number;
 };
 
+export type ShowCounts = {
+  neg: number;
+  eq: number;
+  pos: number;
+  miss: number;
+  new: number;
+};
+
+function buildShowFilters(filters: ResolvedFilters, show: ResolvedFilters["show"]) {
+  return {
+    ...filters,
+    show,
+    showNegative: show === "neg",
+    showEqual: show === "eq",
+    showPositive: show === "pos",
+    showMissing: show === "miss",
+    showNew: show === "new",
+  };
+}
+
+export function buildShowCounts<T extends SummaryFilterShape>(
+  summaries: T[],
+  filters: ResolvedFilters,
+): ShowCounts {
+  return {
+    neg: filterSummaries(summaries, buildShowFilters(filters, "neg")).length,
+    eq: filterSummaries(summaries, buildShowFilters(filters, "eq")).length,
+    pos: filterSummaries(summaries, buildShowFilters(filters, "pos")).length,
+    miss: filterSummaries(summaries, buildShowFilters(filters, "miss")).length,
+    new: filterSummaries(summaries, buildShowFilters(filters, "new")).length,
+  };
+}
+
 export function filterSummaries<T extends SummaryFilterShape>(
   summaries: T[],
   filters: ResolvedFilters,
