@@ -11,12 +11,15 @@ export type ComparisonRowViewModel = {
   missingReason?: string;
   previousUnits: number;
   currentUnits: number;
+  previousTotal: number;
+  currentTotal: number;
   previousUnitPrice: number;
   currentUnitPrice: number;
   previousRef: string | null;
   currentRef: string | null;
   deltaPrice: number;
   isMissing: boolean;
+  isNew: boolean;
   percentDelta?: number;
   hasComment: boolean;
 };
@@ -26,19 +29,17 @@ export type MonthlyComparisonViewModel = {
   summariesCount: number;
   showCounts: MonthlyComparisonResult["showCounts"];
   rows: ComparisonRowViewModel[];
-  sumDeltaVisible: number;
 };
 
 export function toMonthlyComparisonViewModel(
   result: MonthlyComparisonResult,
 ): MonthlyComparisonViewModel {
-  const { filters, summaries, sumDeltaVisible } = result;
+  const { filters, summaries } = result;
 
   return {
     filters,
     summariesCount: summaries.length,
     showCounts: result.showCounts,
-    sumDeltaVisible,
     rows: summaries.map((row) => ({
       id: row.id,
       clientId: row.clientId,
@@ -52,12 +53,15 @@ export function toMonthlyComparisonViewModel(
       missingReason: row.missingReason,
       previousUnits: row.previousUnits,
       currentUnits: row.currentUnits,
+      previousTotal: row.previousTotal,
+      currentTotal: row.currentTotal,
       previousUnitPrice: row.previousUnitPrice,
       currentUnitPrice: row.currentUnitPrice,
       previousRef: row.previousRef,
       currentRef: row.currentRef,
       deltaPrice: row.deltaPrice,
       isMissing: row.isMissing,
+      isNew: row.isNew ?? false,
       percentDelta: row.percentDelta,
       hasComment: false,
     })),

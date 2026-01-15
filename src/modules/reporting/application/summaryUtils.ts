@@ -1,4 +1,5 @@
 import type { ResolvedFilters } from "./filters";
+import type { ShowFilter } from "../dto/reportingSchemas";
 
 export type SummaryMetricsInput = {
   previousTotal: number;
@@ -58,7 +59,11 @@ export type ShowCounts = {
   new: number;
 };
 
-function buildShowFilters(filters: ResolvedFilters, show: ResolvedFilters["show"]) {
+const deltaThreshold = 0.001;
+const percentThreshold = 3;
+const percentTolerance = 0.1;
+
+export function buildShowFilters(filters: ResolvedFilters, show: ShowFilter): ResolvedFilters {
   return {
     ...filters,
     show,
@@ -74,13 +79,54 @@ export function buildShowCounts<T extends SummaryFilterShape>(
   summaries: T[],
   filters: ResolvedFilters,
 ): ShowCounts {
-  return {
-    neg: filterSummaries(summaries, buildShowFilters(filters, "neg")).length,
-    eq: filterSummaries(summaries, buildShowFilters(filters, "eq")).length,
-    pos: filterSummaries(summaries, buildShowFilters(filters, "pos")).length,
-    miss: filterSummaries(summaries, buildShowFilters(filters, "miss")).length,
-    new: filterSummaries(summaries, buildShowFilters(filters, "new")).length,
-  };
+  const counts: ShowCounts = { neg: 0, eq: 0, pos: 0, miss: 0, new: 0 };
+  const percentFlags = [
+    filters.showPercentUnder,
+    filters.showPercentEqual,
+    filters.showPercentOver,
+  ];
+  const hasPercentFilter = percentFlags.some(Boolean);
+  const applyPercentFilter = hasPercentFilter && !percentFlags.every(Boolean);
+
+  for (const row of summaries) {
+    if (row.isMissing) {
+      counts.miss += 1;
+      continue;
+    }
+    if (row.isNew) {
+      counts.new += 1;
+      continue;
+    }
+    if (row.deltaPrice < -deltaThreshold) {
+      counts.neg += 1;
+      continue;
+    }
+    if (Math.abs(row.deltaPrice) <= deltaThreshold) {
+      counts.eq += 1;
+      continue;
+    }
+    if (row.deltaPrice > deltaThreshold) {
+      if (!hasPercentFilter) continue;
+      if (!applyPercentFilter) {
+        counts.pos += 1;
+        continue;
+      }
+      if (row.percentDelta === undefined || Number.isNaN(row.percentDelta)) continue;
+      const absPercent = Math.abs(row.percentDelta);
+      const isUnder = absPercent < percentThreshold - percentTolerance;
+      const isOver = absPercent > percentThreshold + percentTolerance;
+      const isEqual = !isUnder && !isOver;
+      if (
+        (filters.showPercentUnder && isUnder) ||
+        (filters.showPercentEqual && isEqual) ||
+        (filters.showPercentOver && isOver)
+      ) {
+        counts.pos += 1;
+      }
+    }
+  }
+
+  return counts;
 }
 
 export function filterSummaries<T extends SummaryFilterShape>(
@@ -97,20 +143,17 @@ export function filterSummaries<T extends SummaryFilterShape>(
     filters.showPositive && hasPercentFilter && !percentFlags.every(Boolean);
   // Business rule: 3% is the expected annual increase; we treat it as "equal"
   // with a small tolerance to avoid rounding noise.
-  const percentThreshold = 3;
-  const percentTolerance = 0.1;
-
   return summaries.filter((row) => {
     if (filters.showMissing) return row.isMissing;
     if (filters.showNew) return row.isNew;
     const matchesShow =
       filters.showNegative
-        ? !row.isMissing && !row.isNew && row.deltaPrice < -0.001
+        ? !row.isMissing && !row.isNew && row.deltaPrice < -deltaThreshold
         : filters.showEqual
-          ? !row.isMissing && !row.isNew && Math.abs(row.deltaPrice) <= 0.001
+          ? !row.isMissing && !row.isNew && Math.abs(row.deltaPrice) <= deltaThreshold
           : filters.showPositive
-            ? !row.isMissing && !row.isNew && row.deltaPrice > 0.001
-            : !row.isMissing && !row.isNew && row.deltaPrice < -0.001;
+            ? !row.isMissing && !row.isNew && row.deltaPrice > deltaThreshold
+            : !row.isMissing && !row.isNew && row.deltaPrice < -deltaThreshold;
 
     if (!matchesShow) return false;
     if (filters.showPositive && !hasPercentFilter) return false;

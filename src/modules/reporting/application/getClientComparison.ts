@@ -3,13 +3,7 @@ import type { ReportingRepository, YearMonth } from "../ports/reportingRepositor
 import { formatRef } from "./formatRef";
 import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
-import {
-  applySummaryMetrics,
-  buildShowCounts,
-  filterSummaries,
-  sortSummaries,
-  type ShowCounts,
-} from "./summaryUtils";
+import { applySummaryMetrics, buildShowCounts, type ShowCounts } from "./summaryUtils";
 import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
 import type { UserRole } from "@/modules/users/domain/userRole";
 import { isSuperadminRole } from "@/modules/users/domain/rolePolicies";
@@ -31,6 +25,7 @@ export type ClientSummaryRow = {
   currentUnitPrice: number;
   deltaPrice: number;
   isMissing: boolean;
+  isNew?: boolean;
   percentDelta?: number;
 };
 
@@ -45,7 +40,6 @@ export type ClientComparisonResult =
       filters: ReturnType<typeof resolveFilters>;
       summaries: ClientSummaryRow[];
       showCounts: ShowCounts;
-      sumDeltaVisible: number;
     };
 
 export async function getClientComparison({
@@ -313,17 +307,8 @@ export async function getClientComparison({
     }
     flattened.push(...linkedMissingRows);
   }
-  const metricRows = flattened.map((row) => applySummaryMetrics(row));
-  const showCounts = buildShowCounts(metricRows, filters);
-  const summaries = sortSummaries(
-    filterSummaries(metricRows, filters),
-    filters,
-  );
-
-  const sumDeltaVisible = summaries.reduce(
-    (total, row) => total + (row.currentTotal - row.previousTotal),
-    0,
-  );
+  const summaries = flattened.map((row) => applySummaryMetrics(row));
+  const showCounts = buildShowCounts(summaries, filters);
 
   return {
     notFound: false as const,
@@ -332,6 +317,5 @@ export async function getClientComparison({
     filters,
     summaries,
     showCounts,
-    sumDeltaVisible,
   };
 }

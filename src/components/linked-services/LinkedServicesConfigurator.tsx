@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { SearchableDropdownSelect } from "@/components/common/SearchableDropdownSelect";
@@ -34,9 +34,7 @@ export default function LinkedServicesConfigurator({
   services,
   links,
 }: LinkedServicesConfiguratorProps) {
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(
-    services[0]?.id ?? null,
-  );
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [linkedServiceId, setLinkedServiceId] = useState<number | null>(null);
   const [offsetMonths, setOffsetMonths] = useState(3);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,6 +42,22 @@ export default function LinkedServicesConfigurator({
   const [listState, setListState] = useState<ActionState>(initialState);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!state.success) return;
+    const timeout = setTimeout(() => {
+      setState(initialState);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [state.success]);
+
+  useEffect(() => {
+    if (!listState.success) return;
+    const timeout = setTimeout(() => {
+      setListState(initialState);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [listState.success]);
 
   const serviceMap = useMemo(
     () => new Map(services.map((service) => [service.id, service.label])),
@@ -109,6 +123,7 @@ export default function LinkedServicesConfigurator({
       setState(result);
       setListState(initialState);
       if (result.success) {
+        setSelectedServiceId(null);
         setLinkedServiceId(null);
         router.refresh();
       }
@@ -136,7 +151,7 @@ export default function LinkedServicesConfigurator({
             options={serviceOptions}
             value={selectedServiceId}
             onChange={setSelectedServiceId}
-            placeholder="Selecciona un servei"
+            placeholder="Selecciona servei base"
             searchPlaceholder="Cerca serveis..."
           />
           <SearchableDropdownSelect
@@ -161,14 +176,6 @@ export default function LinkedServicesConfigurator({
             />
           </label>
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={isPending}
-              className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-            >
-              Afegir vinculació
-            </button>
             {state.error ? (
               <p className="text-sm font-semibold text-red-600">{state.error}</p>
             ) : null}
@@ -177,6 +184,14 @@ export default function LinkedServicesConfigurator({
                 {state.success}
               </p>
             ) : null}
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={isPending}
+              className="rounded-full bg-emerald-700 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+            >
+              Afegir vinculació
+            </button>
           </div>
         </div>
       </div>

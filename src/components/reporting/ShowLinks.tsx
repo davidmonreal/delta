@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
+
+import type { ShowFilter } from "@/modules/reporting/dto/reportingSchemas";
 
 type ShowLinksProps = {
   baseHref: string;
   year: number;
   month: number;
-  activeShow: string;
+  activeShow: ShowFilter;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
   showPercentOver: boolean;
@@ -15,6 +19,7 @@ type ShowLinksProps = {
     miss: number;
     new: number;
   };
+  onShowChange?: (show: ShowFilter) => void;
 };
 
 export default function ShowLinks({
@@ -26,6 +31,7 @@ export default function ShowLinks({
   showPercentEqual,
   showPercentOver,
   showCounts,
+  onShowChange,
 }: ShowLinksProps) {
   const linkClass = (value: string) =>
     value === activeShow
@@ -43,53 +49,42 @@ export default function ShowLinks({
   const percentSuffix = percentParams.toString();
   const percentQuery = percentSuffix ? `&${percentSuffix}` : "";
 
+  const items: Array<{ value: ShowFilter; label: string; count?: number }> = [
+    { value: "neg", label: "Només negatives", count: showCounts?.neg },
+    { value: "eq", label: "Iguals", count: showCounts?.eq },
+    { value: "pos", label: "Més altes", count: showCounts?.pos },
+    { value: "miss", label: "No fets", count: showCounts?.miss },
+    { value: "new", label: "Nous", count: showCounts?.new },
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-      <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=neg${percentQuery}`}
-        className={linkClass("neg")}
-      >
-        Només negatives
-        {showCounts ? (
-          <span className={badgeClass("neg")}>{showCounts.neg}</span>
-        ) : null}
-      </Link>
-      <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=eq${percentQuery}`}
-        className={linkClass("eq")}
-      >
-        Iguals
-        {showCounts ? (
-          <span className={badgeClass("eq")}>{showCounts.eq}</span>
-        ) : null}
-      </Link>
-      <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=pos${percentQuery}`}
-        className={linkClass("pos")}
-      >
-        Més altes
-        {showCounts ? (
-          <span className={badgeClass("pos")}>{showCounts.pos}</span>
-        ) : null}
-      </Link>
-      <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=miss${percentQuery}`}
-        className={linkClass("miss")}
-      >
-        No fets
-        {showCounts ? (
-          <span className={badgeClass("miss")}>{showCounts.miss}</span>
-        ) : null}
-      </Link>
-      <Link
-        href={`${baseHref}?year=${year}&month=${month}&show=new${percentQuery}`}
-        className={linkClass("new")}
-      >
-        Nous
-        {showCounts ? (
-          <span className={badgeClass("new")}>{showCounts.new}</span>
-        ) : null}
-      </Link>
+      {items.map((item) =>
+        onShowChange ? (
+          <button
+            key={item.value}
+            type="button"
+            onClick={() => onShowChange(item.value)}
+            className={linkClass(item.value)}
+          >
+            {item.label}
+            {item.count !== undefined ? (
+              <span className={badgeClass(item.value)}>{item.count}</span>
+            ) : null}
+          </button>
+        ) : (
+          <Link
+            key={item.value}
+            href={`${baseHref}?year=${year}&month=${month}&show=${item.value}${percentQuery}`}
+            className={linkClass(item.value)}
+          >
+            {item.label}
+            {item.count !== undefined ? (
+              <span className={badgeClass(item.value)}>{item.count}</span>
+            ) : null}
+          </Link>
+        ),
+      )}
     </div>
   );
 }

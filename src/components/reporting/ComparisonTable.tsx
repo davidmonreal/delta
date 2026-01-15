@@ -21,6 +21,7 @@ type ComparisonTableProps = {
   showNew: boolean;
   firstColumnLabel: string;
   subtitleLayout?: "service-manager" | "manager-only";
+  onCommentCreated?: (clientId: number, serviceId: number) => void;
 };
 
 export default function ComparisonTable({
@@ -34,6 +35,7 @@ export default function ComparisonTable({
   showNew,
   firstColumnLabel,
   subtitleLayout = "service-manager",
+  onCommentCreated,
 }: ComparisonTableProps) {
   const { sortState, sortedRows, handleSort } = useComparisonSort(rows);
   const pageSize = 20;
@@ -189,6 +191,11 @@ export default function ComparisonTable({
               title={row.title}
               subtitle={row.subtitle}
               hasComment={row.hasComment}
+              onCommentCreated={
+                onCommentCreated
+                  ? () => onCommentCreated(row.clientId, row.serviceId)
+                  : undefined
+              }
             />
           </div>
         </div>

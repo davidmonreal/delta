@@ -44,22 +44,24 @@ function buildRepo() {
 }
 
 describe("getMonthlyComparison", () => {
-  it("filters by negative deltas by default", async () => {
-    const repo = buildRepo();
-    const result = await getMonthlyComparison({ repo, rawFilters: {} });
-
-    expect(result.summaries).toHaveLength(1);
-    expect(result.filters.showNegative).toBe(true);
-  });
-
-  it("returns empty for positive filter when delta is negative", async () => {
+  it("returns summaries regardless of show filter", async () => {
     const repo = buildRepo();
     const result = await getMonthlyComparison({
       repo,
       rawFilters: { show: "pos" },
     });
 
-    expect(result.summaries).toHaveLength(0);
+    expect(result.summaries).toHaveLength(1);
+  });
+
+  it("tracks show counts for positive filters", async () => {
+    const repo = buildRepo();
+    const result = await getMonthlyComparison({
+      repo,
+      rawFilters: { show: "pos" },
+    });
+
+    expect(result.showCounts.pos).toBe(0);
   });
 
   it("marks missing when current units are zero", async () => {
@@ -103,5 +105,6 @@ describe("getMonthlyComparison", () => {
     });
     expect(result.summaries).toHaveLength(1);
     expect(result.summaries[0].isMissing).toBe(true);
+    expect(result.showCounts.miss).toBe(1);
   });
 });

@@ -7,15 +7,10 @@ import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/pr
 import { getClientComparison } from "@/modules/reporting/application/getClientComparison";
 import { getClientInvoiceLines } from "@/modules/reporting/application/getClientInvoiceLines";
 import { toClientComparisonDto } from "@/modules/reporting/dto/reportingDto";
-import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prismaCommentRepository";
-import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
 import { monthLabels } from "@/modules/reporting/domain/monthLabels";
 import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import FiltersForm from "@/components/reporting/FiltersForm";
-import ShowLinks from "@/components/reporting/ShowLinks";
-import ComparisonTable from "@/components/reporting/ComparisonTable";
-import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
-import PercentFilterForm from "@/components/reporting/PercentFilterForm";
+import ComparisonResultsPanel from "@/components/reporting/ComparisonResultsPanel";
 import ClientInvoiceGroups from "@/components/reporting/ClientInvoiceGroups";
 
 type SearchParams = {
@@ -64,7 +59,7 @@ export default async function ClientPage({
     notFound();
   }
 
-  const { clientId, client, filters, summaries, showCounts, sumDeltaVisible } = result;
+  const { clientId, client, filters, summaries, showCounts } = result;
   const invoiceGroups = await getClientInvoiceLines({
     repo,
     clientId,
@@ -75,29 +70,10 @@ export default async function ClientPage({
     month,
     previousYear,
     show,
-    showEqual,
-    showNegative,
-    showPositive,
-    showMissing,
-    showNew,
     showPercentUnder,
     showPercentEqual,
     showPercentOver,
   } = filters;
-  const commentRepo = new PrismaCommentRepository();
-  const serviceIds = Array.from(new Set(summaries.map((row) => row.serviceId)));
-  const { keys: commentKeys } = await getCommentedContexts({
-    repo: commentRepo,
-    sessionUser: session.user,
-    year,
-    month,
-    clientIds: [clientId],
-    serviceIds,
-  });
-  await commentRepo.disconnect?.();
-  const commentSet = new Set(
-    commentKeys.map((key) => `${key.clientId}-${key.serviceId}`),
-  );
   const rowsWithComments = summaries.map((row) => ({
     id: row.id,
     clientId,
@@ -108,14 +84,17 @@ export default async function ClientPage({
     missingReason: row.missingReason,
     previousUnits: row.previousUnits,
     currentUnits: row.currentUnits,
+    previousTotal: row.previousTotal,
+    currentTotal: row.currentTotal,
     previousUnitPrice: row.previousUnitPrice,
     currentUnitPrice: row.currentUnitPrice,
     previousRef: row.previousRef,
     currentRef: row.currentRef,
     deltaPrice: row.deltaPrice,
     isMissing: row.isMissing,
+    isNew: row.isNew ?? false,
     percentDelta: row.percentDelta,
-    hasComment: commentSet.has(`${clientId}-${row.serviceId}`),
+    hasComment: false,
   }));
 
   return (
@@ -143,53 +122,20 @@ export default async function ClientPage({
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-start lg:justify-between">
-          <span className="text-base font-semibold text-slate-700">
-            {showEqual
-              ? "Resultats amb preu unitari igual"
-              : "Resultats per preu unitari"}
-            {showNegative ? " negatives" : ""}
-          </span>
-          <div className="flex flex-col items-end gap-2">
-            <ShowLinks
-              baseHref={`/client/${clientId}`}
-              year={year}
-              month={month}
-              activeShow={show}
-              showPercentUnder={showPercentUnder}
-              showPercentEqual={showPercentEqual}
-              showPercentOver={showPercentOver}
-              showCounts={showCounts}
-            />
-            {showPositive ? (
-              <PercentFilterForm
-                baseHref={`/client/${clientId}`}
-                year={year}
-                month={month}
-                show={show}
-                showPercentUnder={showPercentUnder}
-                showPercentEqual={showPercentEqual}
-                showPercentOver={showPercentOver}
-              />
-            ) : null}
-          </div>
-        </div>
-        <ComparisonTable
+        <ComparisonResultsPanel
           rows={rowsWithComments}
-          previousYear={previousYear}
+          showCounts={showCounts}
+          baseHref={`/client/${clientId}`}
           year={year}
           month={month}
-          showPositive={showPositive}
-          showEqual={showEqual}
-          showMissing={showMissing}
-          showNew={showNew}
+          previousYear={previousYear}
+          initialShow={show}
+          showPercentUnder={showPercentUnder}
+          showPercentEqual={showPercentEqual}
+          showPercentOver={showPercentOver}
           firstColumnLabel="Servei"
           subtitleLayout="manager-only"
-        />
-        <ComparisonSummaryRow
-          label="Total diferència"
-          value={sumDeltaVisible}
-          showPositive={showPositive}
+          summaryLabel="Total diferència"
         />
       </section>
 

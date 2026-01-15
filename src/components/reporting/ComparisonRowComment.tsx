@@ -14,6 +14,7 @@ type ComparisonRowCommentProps = {
   title: string;
   subtitle?: string;
   hasComment?: boolean;
+  onCommentCreated?: () => void;
 };
 
 type ActionState = {
@@ -31,6 +32,7 @@ export default function ComparisonRowComment({
   title,
   subtitle,
   hasComment = false,
+  onCommentCreated,
 }: ComparisonRowCommentProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -102,6 +104,7 @@ export default function ComparisonRowComment({
       setState(result);
       if (result.success) {
         setIsHighlighted(true);
+        onCommentCreated?.();
         setOpen(false);
       }
     });

@@ -4,17 +4,9 @@ import { requireSession } from "@/lib/require-auth";
 import { isAdminRole } from "@/modules/users/domain/rolePolicies";
 import { PrismaReportingRepository } from "@/modules/reporting/infrastructure/prismaReportingRepository";
 import { getMonthlyComparisonPage } from "@/modules/reporting/application/getMonthlyComparisonPage";
-import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prismaCommentRepository";
-import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
-import { PrismaUserRepository } from "@/modules/users/infrastructure/prismaUserRepository";
-import { listUsersForFilter } from "@/modules/users/application/listUsersForFilter";
 import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import FiltersForm from "@/components/reporting/FiltersForm";
-import ShowLinks from "@/components/reporting/ShowLinks";
-import ComparisonTable from "@/components/reporting/ComparisonTable";
-import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
-import PercentFilterForm from "@/components/reporting/PercentFilterForm";
-import AdminComparisonTable from "@/components/reporting/AdminComparisonTable";
+import ComparisonResultsPanel from "@/components/reporting/ComparisonResultsPanel";
 
 type SearchParams = {
   year?: string | string[];
@@ -37,7 +29,7 @@ export default async function Home({
     : Number.parseInt(session.user.id, 10);
   const repo = new PrismaReportingRepository();
   const linkedServiceRepo = new PrismaLinkedServiceRepository();
-  const { filters, rows, showCounts, sumDeltaVisible } =
+  const { filters, rows, showCounts } =
     await getMonthlyComparisonPage({
       repo,
       linkedServiceRepo,
@@ -58,38 +50,10 @@ export default async function Home({
     month,
     previousYear,
     show,
-    showEqual,
-    showNegative,
-    showPositive,
     showPercentUnder,
     showPercentEqual,
     showPercentOver,
   } = filters;
-  const commentRepo = new PrismaCommentRepository();
-  const clientIds = Array.from(new Set(rows.map((row) => row.clientId)));
-  const serviceIds = Array.from(new Set(rows.map((row) => row.serviceId)));
-  const { keys: commentKeys } = await getCommentedContexts({
-    repo: commentRepo,
-    sessionUser: session.user,
-    year,
-    month,
-    clientIds,
-    serviceIds,
-  });
-  await commentRepo.disconnect?.();
-  const commentSet = new Set(
-    commentKeys.map((key) => `${key.clientId}-${key.serviceId}`),
-  );
-  const rowsWithComments = rows.map((row) => ({
-    ...row,
-    hasComment: commentSet.has(`${row.clientId}-${row.serviceId}`),
-  }));
-  const userRepo = new PrismaUserRepository();
-  const filterUsers = await listUsersForFilter({
-    sessionUser: session.user,
-    repo: userRepo,
-  });
-  await userRepo.disconnect?.();
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -119,67 +83,19 @@ export default async function Home({
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-start lg:justify-between">
-          <span className="text-base font-semibold text-slate-700">
-            {showEqual
-              ? "Resultats amb preu unitari igual"
-              : "Resultats per preu unitari"}
-            {showNegative ? " negatives" : ""}
-          </span>
-          <div className="flex flex-col items-end gap-2">
-            <ShowLinks
-              baseHref="/"
-              year={year}
-              month={month}
-              activeShow={show}
-              showPercentUnder={showPercentUnder}
-              showPercentEqual={showPercentEqual}
-              showPercentOver={showPercentOver}
-              showCounts={showCounts}
-            />
-            {showPositive ? (
-              <PercentFilterForm
-                baseHref="/"
-                year={year}
-                month={month}
-                show={show}
-                showPercentUnder={showPercentUnder}
-                showPercentEqual={showPercentEqual}
-                showPercentOver={showPercentOver}
-              />
-            ) : null}
-          </div>
-        </div>
-        {isAdminRole(session.user.role) ? (
-          <AdminComparisonTable
-            rows={rowsWithComments}
-            users={filterUsers}
-            previousYear={previousYear}
-            year={year}
-            month={month}
-            showPositive={showPositive}
-            showEqual={showEqual}
-            showMissing={filters.showMissing}
-            showNew={filters.showNew}
-            firstColumnLabel="Client"
-          />
-        ) : (
-          <ComparisonTable
-            rows={rowsWithComments}
-            previousYear={previousYear}
-            year={year}
-            month={month}
-            showPositive={showPositive}
-            showEqual={showEqual}
-            showMissing={filters.showMissing}
-            showNew={filters.showNew}
-            firstColumnLabel="Client"
-          />
-        )}
-        <ComparisonSummaryRow
-          label="Total diferència (preu unitari)"
-          value={sumDeltaVisible}
-          showPositive={showPositive}
+        <ComparisonResultsPanel
+          rows={rows}
+          showCounts={showCounts}
+          baseHref="/"
+          year={year}
+          month={month}
+          previousYear={previousYear}
+          initialShow={show}
+          showPercentUnder={showPercentUnder}
+          showPercentEqual={showPercentEqual}
+          showPercentOver={showPercentOver}
+          firstColumnLabel="Client"
+          enableAdminFilters={isAdminRole(session.user.role)}
         />
       </section>
     </div>

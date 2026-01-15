@@ -70,9 +70,10 @@ describe("getClientComparison", () => {
     if (result.notFound) return;
     expect(result.summaries).toHaveLength(1);
     expect(result.summaries[0].serviceName).toBe("Service A");
+    expect(result.showCounts.pos).toBe(1);
   });
 
-  it("filters out positive delta when show is negative", async () => {
+  it("keeps summaries even when show is negative", async () => {
     const repo = buildRepo();
     const result = await getClientComparison({
       repo,
@@ -82,6 +83,7 @@ describe("getClientComparison", () => {
 
     expect(result.notFound).toBe(false);
     if (result.notFound) return;
-    expect(result.summaries).toHaveLength(0);
+    expect(result.summaries).toHaveLength(1);
+    expect(result.showCounts.neg).toBe(0);
   });
 });

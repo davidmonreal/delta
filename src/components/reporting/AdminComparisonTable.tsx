@@ -13,7 +13,7 @@ type UserOption = {
 
 type AdminComparisonTableProps = {
   rows: ComparisonRowViewModel[];
-  users: UserOption[];
+  users?: UserOption[];
   previousYear: number;
   year: number;
   month: number;
@@ -22,6 +22,7 @@ type AdminComparisonTableProps = {
   showMissing: boolean;
   showNew: boolean;
   firstColumnLabel: string;
+  onCommentCreated?: (clientId: number, serviceId: number) => void;
 };
 
 function normalizeSearch(value: string) {
@@ -42,13 +43,14 @@ export default function AdminComparisonTable({
   showMissing,
   showNew,
   firstColumnLabel,
+  onCommentCreated,
 }: AdminComparisonTableProps) {
   const [query, setQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const dropdownOptions = useMemo(
     () => [
       { value: "all", label: "Tots els usuaris" },
-      ...users.map((user) => ({
+      ...(users ?? []).map((user) => ({
         value: String(user.id),
         label: user.label,
       })),
@@ -109,6 +111,7 @@ export default function AdminComparisonTable({
         showMissing={showMissing}
         showNew={showNew}
         firstColumnLabel={firstColumnLabel}
+        onCommentCreated={onCommentCreated}
       />
     </div>
   );

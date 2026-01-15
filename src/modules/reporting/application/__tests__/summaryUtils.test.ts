@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { applySummaryMetrics, filterSummaries, sortSummaries } from "../summaryUtils";
+import {
+  applySummaryMetrics,
+  buildShowCounts,
+  filterSummaries,
+  sortSummaries,
+} from "../summaryUtils";
 import type { ResolvedFilters } from "../filters";
 
 describe("summaryUtils", () => {
@@ -170,5 +175,33 @@ describe("summaryUtils", () => {
     expect(
       filterSummaries(summaries, { ...filters, showPercentUnder: false, showPercentOver: true }),
     ).toHaveLength(1);
+  });
+
+  it("builds show counts in one pass", () => {
+    const summaries = [
+      { deltaPrice: -2, isMissing: false, isNew: false },
+      { deltaPrice: 0, isMissing: false, isNew: false },
+      { deltaPrice: 2, isMissing: false, isNew: false, percentDelta: 2.5 },
+      { deltaPrice: 2, isMissing: false, isNew: false, percentDelta: 4.2 },
+      { deltaPrice: 0, isMissing: true, isNew: false },
+      { deltaPrice: 1, isMissing: false, isNew: true },
+    ];
+    const filters: ResolvedFilters = {
+      year: 2024,
+      month: 1,
+      previousYear: 2023,
+      show: "neg",
+      showNegative: true,
+      showEqual: false,
+      showPositive: false,
+      showMissing: false,
+      showNew: false,
+      showPercentUnder: true,
+      showPercentEqual: false,
+      showPercentOver: false,
+    };
+
+    const counts = buildShowCounts(summaries, filters);
+    expect(counts).toEqual({ neg: 1, eq: 1, pos: 1, miss: 1, new: 1 });
   });
 });
