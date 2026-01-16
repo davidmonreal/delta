@@ -54,6 +54,12 @@ export default async function ClientPage({
       managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
     }),
   );
+  const linkedServiceLinks = await linkedServiceRepo.listLinks();
+  const linkedServiceIds = new Set<number>();
+  for (const link of linkedServiceLinks) {
+    linkedServiceIds.add(link.serviceId);
+    linkedServiceIds.add(link.linkedServiceId);
+  }
   await linkedServiceRepo.disconnect?.();
   if (result.notFound) {
     notFound();
@@ -65,6 +71,13 @@ export default async function ClientPage({
     clientId,
     managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
   });
+  const highlightedInvoiceGroups = invoiceGroups.map((group) => ({
+    ...group,
+    lines: group.lines.map((line) => ({
+      ...line,
+      isLinkedService: linkedServiceIds.has(line.serviceId),
+    })),
+  }));
   const {
     year,
     month,
@@ -96,6 +109,7 @@ export default async function ClientPage({
     isNew: row.isNew ?? false,
     percentDelta: row.percentDelta,
     hasComment: false,
+    isLinkedService: linkedServiceIds.has(row.serviceId),
   }));
 
   return (
@@ -151,10 +165,13 @@ export default async function ClientPage({
             </p>
           </div>
         </div>
-        {invoiceGroups.length === 0 ? (
+        {highlightedInvoiceGroups.length === 0 ? (
           <p className="text-sm text-slate-500">No hi ha línies per mostrar.</p>
         ) : (
-          <ClientInvoiceGroups groups={invoiceGroups} monthLabels={monthLabels} />
+          <ClientInvoiceGroups
+            groups={highlightedInvoiceGroups}
+            monthLabels={monthLabels}
+          />
         )}
       </section>
     </div>

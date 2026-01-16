@@ -16,6 +16,7 @@ export type MonthlySummaryRow = {
   managerName?: string | null;
   managerUserId?: number | null;
   missingReason?: string;
+  isLinkedService?: boolean;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;

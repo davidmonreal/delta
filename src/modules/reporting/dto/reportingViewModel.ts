@@ -23,6 +23,7 @@ export type ComparisonRowViewModel = {
   isNew: boolean;
   percentDelta?: number;
   hasComment: boolean;
+  isLinkedService?: boolean;
 };
 
 export type MonthlyComparisonViewModel = {
@@ -66,6 +67,7 @@ export function toMonthlyComparisonViewModel(
       isNew: row.isNew ?? false,
       percentDelta: row.percentDelta,
       hasComment: false,
+      isLinkedService: row.isLinkedService,
     })),
   };
 }

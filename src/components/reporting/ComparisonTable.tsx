@@ -151,7 +151,11 @@ export default function ComparisonTable({
       {pagedRows.map((row) => (
         <div
           key={row.id}
-          className={`grid items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 ${gridClass}`}
+          className={`grid items-center gap-4 rounded-2xl border px-4 py-3 text-sm text-slate-800 ${gridClass} ${
+            row.isLinkedService
+              ? "border-emerald-200 bg-emerald-50"
+              : "border-slate-200 bg-slate-50"
+          }`}
         >
           <div>
             {row.href ? (

@@ -58,7 +58,11 @@ export default function ClientInvoiceGroups({
               {pagedLines.map((line) => (
                 <div
                   key={line.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800"
+                  className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm text-slate-800 ${
+                    line.isLinkedService
+                      ? "border-emerald-200 bg-emerald-50"
+                      : "border-slate-200 bg-slate-50"
+                  }`}
                 >
                   <div>
                     <p className="font-semibold text-slate-900">

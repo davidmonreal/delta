@@ -15,6 +15,7 @@ export type ClientSummaryRow = {
   managerName?: string | null;
   managerUserId?: number | null;
   missingReason?: string;
+  isLinkedService?: boolean;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;
@@ -89,15 +90,22 @@ export async function getClientComparison({
     month: filters.month,
     managerUserId,
   });
+  const linkedServices = linkedServiceRepo
+    ? await linkedServiceRepo.listLinks()
+    : [];
+  const linkedServiceIds = new Set<number>();
+  for (const link of linkedServices) {
+    linkedServiceIds.add(link.serviceId);
+    linkedServiceIds.add(link.linkedServiceId);
+  }
   const includeLinkedMissing =
     filters.showMissing &&
     viewerRole &&
     isSuperadminRole(viewerRole) &&
     linkedServiceRepo;
-  const linkedServices = includeLinkedMissing
-    ? await linkedServiceRepo.listLinks()
-    : [];
-  const linkedOffsets = new Set(linkedServices.map((link) => link.offsetMonths));
+  const linkedOffsets = includeLinkedMissing
+    ? new Set(linkedServices.map((link) => link.offsetMonths))
+    : new Set<number>();
   const extraOffsets = Array.from(linkedOffsets).filter(
     (offset) => offset !== 0 && offset !== 12,
   );
@@ -160,6 +168,7 @@ export async function getClientComparison({
     const baseRow = {
       serviceId,
       serviceName: serviceMap.get(serviceId) ?? "Unknown service",
+      isLinkedService: linkedServiceIds.has(serviceId),
     };
 
     const summaryRows: ClientSummaryRow[] = [];
@@ -288,6 +297,7 @@ export async function getClientComparison({
             id: `${link.otherServiceId}-${rowCounter++}`,
             serviceId: link.otherServiceId,
             serviceName: serviceMap.get(link.otherServiceId) ?? "Unknown service",
+            isLinkedService: linkedServiceIds.has(link.otherServiceId),
             managerName: trigger.managerName ?? null,
             managerUserId: trigger.managerUserId ?? null,
             missingReason: `↔ ${triggerLabel} · ${formatOffsetLabel(offset)}`,

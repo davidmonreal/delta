@@ -5,11 +5,13 @@ export type ClientInvoiceLineItem = {
   date: Date;
   total: number;
   units: number;
+  serviceId: number;
   serviceName: string;
   managerName: string | null;
   series: string | null;
   albaran: string | null;
   numero: string | null;
+  isLinkedService?: boolean;
 };
 
 export type ClientInvoiceLineGroup = {
@@ -44,6 +46,7 @@ export async function getClientInvoiceLines({
       date: line.date,
       total: line.total,
       units: line.units,
+      serviceId: line.serviceId,
       serviceName: line.serviceName,
       managerName: line.managerName,
       series: line.series,

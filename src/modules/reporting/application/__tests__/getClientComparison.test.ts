@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getClientComparison } from "../getClientComparison";
+import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
 import { InMemoryReportingRepository } from "./testUtils";
 
 const baseMonth = 1;
@@ -85,5 +86,64 @@ describe("getClientComparison", () => {
     if (result.notFound) return;
     expect(result.summaries).toHaveLength(1);
     expect(result.showCounts.neg).toBe(0);
+  });
+
+  it("marks linked services in summaries", async () => {
+    const repo = new InMemoryReportingRepository({
+      latestEntryByClient: new Map([[1, { year, month: baseMonth }]]),
+      clients: [{ id: 1, nameRaw: "Client A" }],
+      services: [
+        { id: 10, conceptRaw: "Service A" },
+        { id: 20, conceptRaw: "Service Linked" },
+      ],
+      clientLinesByClientIdForComparison: new Map([
+        [
+          1,
+          [
+            {
+              serviceId: 10,
+              year: previousYear,
+              month: baseMonth,
+              total: 50,
+              units: 5,
+              series: "A",
+              albaran: null,
+              numero: "1",
+              managerUserId: null,
+              managerName: null,
+            },
+            {
+              serviceId: 10,
+              year,
+              month: baseMonth,
+              total: 60,
+              units: 5,
+              series: "B",
+              albaran: null,
+              numero: "2",
+              managerUserId: null,
+              managerName: null,
+            },
+          ],
+        ],
+      ]),
+    });
+    const linkedServiceRepo: LinkedServiceRepository = {
+      async listLinks() {
+        return [{ id: 1, serviceId: 10, linkedServiceId: 20, offsetMonths: 0 }];
+      },
+    };
+
+    const result = await getClientComparison({
+      repo,
+      linkedServiceRepo,
+      viewerRole: "SUPERADMIN",
+      rawFilters: { show: "pos" },
+      rawClientId: "1",
+    });
+
+    expect(result.notFound).toBe(false);
+    if (result.notFound) return;
+    expect(result.summaries[0].isLinkedService).toBe(true);
   });
 });
