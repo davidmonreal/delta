@@ -1,6 +1,11 @@
 import type { UserEntity } from "../../domain/user";
 import type { UserRole } from "../../domain/userRole";
-import type { CreateUserData, ListUsersParams, UpdateUserData, UserRepository } from "../../ports/userRepository";
+import type {
+  CreateUserData,
+  ListUsersParams,
+  UpdateUserData,
+  UserRepository,
+} from "../../ports/userRepository";
 
 export class InMemoryUserRepository implements UserRepository {
   private users: UserEntity[];
@@ -68,6 +73,16 @@ export class InMemoryUserRepository implements UserRepository {
         (user.name ?? "").toLowerCase().includes(queryLower)
       );
     });
+  }
+
+  async listManagerAliasOwners(aliases: string[]) {
+    if (aliases.length === 0) return [];
+    const normalized = new Set(aliases);
+    return this.users.flatMap((user) =>
+      (user.managerAliases ?? [])
+        .filter((entry) => normalized.has(entry.alias))
+        .map((entry) => ({ alias: entry.alias, userId: user.id })),
+    );
   }
 }
 

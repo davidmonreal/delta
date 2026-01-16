@@ -39,6 +39,10 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return this.lines;
   }
 
+  async listUnmatchedManagers() {
+    return [];
+  }
+
   async updateManagerAssignments({ updates }: { updates: ManagerAssignmentUpdate[] }) {
     for (const entry of updates) {
       for (const id of entry.ids) {

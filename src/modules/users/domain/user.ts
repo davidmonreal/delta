@@ -8,4 +8,6 @@ export type UserEntity = {
   role: UserRole;
   passwordHash: string;
   createdAt: Date;
+  updatedAt: Date;
+  managerAliases?: { alias: string }[];
 };

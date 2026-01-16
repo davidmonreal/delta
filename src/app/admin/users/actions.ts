@@ -71,6 +71,10 @@ export async function updateUserAction(
     name: getString(formData, "name") || undefined,
     password: password.length ? password : undefined,
     role: getString(formData, "role"),
+    managerAliases: formData
+      .getAll("managerAliases")
+      .map((value) => String(value))
+      .filter((value) => value.length > 0),
   });
 
   if (!parsed.success) {
@@ -82,6 +86,7 @@ export async function updateUserAction(
     sessionUser: { id: session.user.id, role: session.user.role },
     repo,
     passwordHasher,
+    invoiceRepo,
   });
   if (result.error) {
     return result;

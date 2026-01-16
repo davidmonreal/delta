@@ -1,9 +1,10 @@
+import { normalizeName } from "@/lib/normalize";
+import type { InvoiceRepository } from "@/modules/invoices/ports/invoiceRepository";
+import type { ActionResult, CurrentUser } from "./types";
+import { canAssignRole, canEditTarget } from "../domain/policies";
+import type { UpdateUserInput } from "../dto/userSchemas";
 import type { PasswordHasher } from "../ports/passwordHasher";
 import type { UserRepository } from "../ports/userRepository";
-import type { UpdateUserInput } from "../dto/userSchemas";
-import { canAssignRole, canEditTarget } from "../domain/policies";
-import { normalizeName } from "@/lib/normalize";
-import type { ActionResult, CurrentUser } from "./types";
 
 function normalizeDisplayName(value: string | undefined) {
   if (!value) return null;
@@ -16,11 +17,13 @@ export async function updateUser({
   sessionUser,
   repo,
   passwordHasher,
+  invoiceRepo,
 }: {
   input: UpdateUserInput;
   sessionUser: CurrentUser;
   repo: UserRepository;
   passwordHasher: PasswordHasher;
+  invoiceRepo?: InvoiceRepository;
 }): Promise<ActionResult> {
   const target = await repo.findById(input.userId);
   if (!target) {
@@ -43,6 +46,28 @@ export async function updateUser({
   }
 
   const displayName = normalizeDisplayName(input.name);
+  const normalizedAliases = input.managerAliases
+    ? Array.from(
+        new Set(
+          input.managerAliases
+            .map((alias) => alias.trim())
+            .filter((alias) => alias.length > 0)
+            .map((alias) => normalizeName(alias)),
+        ),
+      )
+    : undefined;
+  if (normalizedAliases && normalizedAliases.length > 0) {
+    const owners = await repo.listManagerAliasOwners(normalizedAliases);
+    const conflicts = owners.filter((owner) => owner.userId !== target.id);
+    if (conflicts.length > 0) {
+      const conflictList = Array.from(new Set(conflicts.map((entry) => entry.alias)))
+        .slice(0, 3)
+        .join(", ");
+      return {
+        error: `Aquest àlies ja està assignat: ${conflictList}.`,
+      };
+    }
+  }
   const data = {
     email: input.email,
     name: displayName,
@@ -52,12 +77,21 @@ export async function updateUser({
 
   const updateData = input.password?.length
     ? {
-        ...data,
-        passwordHash: await passwordHasher.hash(input.password),
-      }
+      ...data,
+      passwordHash: await passwordHasher.hash(input.password),
+    }
     : data;
 
-  await repo.update(target.id, updateData);
+  await repo.update(target.id, {
+    ...updateData,
+    managerAliases: normalizedAliases,
+  });
+
+  if (normalizedAliases && normalizedAliases.length > 0 && invoiceRepo) {
+    await Promise.all(
+      normalizedAliases.map((alias) => invoiceRepo.assignManagerAlias(alias, target.id)),
+    );
+  }
 
   return { success: "Usuari actualitzat correctament." };
 }

@@ -1,6 +1,6 @@
 import { buildUserCandidates } from "@/modules/users/application/buildUserCandidates";
 import { suggestManagers } from "./suggestManagers";
-import type { InvoiceQueryRepository } from "../ports/invoiceRepository";
+import type { InvoiceRepository } from "../ports/invoiceRepository";
 import type { UserRepository } from "@/modules/users/ports/userRepository";
 
 /**
@@ -12,14 +12,33 @@ export async function getUnmatchedAssignments({
   userRepo,
   suggestionsEnabled,
 }: {
-  invoiceRepo: InvoiceQueryRepository;
+  invoiceRepo: InvoiceRepository;
   userRepo: UserRepository;
   suggestionsEnabled: boolean;
 }) {
-  const [lines, users] = await Promise.all([
-    invoiceRepo.listUnmatched(),
-    userRepo.listAll(),
-  ]);
+  const users = await userRepo.listAll();
+  const aliasAssignments = users.flatMap((user) =>
+    (user.managerAliases ?? [])
+      .map((alias) => alias.alias.trim())
+      .filter((alias) => alias.length > 0)
+      .map((alias) => ({ alias, userId: user.id })),
+  );
+
+  if (aliasAssignments.length > 0) {
+    const uniqueAssignments = new Map<string, number>();
+    for (const { alias, userId } of aliasAssignments) {
+      if (!uniqueAssignments.has(alias)) {
+        uniqueAssignments.set(alias, userId);
+      }
+    }
+
+    // Ensure alias-based assignments are applied before listing unmatched lines.
+    for (const [alias, userId] of uniqueAssignments) {
+      await invoiceRepo.assignManagerAlias(alias, userId);
+    }
+  }
+
+  const lines = await invoiceRepo.listUnmatched();
   const userCandidates = buildUserCandidates(users);
   const resolvedLines = suggestionsEnabled
     ? suggestManagers({ lines, userCandidates })

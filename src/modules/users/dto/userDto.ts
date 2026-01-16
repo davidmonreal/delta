@@ -7,6 +7,7 @@ export type UserRowDto = {
   name: string | null;
   role: UserRole;
   createdAt: string;
+  managerAliases: string[];
 };
 
 export function toUserRowDto(user: UserEntity): UserRowDto {
@@ -16,5 +17,6 @@ export function toUserRowDto(user: UserEntity): UserRowDto {
     name: user.name,
     role: user.role,
     createdAt: user.createdAt.toISOString(),
+    managerAliases: user.managerAliases?.map((a) => a.alias) ?? [],
   };
 }

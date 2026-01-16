@@ -23,6 +23,7 @@ export const UpdateUserSchema = z.object({
   name: z.string().optional(),
   password: z.string().optional(),
   role: UserRoleSchema,
+  managerAliases: z.array(z.string()).optional(),
 });
 
 export const DeleteUserSchema = z.object({

@@ -28,6 +28,10 @@ class InMemoryInvoiceRepository implements InvoiceQueryRepository {
   async listBackfillLines() {
     return [];
   }
+
+  async listUnmatchedManagers() {
+    return [];
+  }
 }
 
 describe("listUnmatched", () => {

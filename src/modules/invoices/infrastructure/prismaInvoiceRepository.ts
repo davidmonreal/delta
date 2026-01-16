@@ -29,25 +29,25 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     const clientIds = Array.from(new Set(lines.map((line) => line.clientId)));
     const suggested = clientIds.length
       ? await prisma.invoiceLine.findMany({
-          where: {
-            clientId: { in: clientIds },
-            managerUserId: { not: null },
-          },
-          orderBy: [{ date: "desc" }],
-          distinct: ["clientId"],
-          select: { clientId: true, managerUserId: true },
-        })
+        where: {
+          clientId: { in: clientIds },
+          managerUserId: { not: null },
+        },
+        orderBy: [{ date: "desc" }],
+        distinct: ["clientId"],
+        select: { clientId: true, managerUserId: true },
+      })
       : [];
     const suggestedByClient = new Map(
       suggested.map((row) => [row.clientId, row.managerUserId]),
     );
     const recentManagers = clientIds.length
       ? await prisma.invoiceLine.findMany({
-          where: { clientId: { in: clientIds } },
-          orderBy: [{ date: "desc" }],
-          distinct: ["clientId"],
-          select: { clientId: true, manager: true },
-        })
+        where: { clientId: { in: clientIds } },
+        orderBy: [{ date: "desc" }],
+        distinct: ["clientId"],
+        select: { clientId: true, manager: true },
+      })
       : [];
     const recentManagerByClient = new Map(
       recentManagers.map((row) => [row.clientId, row.manager]),
@@ -72,6 +72,54 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       if (aEmpty !== bEmpty) return aEmpty ? -1 : 1;
       return b.date.getTime() - a.date.getTime();
     });
+  }
+
+  async listUnmatchedManagers(query: string): Promise<string[]> {
+    const result = await prisma.invoiceLine.findMany({
+      where: {
+        managerUserId: null,
+        manager: { contains: query, mode: "insensitive" },
+      },
+      select: { manager: true },
+      distinct: ["manager"],
+      take: 20,
+    });
+    return result.map((row) => row.manager);
+  }
+
+  async assignManagerAlias(alias: string, userId: number): Promise<void> {
+    const normalized = normalizeName(alias);
+    await prisma.invoiceLine.updateMany({
+      where: {
+        managerUserId: null,
+        managerNormalized: normalized,
+      },
+      data: {
+        managerUserId: userId,
+        managerNormalized: normalized,
+      },
+    });
+
+    const needsNormalization = await prisma.invoiceLine.findMany({
+      where: {
+        managerUserId: null,
+        managerNormalized: null,
+      },
+      select: { id: true, manager: true },
+    });
+
+    const idsToAssign = needsNormalization
+      .filter((line) => normalizeName(line.manager) === normalized)
+      .map((line) => line.id);
+    if (idsToAssign.length) {
+      await prisma.invoiceLine.updateMany({
+        where: { id: { in: idsToAssign } },
+        data: {
+          managerUserId: userId,
+          managerNormalized: normalized,
+        },
+      });
+    }
   }
 
   async assignManager(lineId: number, userId: number) {

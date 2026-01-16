@@ -88,6 +88,7 @@ export default function AdminUsersTable({
           name: editingUser?.name ?? "",
           email: editingUser?.email ?? "",
           role: editingUser?.role ?? "USER",
+          managerAliases: editingUser?.managerAliases ?? [],
         }}
         passwordPlaceholder="Deixa en blanc per a mantenir-la"
         onClose={() => setEditingUser(null)}

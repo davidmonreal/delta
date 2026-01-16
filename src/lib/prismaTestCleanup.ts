@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 
 export async function cleanupPrismaTestData() {
+  await prisma.managerAlias.deleteMany({
+    where: { user: { email: { startsWith: "test-" } } },
+  });
   await prisma.comparisonComment.deleteMany({
     where: { user: { email: { startsWith: "test-" } } },
   });

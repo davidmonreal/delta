@@ -34,6 +34,16 @@ model User {
   managedLines InvoiceLine[]
   comparisonComments ComparisonComment[]
   uploadJobs   UploadJob[]
+  managerAliases ManagerAlias[]
+}
+
+model ManagerAlias {
+  id        Int      @id @default(autoincrement())
+  alias     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@index([userId])
 }
 
 model Client {

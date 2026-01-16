@@ -38,6 +38,7 @@ export interface InvoiceQueryRepository {
   listUnmatched(): Promise<UnmatchedInvoiceLine[]>;
   countUnassignedByManagerName(params: { nameNormalized: string }): Promise<number>;
   listBackfillLines(): Promise<BackfillInvoiceLine[]>;
+  listUnmatchedManagers(query: string): Promise<string[]>;
 }
 
 export interface InvoiceCommandRepository {
@@ -48,11 +49,15 @@ export interface InvoiceCommandRepository {
     nameNormalized: string;
   }): Promise<number>;
   updateManagerAssignments(params: { updates: ManagerAssignmentUpdate[] }): Promise<void>;
-  updateManagerNormalized(params: { updates: ManagerNormalizationUpdate[] }): Promise<void>;
+  updateManagerNormalized(params: {
+    updates: ManagerNormalizationUpdate[];
+  }): Promise<void>;
+  // Manager aliases
+  assignManagerAlias(alias: string, userId: number): Promise<void>;
 }
 
 export interface InvoiceRepository
   extends InvoiceQueryRepository,
-    InvoiceCommandRepository {
+  InvoiceCommandRepository {
   disconnect?: () => Promise<void>;
 }

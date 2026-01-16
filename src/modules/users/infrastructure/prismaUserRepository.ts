@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { normalizeName } from "@/lib/normalize";
 
 import type { UserEntity } from "../domain/user";
-import type { UserRepository, CreateUserData, ListUsersParams, UpdateUserData } from "../ports/userRepository";
+import type {
+  UserRepository,
+  CreateUserData,
+  ListUsersParams,
+  UpdateUserData,
+} from "../ports/userRepository";
 
 const userSelect = {
   id: true,
@@ -11,31 +18,35 @@ const userSelect = {
   role: true,
   passwordHash: true,
   createdAt: true,
-} as const;
+  updatedAt: true,
+  managerAliases: {
+    select: {
+      alias: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+function toEntity(row: Prisma.UserGetPayload<{ select: typeof userSelect }>): UserEntity {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    nameNormalized: row.nameNormalized,
+    role: row.role,
+    passwordHash: row.passwordHash,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    managerAliases: row.managerAliases,
+  };
+}
 
 export class PrismaUserRepository implements UserRepository {
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    return prisma.user.findUnique({ where: { email }, select: userSelect });
-  }
-
-  async findById(id: number): Promise<UserEntity | null> {
-    return prisma.user.findUnique({ where: { id }, select: userSelect });
-  }
-
   async listAll(): Promise<UserEntity[]> {
-    return prisma.user.findMany({ select: userSelect });
-  }
-
-  async create(data: CreateUserData): Promise<UserEntity> {
-    return prisma.user.create({ data, select: userSelect });
-  }
-
-  async update(id: number, data: UpdateUserData): Promise<UserEntity> {
-    return prisma.user.update({ where: { id }, data, select: userSelect });
-  }
-
-  async delete(id: number): Promise<UserEntity> {
-    return prisma.user.delete({ where: { id }, select: userSelect });
+    const users = await prisma.user.findMany({
+      orderBy: [{ role: "desc" }, { email: "asc" }],
+      select: userSelect,
+    });
+    return users.map(toEntity);
   }
 
   async list({ roles, query }: ListUsersParams): Promise<UserEntity[]> {
@@ -53,7 +64,72 @@ export class PrismaUserRepository implements UserRepository {
       },
       orderBy: [{ role: "desc" }, { email: "asc" }],
       select: userSelect,
+    }).then((rows) => rows.map(toEntity));
+  }
+
+  async findById(id: number): Promise<UserEntity | null> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: userSelect,
     });
+
+    if (!user) return null;
+    return toEntity(user);
+  }
+
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: userSelect,
+    });
+
+    if (!user) return null;
+    return toEntity(user);
+  }
+
+  async create(userData: CreateUserData): Promise<UserEntity> {
+    const user = await prisma.user.create({
+      data: {
+        ...userData,
+        nameNormalized: normalizeName(userData.name ?? ""),
+      },
+      select: userSelect,
+    });
+    return toEntity(user);
+  }
+
+  async update(id: number, input: UpdateUserData): Promise<UserEntity> {
+    const { managerAliases, ...userData } = input;
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...userData,
+        ...(managerAliases
+          ? {
+            managerAliases: {
+              deleteMany: {}, // Clear existing aliases for this user
+              create: managerAliases.map((alias) => ({ alias })),
+            },
+          }
+          : {}),
+      },
+      select: userSelect,
+    });
+    return toEntity(user);
+  }
+
+  async listManagerAliasOwners(
+    aliases: string[],
+  ): Promise<{ alias: string; userId: number }[]> {
+    if (aliases.length === 0) return [];
+    return prisma.managerAlias.findMany({
+      where: { alias: { in: aliases } },
+      select: { alias: true, userId: true },
+    });
+  }
+
+  async delete(id: number): Promise<UserEntity> {
+    return toEntity(await prisma.user.delete({ where: { id }, select: userSelect }));
   }
 
   async disconnect() {

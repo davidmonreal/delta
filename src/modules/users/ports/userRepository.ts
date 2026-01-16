@@ -15,6 +15,7 @@ export type UpdateUserData = {
   nameNormalized: string | null;
   role: UserRole;
   passwordHash?: string;
+  managerAliases?: string[];
 };
 
 export type ListUsersParams = {
@@ -30,5 +31,6 @@ export interface UserRepository {
   update(id: number, data: UpdateUserData): Promise<UserEntity>;
   delete(id: number): Promise<UserEntity>;
   list(params: ListUsersParams): Promise<UserEntity[]>;
+  listManagerAliasOwners(aliases: string[]): Promise<{ alias: string; userId: number }[]>;
   disconnect?: () => Promise<void>;
 }
