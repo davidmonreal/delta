@@ -58,6 +58,8 @@ export default function AdminUserFormModal({
   const router = useRouter();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const requestIdRef = useRef(0);
+  const lastHandledSuccessRef = useRef<string | null>(null);
+  const lastHandledDeleteRef = useRef<string | null>(null);
   const [role, setRole] = useState<UserFormValues["role"]>(initialValues.role);
   const [nameValue, setNameValue] = useState(initialValues.name ?? "");
   const [matchCount, setMatchCount] = useState<number | null>(null);
@@ -79,23 +81,27 @@ export default function AdminUserFormModal({
     setNameValue(initialValues.name ?? "");
     setMatchCount(null);
     setIsChecking(false);
+    lastHandledSuccessRef.current = null;
+    lastHandledDeleteRef.current = null;
   }, [initialValues.role, initialValues.name, isOpen]);
 
   useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-      if (autoCloseOnSuccess) {
-        onClose();
-      }
-    }
-  }, [state, router, onClose, autoCloseOnSuccess]);
-
-  useEffect(() => {
-    if (deleteState?.success) {
-      router.refresh();
+    if (!state?.success) return;
+    if (lastHandledSuccessRef.current === state.success) return;
+    lastHandledSuccessRef.current = state.success;
+    router.refresh();
+    if (autoCloseOnSuccess) {
       onClose();
     }
-  }, [deleteState, router, onClose]);
+  }, [state?.success, router, onClose, autoCloseOnSuccess]);
+
+  useEffect(() => {
+    if (!deleteState?.success) return;
+    if (lastHandledDeleteRef.current === deleteState.success) return;
+    lastHandledDeleteRef.current = deleteState.success;
+    router.refresh();
+    onClose();
+  }, [deleteState?.success, router, onClose]);
 
   useEffect(() => {
     if (!isOpen) return;

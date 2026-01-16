@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 
 type SearchInputProps = {
@@ -18,24 +18,37 @@ export default function SearchInput({
   minChars = 3,
 }: SearchInputProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue ?? "");
+  const lastAppliedRef = useRef<string | null>(null);
   const trimmed = useMemo(() => value.trim(), [value]);
+  const currentValue = useMemo(
+    () => searchParams.get(name)?.trim() ?? "",
+    [name, searchParams],
+  );
 
   useEffect(() => {
     const handle = setTimeout(() => {
       if (trimmed.length >= minChars) {
-        const params = new URLSearchParams();
+        if (trimmed === currentValue) return;
+        if (lastAppliedRef.current === trimmed) return;
+        lastAppliedRef.current = trimmed;
+        const params = new URLSearchParams(searchParams.toString());
         params.set(name, trimmed);
         router.replace(`?${params.toString()}`);
-        router.refresh();
       } else if (trimmed.length === 0) {
-        router.replace("?");
-        router.refresh();
+        if (!currentValue) return;
+        if (lastAppliedRef.current === "") return;
+        lastAppliedRef.current = "";
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete(name);
+        const query = params.toString();
+        router.replace(query ? `?${query}` : "?");
       }
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [name, router, trimmed, minChars]);
+  }, [currentValue, minChars, name, router, searchParams, trimmed]);
 
   return (
     <label className="relative block">

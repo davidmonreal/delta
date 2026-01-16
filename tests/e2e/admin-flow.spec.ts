@@ -297,13 +297,14 @@ test.describe("admin flows", () => {
     page,
   }) => {
     await login(page);
-    await page.goto("/admin/users");
+    await page.goto(`/admin/users?q=${runId}`);
 
     const editButtons = page.locator('button[title="Editar usuari"]');
     const editButtonCount = await editButtons.count();
     expect(editButtonCount).toBeGreaterThan(1);
 
-    await editButtons.nth(0).click();
+    const adminRow = page.getByText(adminEmail, { exact: true }).locator("..");
+    await adminRow.locator('button[title="Editar usuari"]').click();
     const editHeading = page.getByRole("heading", { name: "Editar usuari" });
     await expect(editHeading).toBeVisible();
 
@@ -311,8 +312,10 @@ test.describe("admin flows", () => {
     await page.getByRole("button", { name: "Guardar" }).click();
     await expect(editHeading).toBeHidden();
 
-    const refreshedEditButtons = page.locator('button[title="Editar usuari"]');
-    await refreshedEditButtons.nth(1).click();
+    const secondaryRow = page
+      .getByText(extraUserEmails[0], { exact: true })
+      .locator("..");
+    await secondaryRow.locator('button[title="Editar usuari"]').click();
     await expect(editHeading).toBeVisible();
     await page.waitForTimeout(300);
     await expect(editHeading).toBeVisible();

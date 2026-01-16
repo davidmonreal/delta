@@ -97,6 +97,8 @@ export default function ComparisonResultsPanel({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
+    const current = url.searchParams.get("show");
+    if (current === activeShow) return;
     url.searchParams.set("show", activeShow);
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }, [activeShow]);
