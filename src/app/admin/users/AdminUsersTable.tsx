@@ -19,6 +19,7 @@ export default function AdminUsersTable({
   allowSuperadmin,
 }: AdminUsersTableProps) {
   const [editingUser, setEditingUser] = useState<UserRowDto | null>(null);
+  const [formKey, setFormKey] = useState(0);
   const pageSize = 20;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
@@ -62,7 +63,10 @@ export default function AdminUsersTable({
             <div className="flex items-center justify-end gap-2">
               <EditIconButton
                 title="Editar usuari"
-                onClick={() => setEditingUser(user)}
+                onClick={() => {
+                  setFormKey((prev) => prev + 1);
+                  setEditingUser(user);
+                }}
               />
               <IconButton
                 icon={User}
@@ -80,6 +84,7 @@ export default function AdminUsersTable({
         />
       </div>
       <AdminUserFormModal
+        key={formKey}
         isOpen={Boolean(editingUser)}
         title="Editar usuari"
         submitLabel="Guardar"
