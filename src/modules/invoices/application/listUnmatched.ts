@@ -1,5 +1,5 @@
-import type { InvoiceRepository } from "../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../ports/invoiceRepository";
 
-export async function listUnmatched({ repo }: { repo: InvoiceRepository }) {
+export async function listUnmatched({ repo }: { repo: InvoiceQueryRepository }) {
   return repo.listUnmatched();
 }

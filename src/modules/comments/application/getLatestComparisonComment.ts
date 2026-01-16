@@ -1,4 +1,4 @@
-import type { CommentRepository } from "../ports/commentRepository";
+import type { CommentQueryRepository } from "../ports/commentRepository";
 import type { CurrentUser } from "@/modules/users/application/types";
 
 export async function getLatestComparisonComment({
@@ -9,7 +9,7 @@ export async function getLatestComparisonComment({
   year,
   month,
 }: {
-  repo: CommentRepository;
+  repo: CommentQueryRepository;
   sessionUser: CurrentUser;
   clientId: number;
   serviceId: number;

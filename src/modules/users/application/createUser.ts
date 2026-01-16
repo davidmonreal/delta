@@ -3,7 +3,7 @@ import type { UserRepository } from "../ports/userRepository";
 import type { CreateUserInput } from "../dto/userSchemas";
 import { canAssignRole } from "../domain/policies";
 import { normalizeName } from "@/lib/normalize";
-import type { InvoiceRepository } from "@/modules/invoices/ports/invoiceRepository";
+import type { InvoiceCommandRepository } from "@/modules/invoices/ports/invoiceRepository";
 import type { ActionResult, CurrentUser } from "./types";
 
 function normalizeDisplayName(value: string | undefined) {
@@ -23,7 +23,7 @@ export async function createUser({
   sessionUser: CurrentUser;
   repo: UserRepository;
   passwordHasher: PasswordHasher;
-  invoiceRepo: InvoiceRepository;
+  invoiceRepo: InvoiceCommandRepository;
 }): Promise<ActionResult> {
   if (!canAssignRole(sessionUser.role, input.role)) {
     return { error: "No tens permisos per crear superadmins." };

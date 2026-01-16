@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { getLatestComparisonComment } from "../getLatestComparisonComment";
-import type { CommentRepository, ComparisonCommentSummary } from "../../ports/commentRepository";
+import type {
+  CommentQueryRepository,
+  ComparisonCommentSummary,
+} from "../../ports/commentRepository";
 
-class InMemoryCommentRepository implements CommentRepository {
-  async createComparisonComment() {
-    return;
-  }
-
+class InMemoryCommentRepository implements CommentQueryRepository {
   async findLatestByContext(): Promise<ComparisonCommentSummary | null> {
     return {
       kind: "REPORT_ERROR",

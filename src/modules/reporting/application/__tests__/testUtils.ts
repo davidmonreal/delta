@@ -1,5 +1,5 @@
 import type {
-  ReportingRepository,
+  ReportingQueryRepository,
   YearMonth,
   MonthlyGroupRow,
   MonthlyRefRow,
@@ -30,7 +30,7 @@ type SeedData = {
   clientLinesByClientId?: Map<number, ClientInvoiceLineRow[]>;
 };
 
-export class InMemoryReportingRepository implements ReportingRepository {
+export class InMemoryReportingRepository implements ReportingQueryRepository {
   private latestEntry: YearMonth | null;
   private latestEntryByClient: Map<number, YearMonth | null>;
   private monthlyGroups: MonthlyGroupRow[];

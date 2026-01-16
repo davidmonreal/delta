@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { assignManager } from "../assignManager";
-import type { InvoiceRepository } from "../../ports/invoiceRepository";
+import type { InvoiceCommandRepository } from "../../ports/invoiceRepository";
 
-class InMemoryInvoiceRepository implements InvoiceRepository {
+class InMemoryInvoiceRepository implements InvoiceCommandRepository {
   assigned: { lineId: number; userId: number } | null = null;
-
-  async listUnmatched() {
-    return [];
-  }
 
   async assignManager(lineId: number, userId: number) {
     this.assigned = { lineId, userId };
@@ -22,12 +18,12 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     return 0;
   }
 
-  async countUnassignedByManagerName() {
-    return 0;
+  async updateManagerAssignments() {
+    return;
   }
 
-  async backfillManagers() {
-    return 0;
+  async updateManagerNormalized() {
+    return;
   }
 }
 

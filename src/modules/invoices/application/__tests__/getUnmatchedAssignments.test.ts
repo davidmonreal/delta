@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { getUnmatchedAssignments } from "../getUnmatchedAssignments";
-import type { InvoiceRepository } from "../../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../../ports/invoiceRepository";
 import type { UserRepository } from "@/modules/users/ports/userRepository";
 
 describe("getUnmatchedAssignments", () => {
   it("returns suggestions only when enabled", async () => {
-    const invoiceRepo: InvoiceRepository = {
+    const invoiceRepo: InvoiceQueryRepository = {
       async listUnmatched() {
         return [
           {
@@ -21,18 +21,11 @@ describe("getUnmatchedAssignments", () => {
           },
         ];
       },
-      async assignManager() {},
-      async assignManagerForClient() {
-        return 0;
-      },
-      async assignManagersForUser() {
-        return 0;
-      },
       async countUnassignedByManagerName() {
         return 0;
       },
-      async backfillManagers() {
-        return 0;
+      async listBackfillLines() {
+        return [];
       },
     };
 

@@ -1,4 +1,4 @@
-import type { CommentRepository } from "../ports/commentRepository";
+import type { CommentQueryRepository } from "../ports/commentRepository";
 import type { CurrentUser } from "@/modules/users/application/types";
 
 export async function getCommentedContexts({
@@ -9,7 +9,7 @@ export async function getCommentedContexts({
   clientIds,
   serviceIds,
 }: {
-  repo: CommentRepository;
+  repo: CommentQueryRepository;
   sessionUser: CurrentUser;
   year: number;
   month: number;

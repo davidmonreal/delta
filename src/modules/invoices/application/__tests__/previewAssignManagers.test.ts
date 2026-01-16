@@ -1,31 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { previewAssignManagers } from "../previewAssignManagers";
-import type { InvoiceRepository } from "../../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../../ports/invoiceRepository";
 
-class InMemoryInvoiceRepository implements InvoiceRepository {
+class InMemoryInvoiceRepository implements InvoiceQueryRepository {
   async listUnmatched() {
     return [];
-  }
-
-  async assignManager() {
-    return;
-  }
-
-  async assignManagerForClient() {
-    return 0;
-  }
-
-  async assignManagersForUser() {
-    return 0;
   }
 
   async countUnassignedByManagerName({ nameNormalized }: { nameNormalized: string }) {
     return nameNormalized === "TONI NAVARRETE" ? 5 : 0;
   }
 
-  async backfillManagers() {
-    return 0;
+  async listBackfillLines() {
+    return [];
   }
 }
 

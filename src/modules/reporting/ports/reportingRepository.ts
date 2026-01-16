@@ -105,7 +105,7 @@ export type ServiceRow = {
   conceptRaw: string;
 };
 
-export interface ReportingRepository {
+export interface ReportingQueryRepository {
   getLatestEntry(params?: { managerUserId?: number }): Promise<YearMonth | null>;
   getLatestEntryForClient(
     clientId: number,
@@ -168,3 +168,5 @@ export interface ReportingRepository {
     managerUserId?: number;
   }): Promise<ClientInvoiceLineRow[]>;
 }
+
+export interface ReportingRepository extends ReportingQueryRepository {}

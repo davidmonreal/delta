@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { Prisma, type PrismaClient } from "../../../generated/prisma";
+import { resolveManagerName } from "../domain/managerName";
 
 import type {
   ReportingRepository,
@@ -34,12 +35,6 @@ function buildInvoiceLineWhere(params: InvoiceLineWhereParams) {
     ...(params.years ? { year: { in: params.years } } : {}),
     ...(params.managerUserId ? { managerUserId: params.managerUserId } : {}),
   };
-}
-
-function resolveManagerName(managerName?: string | null, userName?: string | null) {
-  const rawName = userName ?? managerName ?? "";
-  const trimmed = rawName.trim();
-  return trimmed.length ? trimmed : null;
 }
 
 function resolveManagerNameRow(row: ManagerSelectRow) {

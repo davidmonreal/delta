@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db";
-import { matchUserId } from "@/lib/match-user";
 import { normalizeName } from "@/lib/normalize";
 
 import type {
-  BackfillProgress,
+  BackfillInvoiceLine,
   InvoiceRepository,
+  ManagerAssignmentUpdate,
+  ManagerNormalizationUpdate,
   UnmatchedInvoiceLine,
 } from "../ports/invoiceRepository";
 
@@ -146,88 +147,42 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
-  async backfillManagers({
-    userCandidates,
-    onProgress,
-  }: {
-    userCandidates: { id: number; nameNormalized: string }[];
-    onProgress?: (progress: BackfillProgress) => Promise<void> | void;
-  }) {
-    const lines = await prisma.invoiceLine.findMany({
+  async listBackfillLines(): Promise<BackfillInvoiceLine[]> {
+    return prisma.invoiceLine.findMany({
       where: {
         OR: [{ managerUserId: null }, { managerNormalized: null }],
       },
       select: { id: true, manager: true, managerNormalized: true, managerUserId: true },
     });
+  }
 
-    const progressBatch = 100;
-    if (onProgress) {
-      await onProgress({ processed: 0, total: lines.length });
+  async updateManagerAssignments({
+    updates,
+  }: {
+    updates: ManagerAssignmentUpdate[];
+  }): Promise<void> {
+    for (const entry of updates) {
+      await prisma.invoiceLine.updateMany({
+        where: { id: { in: entry.ids } },
+        data: {
+          managerUserId: entry.managerUserId,
+          managerNormalized: entry.managerNormalized,
+        },
+      });
     }
+  }
 
-    let updated = 0;
-    let processed = 0;
-    const matchCache = new Map<string, number | null>();
-    const updateBatchSize = 200;
-    for (let start = 0; start < lines.length; start += updateBatchSize) {
-      const batch = lines.slice(start, start + updateBatchSize);
-      const updatesByKey = new Map<
-        string,
-        { ids: number[]; managerUserId: number | null; managerNormalized: string }
-      >();
-      const normalizeOnlyByValue = new Map<string, number[]>();
-
-      for (const line of batch) {
-        const normalized = normalizeName(line.managerNormalized ?? line.manager);
-        if (line.managerUserId == null) {
-          let userId = matchCache.get(normalized);
-          if (userId === undefined) {
-            const match = matchUserId(normalized, userCandidates);
-            userId = match.userId ?? null;
-            matchCache.set(normalized, userId);
-          }
-          if (userId) {
-            updated += 1;
-          }
-          const key = `${normalized}::${userId ?? "null"}`;
-          const entry = updatesByKey.get(key) ?? {
-            ids: [],
-            managerUserId: userId,
-            managerNormalized: normalized,
-          };
-          entry.ids.push(line.id);
-          updatesByKey.set(key, entry);
-        } else if (line.managerNormalized !== normalized) {
-          const ids = normalizeOnlyByValue.get(normalized) ?? [];
-          ids.push(line.id);
-          normalizeOnlyByValue.set(normalized, ids);
-        }
-      }
-
-      for (const entry of updatesByKey.values()) {
-        await prisma.invoiceLine.updateMany({
-          where: { id: { in: entry.ids } },
-          data: {
-            managerUserId: entry.managerUserId,
-            managerNormalized: entry.managerNormalized,
-          },
-        });
-      }
-
-      for (const [normalized, ids] of normalizeOnlyByValue.entries()) {
-        await prisma.invoiceLine.updateMany({
-          where: { id: { in: ids } },
-          data: { managerNormalized: normalized },
-        });
-      }
-
-      processed += batch.length;
-      if (onProgress && (processed % progressBatch === 0 || processed === lines.length)) {
-        await onProgress({ processed, total: lines.length });
-      }
+  async updateManagerNormalized({
+    updates,
+  }: {
+    updates: ManagerNormalizationUpdate[];
+  }): Promise<void> {
+    for (const entry of updates) {
+      await prisma.invoiceLine.updateMany({
+        where: { id: { in: entry.ids } },
+        data: { managerNormalized: entry.managerNormalized },
+      });
     }
-
-    return updated;
   }
 
   async disconnect() {

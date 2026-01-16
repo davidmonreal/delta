@@ -1,4 +1,4 @@
-import type { ReportingRepository } from "../ports/reportingRepository";
+import type { ReportingQueryRepository } from "../ports/reportingRepository";
 
 export type ClientInvoiceLineItem = {
   id: number;
@@ -23,7 +23,7 @@ export async function getClientInvoiceLines({
   clientId,
   managerUserId,
 }: {
-  repo: ReportingRepository;
+  repo: ReportingQueryRepository;
   clientId: number;
   managerUserId?: number;
 }): Promise<ClientInvoiceLineGroup[]> {

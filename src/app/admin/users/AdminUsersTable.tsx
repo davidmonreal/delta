@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User } from "lucide-react";
-
-import { EditIconButton, IconButton } from "@/components/common/IconButton";
+import { EditIconButton } from "@/components/common/IconButton";
 import { deleteUserAction, updateUserAction } from "@/app/admin/users/actions";
 import type { UserRowDto } from "@/modules/users/dto/userDto";
 import AdminUserFormModal from "@/app/admin/users/AdminUserFormModal";
@@ -67,11 +65,6 @@ export default function AdminUsersTable({
                   setFormKey((prev) => prev + 1);
                   setEditingUser(user);
                 }}
-              />
-              <IconButton
-                icon={User}
-                title="Suplantar usuari"
-                onClick={() => {}}
               />
             </div>
           </div>

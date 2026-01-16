@@ -1,4 +1,4 @@
-import type { CommentRepository } from "../ports/commentRepository";
+import type { CommentCommandRepository } from "../ports/commentRepository";
 import type { CreateComparisonCommentInput } from "../dto/commentSchemas";
 import type { CurrentUser } from "@/modules/users/application/types";
 
@@ -9,7 +9,7 @@ export async function createComparisonComment({
 }: {
   input: CreateComparisonCommentInput;
   sessionUser: CurrentUser;
-  repo: CommentRepository;
+  repo: CommentCommandRepository;
 }) {
   // Business rule: comments must be attributed to a valid user for auditability.
   const userId = Number.parseInt(sessionUser.id, 10);

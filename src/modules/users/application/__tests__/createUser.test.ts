@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createUser } from "../createUser";
 import type { CreateUserInput } from "../../dto/userSchemas";
 import { InMemoryUserRepository, StubPasswordHasher } from "./testUtils";
-import type { InvoiceRepository } from "@/modules/invoices/ports/invoiceRepository";
+import type { InvoiceCommandRepository } from "@/modules/invoices/ports/invoiceRepository";
 
 const baseInput: CreateUserInput = {
   email: "user@example.com",
@@ -15,13 +15,12 @@ const baseInput: CreateUserInput = {
 describe("createUser", () => {
   it("blocks admins from creating superadmins", async () => {
     const repo = new InMemoryUserRepository();
-    const invoiceRepo: InvoiceRepository = {
-      listUnmatched: async () => [],
+    const invoiceRepo: InvoiceCommandRepository = {
+      assignManagersForUser: async () => 0,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
-      assignManagersForUser: async () => 0,
-      countUnassignedByManagerName: async () => 0,
-      backfillManagers: async () => 0,
+      updateManagerAssignments: async () => undefined,
+      updateManagerNormalized: async () => undefined,
     };
     const result = await createUser({
       input: { ...baseInput, role: "SUPERADMIN" },
@@ -46,13 +45,12 @@ describe("createUser", () => {
         createdAt: new Date(),
       },
     ]);
-    const invoiceRepo: InvoiceRepository = {
-      listUnmatched: async () => [],
+    const invoiceRepo: InvoiceCommandRepository = {
+      assignManagersForUser: async () => 0,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
-      assignManagersForUser: async () => 0,
-      countUnassignedByManagerName: async () => 0,
-      backfillManagers: async () => 0,
+      updateManagerAssignments: async () => undefined,
+      updateManagerNormalized: async () => undefined,
     };
     const result = await createUser({
       input: baseInput,
@@ -67,13 +65,12 @@ describe("createUser", () => {
 
   it("creates a user with hashed password", async () => {
     const repo = new InMemoryUserRepository();
-    const invoiceRepo: InvoiceRepository = {
-      listUnmatched: async () => [],
+    const invoiceRepo: InvoiceCommandRepository = {
+      assignManagersForUser: async () => 2,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
-      assignManagersForUser: async () => 2,
-      countUnassignedByManagerName: async () => 0,
-      backfillManagers: async () => 0,
+      updateManagerAssignments: async () => undefined,
+      updateManagerNormalized: async () => undefined,
     };
     const result = await createUser({
       input: baseInput,

@@ -1,21 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { createComparisonComment } from "../createComparisonComment";
-import type { CommentRepository } from "../../ports/commentRepository";
+import type { CommentCommandRepository } from "../../ports/commentRepository";
 
-class InMemoryCommentRepository implements CommentRepository {
+class InMemoryCommentRepository implements CommentCommandRepository {
   created: unknown[] = [];
 
   async createComparisonComment(input: unknown) {
     this.created.push(input);
-  }
-
-  async findLatestByContext() {
-    return null;
-  }
-
-  async findCommentedContexts() {
-    return [];
   }
 }
 

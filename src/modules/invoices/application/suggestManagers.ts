@@ -1,18 +1,15 @@
-import { matchUserId } from "@/lib/match-user";
-
+import type { ManagerCandidate, ManagerMatcher } from "../domain/managerMatcher";
+import { defaultManagerMatcher } from "../domain/managerMatcher";
 import type { UnmatchedInvoiceLine } from "../ports/invoiceRepository";
-
-type UserCandidate = {
-  id: number;
-  nameNormalized: string;
-};
 
 export function suggestManagers({
   lines,
   userCandidates,
+  matcher = defaultManagerMatcher,
 }: {
   lines: UnmatchedInvoiceLine[];
-  userCandidates: UserCandidate[];
+  userCandidates: ManagerCandidate[];
+  matcher?: ManagerMatcher;
 }) {
   // Business rule: suggest the most recent manager on the client line when possible,
   // but never auto-assign; the admin must confirm.
@@ -35,7 +32,7 @@ export function suggestManagers({
       cacheByClientId.set(line.clientId, null);
       return line;
     }
-    const match = matchUserId(candidateName, userCandidates);
+    const match = matcher.match(candidateName, userCandidates);
     cacheByClientId.set(line.clientId, match.userId ?? null);
     if (!match.userId) return line;
     return { ...line, suggestedUserId: match.userId };

@@ -1,3 +1,10 @@
+import type { CommentViewer } from "../domain/commentVisibilityPolicy";
+
+export type CommentContextKey = {
+  clientId: number;
+  serviceId: number;
+};
+
 export type CreateComparisonCommentData = {
   userId: number;
   clientId: number;
@@ -14,20 +21,7 @@ export type ComparisonCommentSummary = {
   createdAt: Date;
 };
 
-import type { UserRole } from "@/modules/users/domain/userRole";
-
-export type CommentViewer = {
-  userId: number;
-  role: UserRole;
-};
-
-export type CommentContextKey = {
-  clientId: number;
-  serviceId: number;
-};
-
-export interface CommentRepository {
-  createComparisonComment(data: CreateComparisonCommentData): Promise<void>;
+export interface CommentQueryRepository {
   findLatestByContext(params: {
     viewer: CommentViewer;
     clientId: number;
@@ -42,5 +36,14 @@ export interface CommentRepository {
     clientIds: number[];
     serviceIds: number[];
   }): Promise<CommentContextKey[]>;
+}
+
+export interface CommentCommandRepository {
+  createComparisonComment(data: CreateComparisonCommentData): Promise<void>;
+}
+
+export interface CommentRepository
+  extends CommentQueryRepository,
+    CommentCommandRepository {
   disconnect?: () => Promise<void>;
 }

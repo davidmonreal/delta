@@ -1,10 +1,10 @@
-import type { InvoiceRepository } from "../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../ports/invoiceRepository";
 
 export async function previewAssignManagers({
   repo,
   nameNormalized,
 }: {
-  repo: InvoiceRepository;
+  repo: InvoiceQueryRepository;
   nameNormalized: string;
 }) {
   return repo.countUnassignedByManagerName({ nameNormalized });

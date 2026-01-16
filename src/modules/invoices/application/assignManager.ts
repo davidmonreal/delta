@@ -1,11 +1,11 @@
-import type { InvoiceRepository } from "../ports/invoiceRepository";
+import type { InvoiceCommandRepository } from "../ports/invoiceRepository";
 
 export async function assignManager({
   repo,
   lineId,
   userId,
 }: {
-  repo: InvoiceRepository;
+  repo: InvoiceCommandRepository;
   lineId: number;
   userId: number;
 }) {

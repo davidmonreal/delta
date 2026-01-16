@@ -1,4 +1,4 @@
-import type { ReportingRepository, YearMonth } from "../ports/reportingRepository";
+import type { ReportingQueryRepository, YearMonth } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
@@ -43,7 +43,7 @@ export async function getMonthlyComparison({
   rawFilters,
   managerUserId,
 }: {
-  repo: ReportingRepository;
+  repo: ReportingQueryRepository;
   linkedServiceRepo?: LinkedServiceRepository;
   viewerRole?: UserRole;
   rawFilters: {

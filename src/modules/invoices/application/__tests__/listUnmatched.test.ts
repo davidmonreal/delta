@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { listUnmatched } from "../listUnmatched";
-import type { InvoiceRepository } from "../../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../../ports/invoiceRepository";
 
-class InMemoryInvoiceRepository implements InvoiceRepository {
+class InMemoryInvoiceRepository implements InvoiceQueryRepository {
   async listUnmatched() {
     return [
       {
@@ -21,24 +21,12 @@ class InMemoryInvoiceRepository implements InvoiceRepository {
     ];
   }
 
-  async assignManager() {
-    return;
-  }
-
-  async assignManagerForClient() {
-    return 0;
-  }
-
-  async assignManagersForUser() {
-    return 0;
-  }
-
   async countUnassignedByManagerName() {
     return 0;
   }
 
-  async backfillManagers() {
-    return 0;
+  async listBackfillLines() {
+    return [];
   }
 }
 

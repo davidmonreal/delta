@@ -1,4 +1,4 @@
-import type { ReportingRepository } from "../ports/reportingRepository";
+import type { ReportingQueryRepository } from "../ports/reportingRepository";
 import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
 import type { UserRole } from "@/modules/users/domain/userRole";
 import { toMonthlyComparisonViewModel } from "../dto/reportingViewModel";
@@ -11,7 +11,7 @@ export async function getMonthlyComparisonPage({
   rawFilters,
   managerUserId,
 }: {
-  repo: ReportingRepository;
+  repo: ReportingQueryRepository;
   linkedServiceRepo?: LinkedServiceRepository;
   viewerRole?: UserRole;
   rawFilters: {

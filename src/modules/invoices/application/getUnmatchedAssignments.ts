@@ -1,6 +1,6 @@
 import { buildUserCandidates } from "@/modules/users/application/buildUserCandidates";
 import { suggestManagers } from "./suggestManagers";
-import type { InvoiceRepository } from "../ports/invoiceRepository";
+import type { InvoiceQueryRepository } from "../ports/invoiceRepository";
 import type { UserRepository } from "@/modules/users/ports/userRepository";
 
 /**
@@ -12,7 +12,7 @@ export async function getUnmatchedAssignments({
   userRepo,
   suggestionsEnabled,
 }: {
-  invoiceRepo: InvoiceRepository;
+  invoiceRepo: InvoiceQueryRepository;
   userRepo: UserRepository;
   suggestionsEnabled: boolean;
 }) {
