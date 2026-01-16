@@ -37,6 +37,10 @@ export async function createUserAction(
     name: getString(formData, "name") || undefined,
     password: getString(formData, "password"),
     role: getString(formData, "role"),
+    managerAliases: formData
+      .getAll("managerAliases")
+      .map((value) => String(value))
+      .filter((value) => value.length > 0),
   });
 
   if (!parsed.success) {

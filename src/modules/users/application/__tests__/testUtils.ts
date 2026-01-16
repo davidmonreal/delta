@@ -41,10 +41,14 @@ export class InMemoryUserRepository implements UserRepository {
       throw new Error("User not found");
     }
     const existing = this.users[index];
+    const managerAliases = data.managerAliases
+      ? data.managerAliases.map((alias) => ({ alias }))
+      : existing.managerAliases;
     const updated: UserEntity = {
       ...existing,
       ...data,
       passwordHash: data.passwordHash ?? existing.passwordHash,
+      managerAliases,
     };
     this.users[index] = updated;
     return updated;

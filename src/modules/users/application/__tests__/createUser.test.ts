@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createUser } from "../createUser";
 import type { CreateUserInput } from "../../dto/userSchemas";
@@ -17,6 +17,7 @@ describe("createUser", () => {
     const repo = new InMemoryUserRepository();
     const invoiceRepo: InvoiceCommandRepository = {
       assignManagersForUser: async () => 0,
+      assignManagerAlias: async () => undefined,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
       updateManagerAssignments: async () => undefined,
@@ -47,6 +48,7 @@ describe("createUser", () => {
     ]);
     const invoiceRepo: InvoiceCommandRepository = {
       assignManagersForUser: async () => 0,
+      assignManagerAlias: async () => undefined,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
       updateManagerAssignments: async () => undefined,
@@ -67,6 +69,7 @@ describe("createUser", () => {
     const repo = new InMemoryUserRepository();
     const invoiceRepo: InvoiceCommandRepository = {
       assignManagersForUser: async () => 2,
+      assignManagerAlias: async () => undefined,
       assignManager: async () => undefined,
       assignManagerForClient: async () => 0,
       updateManagerAssignments: async () => undefined,
@@ -85,5 +88,34 @@ describe("createUser", () => {
     expect(created?.passwordHash).toBe("hashed:secret");
     expect(created?.name).toBe("Jane Doe");
     expect(created?.nameNormalized).toBe("JANE DOE");
+  });
+
+  it("stores manager aliases on creation", async () => {
+    const repo = new InMemoryUserRepository();
+    const assignManagerAlias = vi.fn().mockResolvedValue(undefined);
+    const invoiceRepo: InvoiceCommandRepository = {
+      assignManagersForUser: async () => 0,
+      assignManagerAlias,
+      assignManager: async () => undefined,
+      assignManagerForClient: async () => 0,
+      updateManagerAssignments: async () => undefined,
+      updateManagerNormalized: async () => undefined,
+    };
+    const result = await createUser({
+      input: {
+        ...baseInput,
+        email: "alias@example.com",
+        managerAliases: ["Certificats Digitals"],
+      },
+      sessionUser: { id: "1", role: "SUPERADMIN" },
+      repo,
+      passwordHasher: new StubPasswordHasher(),
+      invoiceRepo,
+    });
+
+    expect(result.success).toBe("Usuari creat correctament. No té cap línia assignada encara.");
+    const created = await repo.findByEmail("alias@example.com");
+    expect(created?.managerAliases).toEqual([{ alias: "CERTIFICATS DIGITALS" }]);
+    expect(assignManagerAlias).toHaveBeenCalledWith("CERTIFICATS DIGITALS", created?.id);
   });
 });

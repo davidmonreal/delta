@@ -34,6 +34,28 @@ export async function createUser({
     return { error: "Aquest email ja existeix." };
   }
 
+  const normalizedAliases = input.managerAliases
+    ? Array.from(
+        new Set(
+          input.managerAliases
+            .map((alias) => alias.trim())
+            .filter((alias) => alias.length > 0)
+            .map((alias) => normalizeName(alias)),
+        ),
+      )
+    : undefined;
+  if (normalizedAliases && normalizedAliases.length > 0) {
+    const owners = await repo.listManagerAliasOwners(normalizedAliases);
+    if (owners.length > 0) {
+      const conflictList = Array.from(new Set(owners.map((entry) => entry.alias)))
+        .slice(0, 3)
+        .join(", ");
+      return {
+        error: `Aquest àlies ja està assignat: ${conflictList}.`,
+      };
+    }
+  }
+
   const passwordHash = await passwordHasher.hash(input.password);
 
   const displayName = normalizeDisplayName(input.name);
@@ -44,6 +66,19 @@ export async function createUser({
     role: input.role,
     passwordHash,
   });
+
+  if (normalizedAliases && normalizedAliases.length > 0) {
+    await repo.update(created.id, {
+      email: created.email,
+      name: created.name,
+      nameNormalized: created.nameNormalized,
+      role: created.role,
+      managerAliases: normalizedAliases,
+    });
+    await Promise.all(
+      normalizedAliases.map((alias) => invoiceRepo.assignManagerAlias(alias, created.id)),
+    );
+  }
 
   if (!created.nameNormalized) {
     return { success: "Usuari creat correctament." };
