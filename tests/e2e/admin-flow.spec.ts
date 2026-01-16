@@ -13,6 +13,8 @@ const sourceFile = `__e2e__${runId}`;
 
 const adminEmail = `admin-${runId}@example.com`;
 const adminPassword = `pass-${runId}`;
+const clientName = `000 E2E Client ${runId}`;
+const unmatchedManagerName = `Unmatched Manager ${runId}`;
 const extraUserEmails = [
   `user-a-${runId}@example.com`,
   `user-b-${runId}@example.com`,
@@ -70,8 +72,8 @@ async function seedData() {
 
   const client = await prisma.client.create({
     data: {
-      nameRaw: `Client ${runId}`,
-      nameNormalized: normalizeName(`Client ${runId}`),
+      nameRaw: clientName,
+      nameNormalized: normalizeName(clientName),
     },
   });
 
@@ -127,8 +129,8 @@ async function seedData() {
         units: 5,
         price: 8,
         total: 40,
-        manager: "Unmatched Manager",
-        managerNormalized: "UNMATCHED MANAGER",
+        manager: unmatchedManagerName,
+        managerNormalized: normalizeName(unmatchedManagerName),
         sourceFile,
         clientId: client.id,
         serviceId: serviceIdsByKey.unmatched,
@@ -248,46 +250,110 @@ test.describe("admin flows", () => {
     ).toBeVisible();
   });
 
+  test("can impersonate a user and return", async ({ page }) => {
+    await login(page);
+    await page.goto(`/admin/users?q=${runId}`);
+
+    const userRow = page
+      .getByText(extraUserEmails[0], { exact: true })
+      .locator("..");
+    await userRow.locator('button[title="Suplantar usuari"]').click();
+
+    await expect(page.getByText(`Suplantant User A ${runId}`)).toBeVisible();
+    const stopButton = page.getByRole("button", { name: "Deixar de suplantar" });
+    await expect(stopButton).toBeVisible();
+
+    await stopButton.click();
+    await expect(page.getByText(`Suplantant User A ${runId}`)).toHaveCount(0);
+
+    await page.goto("/admin/users");
+    await expect(
+      page.getByRole("heading", { name: "Gestio d'usuaris" }),
+    ).toBeVisible();
+  });
+
   test("shows unmatched managers", async ({ page }) => {
     await login(page);
     await page.goto("/admin/upload");
     await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
-    await expect(page.getByText("Unmatched Manager")).toBeVisible();
+    await expect(page.getByText(unmatchedManagerName)).toBeVisible();
   });
 
   test("shows client comparison filters", async ({ page }) => {
     await login(page);
     await page.goto(`/client/${clientId}?show=neg`);
-    await expect(page.getByText(`Client ${runId}`)).toBeVisible();
-    await expect(page.getByText(serviceNames.negative, { exact: true })).toBeVisible();
-    await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(clientName)).toBeVisible();
+    const comparisonSection = page.locator("section").first();
+    await expect(
+      comparisonSection.getByText(serviceNames.negative, { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      comparisonSection.getByText(serviceNames.equal, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSection.getByText(serviceNames.positive, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSection.getByText(serviceNames.missing, { exact: true }),
+    ).toHaveCount(0);
 
     await page.goto(`/client/${clientId}?show=eq`);
-    await expect(page.getByText(serviceNames.equal, { exact: true })).toBeVisible();
-    await expect(page.getByText(serviceNames.negative, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+    const comparisonSectionEq = page.locator("section").first();
+    await expect(
+      comparisonSectionEq.getByText(serviceNames.equal, { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      comparisonSectionEq.getByText(serviceNames.negative, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionEq.getByText(serviceNames.positive, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionEq.getByText(serviceNames.missing, { exact: true }),
+    ).toHaveCount(0);
 
     await page.goto(`/client/${clientId}?show=pos`);
-    await expect(page.getByText(serviceNames.positive, { exact: true })).toBeVisible();
-    await expect(page.getByText(serviceNames.negative, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+    const comparisonSectionPos = page.locator("section").first();
+    await expect(
+      comparisonSectionPos
+        .getByText(serviceNames.positive, { exact: true })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      comparisonSectionPos.getByText(serviceNames.negative, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionPos.getByText(serviceNames.equal, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionPos.getByText(serviceNames.missing, { exact: true }),
+    ).toHaveCount(0);
 
     await page.goto(`/client/${clientId}?show=miss`);
-    await expect(page.getByText(serviceNames.missing, { exact: true })).toBeVisible();
-    await expect(page.getByText(serviceNames.negative, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
+    const comparisonSectionMiss = page.locator("section").first();
+    await expect(
+      comparisonSectionMiss
+        .getByText(serviceNames.missing, { exact: true })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      comparisonSectionMiss.getByText(serviceNames.negative, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionMiss.getByText(serviceNames.equal, { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      comparisonSectionMiss.getByText(serviceNames.positive, { exact: true }),
+    ).toHaveCount(0);
   });
 
   test("shows monthly comparison on the home page", async ({ page }) => {
     await login(page);
     await page.goto(`/?show=neg&year=2025&month=1`);
-    await expect(page.getByText(`Client ${runId}`)).toBeVisible();
-    await expect(page.getByText(serviceNames.negative)).toBeVisible();
+    await expect(page.getByPlaceholder("Cerca per client")).toBeVisible();
+    await page.getByPlaceholder("Cerca per client").fill(clientName);
+    await expect(page.getByText(clientName)).toBeVisible();
+    await expect(page.getByText(serviceNames.negative).first()).toBeVisible();
     await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);

@@ -64,6 +64,9 @@ codebase reads like it was written by one person with the same criteria.
 - Use case tests in application/__tests__ with in-memory ports.
 - Prisma tests in infrastructure/__tests__ gated by RUN_DB_TESTS=1.
 - Prefer deterministic data and avoid time-based flakiness.
+- E2E tests use Playwright; avoid port conflicts by either:
+  - Reusing an existing dev server: `RUN_E2E=1 E2E_SKIP_WEB_SERVER=1 E2E_BASE_URL=http://localhost:3000 npm run test:e2e`
+  - Starting a dedicated server on another port: `RUN_E2E=1 E2E_PORT=3001 npm run test:e2e`
 
 ## Database guidance
 - Use numeric/decimal types for money; avoid float for totals.

@@ -19,6 +19,7 @@ export default async function AdminUsersPage({
   searchParams?: SearchParams;
 }) {
   const session = await requireAdminSession();
+  const viewerId = Number.parseInt(session.user.id, 10);
   const resolvedSearchParams = (await searchParams) ?? {};
   const query = resolvedSearchParams.q?.trim() ?? "";
   const repo = new PrismaUserRepository();
@@ -64,6 +65,7 @@ export default async function AdminUsersPage({
         <AdminUsersTable
           users={serializedUsers}
           allowSuperadmin={allowSuperadmin}
+          viewerId={viewerId}
         />
       </section>
     </div>

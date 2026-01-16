@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EditIconButton } from "@/components/common/IconButton";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { UserRound } from "lucide-react";
+import { IconButton, EditIconButton } from "@/components/common/IconButton";
 import { deleteUserAction, updateUserAction } from "@/app/admin/users/actions";
 import type { UserRowDto } from "@/modules/users/dto/userDto";
 import AdminUserFormModal from "@/app/admin/users/AdminUserFormModal";
@@ -10,14 +13,19 @@ import PaginationControls from "@/components/common/PaginationControls";
 type AdminUsersTableProps = {
   users: UserRowDto[];
   allowSuperadmin: boolean;
+  viewerId: number;
 };
 
 export default function AdminUsersTable({
   users,
   allowSuperadmin,
+  viewerId,
 }: AdminUsersTableProps) {
   const [editingUser, setEditingUser] = useState<UserRowDto | null>(null);
   const [formKey, setFormKey] = useState(0);
+  const [impersonatingId, setImpersonatingId] = useState<number | null>(null);
+  const router = useRouter();
+  const { update } = useSession();
   const pageSize = 20;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
@@ -36,6 +44,23 @@ export default function AdminUsersTable({
       setPage(totalPages);
     }
   }, [page, totalPages]);
+
+  const canImpersonate = (user: UserRowDto) => {
+    if (user.id === viewerId) return false;
+    if (allowSuperadmin) return true;
+    return user.role === "USER";
+  };
+
+  const handleImpersonate = async (user: UserRowDto) => {
+    if (impersonatingId === user.id) return;
+    setImpersonatingId(user.id);
+    try {
+      await update({ impersonateUserId: user.id });
+      router.refresh();
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
 
   return (
     <>
@@ -59,6 +84,15 @@ export default function AdminUsersTable({
               {new Date(user.createdAt).toLocaleDateString("ca-ES")}
             </span>
             <div className="flex items-center justify-end gap-2">
+              {canImpersonate(user) ? (
+                <IconButton
+                  icon={UserRound}
+                  title="Suplantar usuari"
+                  size="sm"
+                  onClick={() => handleImpersonate(user)}
+                  className={impersonatingId === user.id ? "opacity-60" : ""}
+                />
+              ) : null}
               <EditIconButton
                 title="Editar usuari"
                 onClick={() => {

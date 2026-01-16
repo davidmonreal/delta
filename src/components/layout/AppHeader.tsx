@@ -1,16 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import type { UserRole } from "@/modules/users/domain/userRole";
 
 type AppHeaderProps = {
   showAdminLink: boolean;
   showUploadLink: boolean;
   showLinkedServicesLink: boolean;
-  role: string;
+  role: UserRole;
   name?: string | null;
   email?: string | null;
+  impersonator?: {
+    id: string;
+    role: UserRole;
+    name?: string | null;
+    email?: string | null;
+  };
 };
 
 export default function AppHeader({
@@ -20,8 +27,11 @@ export default function AppHeader({
   role,
   name,
   email,
+  impersonator,
 }: AppHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { update } = useSession();
   const displayName = name?.trim() || email || "";
   const baseClass = "text-sm font-medium text-slate-500 hover:text-emerald-700";
   const activeClass = "text-sm font-semibold text-slate-900";
@@ -29,6 +39,7 @@ export default function AppHeader({
   const isUsers = pathname.startsWith("/admin/users");
   const isUpload = pathname.startsWith("/admin/upload");
   const isLinkedServices = pathname.startsWith("/admin/linked-services");
+  const isImpersonating = Boolean(impersonator);
 
   return (
     <nav className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur">
@@ -62,7 +73,25 @@ export default function AppHeader({
         <span className="rounded-full bg-emerald-100 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.2em] text-emerald-800">
           {role}
         </span>
-        <span>{displayName}</span>
+        {isImpersonating ? (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.12em] text-amber-900">
+            Suplantant {displayName}
+          </span>
+        ) : (
+          <span>{displayName}</span>
+        )}
+        {isImpersonating ? (
+          <button
+            type="button"
+            onClick={async () => {
+              await update({ clearImpersonation: true });
+              router.refresh();
+            }}
+            className="rounded-full border border-amber-200 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.12em] text-amber-800 hover:border-amber-300 hover:text-amber-900"
+          >
+            Deixar de suplantar
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: "/login" })}

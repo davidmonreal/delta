@@ -25,6 +25,10 @@ class InMemoryInvoiceRepository implements InvoiceCommandRepository {
   async updateManagerNormalized() {
     return;
   }
+
+  async assignManagerAlias() {
+    return;
+  }
 }
 
 describe("assignManager", () => {

@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import AppHeader from "@/components/layout/AppHeader";
 import { canSeeAdminNav, canSeeLinkedServices } from "@/modules/users/domain/uiPolicies";
+import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,17 +27,20 @@ export default async function RootLayout({
   return (
     <html lang="ca">
       <body className="min-h-screen bg-slate-100 text-slate-900">
-        {session ? (
-          <AppHeader
-            showAdminLink={showAdminLink}
-            showUploadLink={showUploadLink}
-            showLinkedServicesLink={showLinkedServicesLink}
-            role={session.user.role}
-            name={session.user.name}
-            email={session.user.email}
-          />
-        ) : null}
-        {children}
+        <Providers session={session}>
+          {session ? (
+            <AppHeader
+              showAdminLink={showAdminLink}
+              showUploadLink={showUploadLink}
+              showLinkedServicesLink={showLinkedServicesLink}
+              role={session.user.role}
+              name={session.user.name}
+              email={session.user.email}
+              impersonator={session.impersonator}
+            />
+          ) : null}
+          {children}
+        </Providers>
       </body>
     </html>
   );
