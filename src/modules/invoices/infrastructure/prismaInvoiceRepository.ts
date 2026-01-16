@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { normalizeName } from "@/lib/normalize";
+import { Prisma } from "@/generated/prisma";
 
 import type {
   BackfillInvoiceLine,
@@ -8,6 +9,10 @@ import type {
   ManagerNormalizationUpdate,
   UnmatchedInvoiceLine,
 } from "../ports/invoiceRepository";
+
+function toNumber(value: Prisma.Decimal | number) {
+  return typeof value === "number" ? value : value.toNumber();
+}
 
 export class PrismaInvoiceRepository implements InvoiceRepository {
   async listUnmatched(): Promise<UnmatchedInvoiceLine[]> {
@@ -61,7 +66,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       clientId: line.clientId,
       clientName: line.client.nameRaw,
       serviceName: line.service.conceptRaw,
-      total: line.total,
+      total: toNumber(line.total),
       suggestedUserId: suggestedByClient.get(line.clientId) ?? null,
       recentManagerName: recentManagerByClient.get(line.clientId) ?? null,
     }));

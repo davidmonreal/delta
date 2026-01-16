@@ -69,9 +69,9 @@ model InvoiceLine {
   date       DateTime
   year       Int
   month      Int
-  units      Float
-  price      Float
-  total      Float
+  units      Decimal @db.Decimal(12, 3)
+  price      Decimal @db.Decimal(12, 2)
+  total      Decimal @db.Decimal(12, 2)
   manager    String
   managerNormalized String?
   sourceFile String

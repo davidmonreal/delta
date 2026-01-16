@@ -41,6 +41,15 @@ function resolveManagerNameRow(row: ManagerSelectRow) {
   return resolveManagerName(row.manager, row.managerUser?.name);
 }
 
+function toNumber(value: Prisma.Decimal | number) {
+  return typeof value === "number" ? value : value.toNumber();
+}
+
+function toNumberOrNull(value: Prisma.Decimal | number | null) {
+  if (value === null) return null;
+  return toNumber(value);
+}
+
 const managerSelect = Prisma.validator<Prisma.InvoiceLineSelect>()({
   manager: true,
   managerUser: { select: { name: true } },
@@ -170,8 +179,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       serviceId: row.serviceId,
       year: row.year,
       month: row.month,
-      total: row.total,
-      units: row.units,
+      total: toNumber(row.total),
+      units: toNumber(row.units),
       series: row.series,
       albaran: row.albaran,
       numero: row.numero,
@@ -198,8 +207,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       serviceId: row.serviceId,
       year: row.year,
       month: row.month,
-      total: row._sum.total ?? null,
-      units: row._sum.units ?? null,
+      total: toNumberOrNull(row._sum.total),
+      units: toNumberOrNull(row._sum.units),
     })) satisfies MonthlyGroupRow[];
   }
 
@@ -283,8 +292,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       serviceId: row.serviceId,
       year: row.year,
       month: row.month,
-      total: row.total,
-      units: row.units,
+      total: toNumber(row.total),
+      units: toNumber(row.units),
       series: row.series,
       albaran: row.albaran,
       numero: row.numero,
@@ -335,8 +344,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       serviceId: row.serviceId,
       year: row.year,
       month: row.month,
-      total: row._sum.total ?? null,
-      units: row._sum.units ?? null,
+      total: toNumberOrNull(row._sum.total),
+      units: toNumberOrNull(row._sum.units),
     })) satisfies ClientGroupRow[];
   }
 
@@ -422,8 +431,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       serviceId: row.serviceId,
       year: row.year,
       month: row.month,
-      total: row.total,
-      units: row.units,
+      total: toNumber(row.total),
+      units: toNumber(row.units),
       series: row.series,
       albaran: row.albaran,
       numero: row.numero,
@@ -463,8 +472,8 @@ export class PrismaReportingRepository implements ReportingRepository {
       year: row.year,
       month: row.month,
       date: row.date,
-      total: row.total,
-      units: row.units,
+      total: toNumber(row.total),
+      units: toNumber(row.units),
       serviceId: row.serviceId,
       serviceName: row.service.conceptRaw,
       managerName: resolveManagerNameRow(row),

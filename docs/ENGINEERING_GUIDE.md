@@ -67,6 +67,7 @@ codebase reads like it was written by one person with the same criteria.
 - E2E tests use Playwright; avoid port conflicts by either:
   - Reusing an existing dev server: `RUN_E2E=1 E2E_SKIP_WEB_SERVER=1 E2E_BASE_URL=http://localhost:3000 npm run test:e2e`
   - Starting a dedicated server on another port: `RUN_E2E=1 E2E_PORT=3001 npm run test:e2e`
+  - If reusing the main dev server, start it with `E2E_AUTH_BYPASS=1 NEXTAUTH_URL=http://localhost:3000 npm run dev -- --port 3000` and switch back to the normal `npm run dev` after.
 
 ## Database guidance
 - Use numeric/decimal types for money; avoid float for totals.
