@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
 import { PrismaClient } from "../../src/generated/prisma";
+import { BcryptPasswordHasher } from "../../src/modules/users/infrastructure/bcryptPasswordHasher";
 import { normalizeName } from "../../src/lib/normalize";
 
 const test = base;
@@ -11,6 +12,11 @@ const runId = Date.now();
 const sourceFile = `__e2e__${runId}`;
 
 const adminEmail = `admin-${runId}@example.com`;
+const adminPassword = `pass-${runId}`;
+const extraUserEmails = [
+  `user-a-${runId}@example.com`,
+  `user-b-${runId}@example.com`,
+];
 let clientId = 0;
 const serviceIds: number[] = [];
 const serviceNames = {
@@ -29,12 +35,35 @@ const serviceIdsByKey: Record<keyof typeof serviceNames, number> = {
 };
 
 async function seedData() {
+  const passwordHasher = new BcryptPasswordHasher();
+  const adminPasswordHash = await passwordHasher.hash(adminPassword);
+
   const user = await prisma.user.create({
     data: {
       email: adminEmail,
       name: "Admin User",
       nameNormalized: normalizeName("Admin User"),
       role: "ADMIN",
+      passwordHash: adminPasswordHash,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: extraUserEmails[0],
+      name: `User A ${runId}`,
+      nameNormalized: normalizeName(`User A ${runId}`),
+      role: "USER",
+      passwordHash: "hashed",
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: extraUserEmails[1],
+      name: `User B ${runId}`,
+      nameNormalized: normalizeName(`User B ${runId}`),
+      role: "USER",
       passwordHash: "hashed",
     },
   });
@@ -182,7 +211,9 @@ async function seedData() {
 
 async function cleanup() {
   await prisma.invoiceLine.deleteMany({ where: { sourceFile } });
-  await prisma.user.deleteMany({ where: { email: adminEmail } });
+  await prisma.user.deleteMany({
+    where: { email: { in: [adminEmail, ...extraUserEmails] } },
+  });
   await prisma.client.deleteMany({ where: { id: clientId } });
   await prisma.service.deleteMany({ where: { id: { in: serviceIds } } });
   await prisma.$disconnect();
@@ -190,6 +221,12 @@ async function cleanup() {
 
 async function login(page: Page) {
   await page.goto("/");
+  if (page.url().includes("/login")) {
+    await page.getByLabel("Email").fill(adminEmail);
+    await page.getByLabel("Password").fill(adminPassword);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  }
 }
 
 test.describe("admin flows", () => {
@@ -254,5 +291,30 @@ test.describe("admin flows", () => {
     await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+  });
+
+  test("keeps edit modal open when switching users after save", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/admin/users");
+
+    const editButtons = page.locator('button[title="Editar usuari"]');
+    const editButtonCount = await editButtons.count();
+    expect(editButtonCount).toBeGreaterThan(1);
+
+    await editButtons.nth(0).click();
+    const editHeading = page.getByRole("heading", { name: "Editar usuari" });
+    await expect(editHeading).toBeVisible();
+
+    await page.getByLabel("Nom").fill(`Admin User ${runId} Updated`);
+    await page.getByRole("button", { name: "Guardar" }).click();
+    await expect(editHeading).toBeHidden();
+
+    const refreshedEditButtons = page.locator('button[title="Editar usuari"]');
+    await refreshedEditButtons.nth(1).click();
+    await expect(editHeading).toBeVisible();
+    await page.waitForTimeout(300);
+    await expect(editHeading).toBeVisible();
   });
 });
