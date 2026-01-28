@@ -329,6 +329,7 @@ export default function ComparisonResultsPanel({
           showMissing={showMissing}
           showNew={showNew}
           firstColumnLabel={firstColumnLabel}
+          currentFirst
           onCommentCreated={handleCommentCreated}
         />
       ) : (
@@ -342,6 +343,7 @@ export default function ComparisonResultsPanel({
           showNew={showNew}
           firstColumnLabel={firstColumnLabel}
           subtitleLayout={subtitleLayout}
+          currentFirst
           onCommentCreated={handleCommentCreated}
         />
       )}

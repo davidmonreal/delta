@@ -161,7 +161,7 @@ export default async function ClientPage({
             {client.nameRaw}
           </h1>
           <p className="mt-2 text-base text-slate-500">
-            Diferències per servei ({periodALabel} vs {periodBLabel})
+            Diferències per servei ({periodBLabel} vs {periodALabel})
           </p>
         </div>
         <FiltersForm

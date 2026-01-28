@@ -21,6 +21,7 @@ type AdminComparisonTableProps = {
   showMissing: boolean;
   showNew: boolean;
   firstColumnLabel: string;
+  currentFirst?: boolean;
   onCommentCreated?: (
     clientId: number,
     serviceId: number,
@@ -46,6 +47,7 @@ export default function AdminComparisonTable({
   showMissing,
   showNew,
   firstColumnLabel,
+  currentFirst = false,
   onCommentCreated,
 }: AdminComparisonTableProps) {
   const [query, setQuery] = useState("");
@@ -131,6 +133,7 @@ export default function AdminComparisonTable({
         showMissing={showMissing}
         showNew={showNew}
         firstColumnLabel={firstColumnLabel}
+        currentFirst={currentFirst}
         onCommentCreated={onCommentCreated}
       />
     </div>

@@ -102,7 +102,7 @@ export default async function Home({
             Diferències per client i servei
           </h1>
           <p className="mt-2 text-base text-slate-500">
-            Comparant {periodALabel} amb {periodBLabel}
+            Comparant {periodBLabel} amb {periodALabel}
           </p>
         </div>
         <FiltersForm

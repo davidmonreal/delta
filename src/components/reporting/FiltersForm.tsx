@@ -77,9 +77,9 @@ export default function FiltersForm({
 
   const monthYearValueA = `${yearA}-${String(monthA).padStart(2, "0")}`;
   const monthYearValueB = `${yearB}-${String(monthB).padStart(2, "0")}`;
-  const monthOptionsB =
+  const monthOptionsRight =
     selectedRangeType === "month"
-      ? filterOptionsByValue(monthOptions, monthYearValueA)
+      ? filterOptionsByValue(monthOptions, monthYearValueB)
       : monthOptions;
 
   const quarterOptions = useMemo(
@@ -87,9 +87,9 @@ export default function FiltersForm({
     [sortedMonths],
   );
 
-  const quarterOptionsB =
+  const quarterOptionsRight =
     selectedRangeType === "quarter"
-      ? filterOptionsByValue(quarterOptions, quarterAValue)
+      ? filterOptionsByValue(quarterOptions, quarterBValue)
       : quarterOptions;
 
   const findMonthOption = (value: string) =>
@@ -100,32 +100,32 @@ export default function FiltersForm({
   useEffect(() => {
     if (selectedRangeType !== "month") return;
     if (monthYearValueA !== monthYearValueB) return;
-    const fallback = monthOptionsB[0];
+    const fallback = monthOptionsRight[0];
     if (!fallback) return;
-    setYearB(fallback.year);
-    setMonthB(fallback.month);
-  }, [monthOptionsB, monthYearValueA, monthYearValueB, selectedRangeType]);
+    setYearA(fallback.year);
+    setMonthA(fallback.month);
+  }, [monthOptionsRight, monthYearValueA, monthYearValueB, selectedRangeType]);
 
   useEffect(() => {
     if (selectedRangeType !== "year") return;
-    const targetYear = yearA - 1;
-    const targetValue = `${targetYear}-${String(monthA).padStart(2, "0")}`;
+    const targetYear = yearB - 1;
+    const targetValue = `${targetYear}-${String(monthB).padStart(2, "0")}`;
     const targetOption = monthOptions.find(
       (option) => option.value === targetValue,
     );
     if (!targetOption) return;
-    if (monthYearValueB === targetOption.value) return;
-    setYearB(targetOption.year);
-    setMonthB(targetOption.month);
-  }, [selectedRangeType, yearA, monthA, monthYearValueB, monthOptions]);
+    if (monthYearValueA === targetOption.value) return;
+    setYearA(targetOption.year);
+    setMonthA(targetOption.month);
+  }, [selectedRangeType, yearB, monthB, monthYearValueA, monthOptions]);
 
   useEffect(() => {
     if (selectedRangeType !== "quarter") return;
     if (quarterAValue !== quarterBValue) return;
-    const fallback = quarterOptionsB[0];
+    const fallback = quarterOptionsRight[0];
     if (!fallback) return;
-    setQuarterBValue(fallback.value);
-  }, [quarterAValue, quarterBValue, quarterOptionsB, selectedRangeType]);
+    setQuarterAValue(fallback.value);
+  }, [quarterAValue, quarterBValue, quarterOptionsRight, selectedRangeType]);
 
   const isSameMonth =
     selectedRangeType === "month" && monthYearValueA === monthYearValueB;
@@ -185,93 +185,14 @@ export default function FiltersForm({
               <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
                 <ScrollDropdown
                   label="Mes/Any"
-                  value={monthYearValueA}
-                  options={monthOptions}
-                  onChange={(value) => {
-                    const option = findMonthOption(value);
-                    if (!option) return;
-                    setYearA(option.year);
-                    setMonthA(option.month);
-                  }}
-                />
-              <input type="hidden" name="aStartMonth" value={monthA} />
-              <input type="hidden" name="aEndMonth" value={monthA} />
-              <input type="hidden" name="aStartYear" value={yearA} />
-              <input type="hidden" name="aEndYear" value={yearA} />
-            </div>
-          ) : null}
-            {selectedRangeType === "quarter" ? (
-              <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
-                <ScrollDropdown
-                  label="Trimestre"
-                  value={quarterAValue}
-                  options={quarterOptions}
-                  onChange={setQuarterAValue}
-                />
-                {findQuarterOption(quarterAValue) ? (
-                  <>
-                    <input
-                      type="hidden"
-                      name="aStartMonth"
-                      value={findQuarterOption(quarterAValue)?.startMonth ?? 1}
-                    />
-                    <input
-                      type="hidden"
-                      name="aEndMonth"
-                      value={findQuarterOption(quarterAValue)?.endMonth ?? 1}
-                    />
-                    <input
-                      type="hidden"
-                      name="aStartYear"
-                      value={findQuarterOption(quarterAValue)?.year ?? yearA}
-                    />
-                    <input
-                      type="hidden"
-                      name="aEndYear"
-                      value={findQuarterOption(quarterAValue)?.year ?? yearA}
-                    />
-                  </>
-                ) : null}
-              </div>
-            ) : null}
-            {selectedRangeType === "period" ? (
-              <div className="flex flex-wrap items-start gap-3 md:flex-nowrap">
-                <ScrollDropdown
-                  label="Mes inici"
-                  value={periodAStartValue}
-                  options={monthOptions}
-                  onChange={setPeriodAStartValue}
-                  className="w-40"
-                />
-                <ScrollDropdown
-                  label="Mes fi"
-                  value={periodAEndValue}
-                  options={monthOptions}
-                  onChange={setPeriodAEndValue}
-                  className="w-40"
-                />
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Periode B
-          </span>
-          <div className="min-h-[80px]">
-            {selectedRangeType === "month" || selectedRangeType === "year" ? (
-              <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
-                <ScrollDropdown
-                  label="Mes/Any"
                   value={monthYearValueB}
-                  options={monthOptionsB}
+                  options={monthOptions}
                   onChange={(value) => {
                     const option = findMonthOption(value);
                     if (!option) return;
                     setYearB(option.year);
                     setMonthB(option.month);
                   }}
-                  disabled={selectedRangeType === "year"}
                 />
                 <input type="hidden" name="bStartMonth" value={monthB} />
                 <input type="hidden" name="bEndMonth" value={monthB} />
@@ -284,7 +205,7 @@ export default function FiltersForm({
                 <ScrollDropdown
                   label="Trimestre"
                   value={quarterBValue}
-                  options={quarterOptionsB}
+                  options={quarterOptions}
                   onChange={setQuarterBValue}
                 />
                 {findQuarterOption(quarterBValue) ? (
@@ -327,6 +248,85 @@ export default function FiltersForm({
                   value={periodBEndValue}
                   options={monthOptions}
                   onChange={setPeriodBEndValue}
+                  className="w-40"
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            Periode B
+          </span>
+          <div className="min-h-[80px]">
+            {selectedRangeType === "month" || selectedRangeType === "year" ? (
+              <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
+                <ScrollDropdown
+                  label="Mes/Any"
+                  value={monthYearValueA}
+                  options={monthOptionsRight}
+                  onChange={(value) => {
+                    const option = findMonthOption(value);
+                    if (!option) return;
+                    setYearA(option.year);
+                    setMonthA(option.month);
+                  }}
+                  disabled={selectedRangeType === "year"}
+                />
+                <input type="hidden" name="aStartMonth" value={monthA} />
+                <input type="hidden" name="aEndMonth" value={monthA} />
+                <input type="hidden" name="aStartYear" value={yearA} />
+                <input type="hidden" name="aEndYear" value={yearA} />
+              </div>
+            ) : null}
+            {selectedRangeType === "quarter" ? (
+              <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
+                <ScrollDropdown
+                  label="Trimestre"
+                  value={quarterAValue}
+                  options={quarterOptionsRight}
+                  onChange={setQuarterAValue}
+                />
+                {findQuarterOption(quarterAValue) ? (
+                  <>
+                    <input
+                      type="hidden"
+                      name="aStartMonth"
+                      value={findQuarterOption(quarterAValue)?.startMonth ?? 1}
+                    />
+                    <input
+                      type="hidden"
+                      name="aEndMonth"
+                      value={findQuarterOption(quarterAValue)?.endMonth ?? 1}
+                    />
+                    <input
+                      type="hidden"
+                      name="aStartYear"
+                      value={findQuarterOption(quarterAValue)?.year ?? yearA}
+                    />
+                    <input
+                      type="hidden"
+                      name="aEndYear"
+                      value={findQuarterOption(quarterAValue)?.year ?? yearA}
+                    />
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+            {selectedRangeType === "period" ? (
+              <div className="flex flex-wrap items-start gap-3 md:flex-nowrap">
+                <ScrollDropdown
+                  label="Mes inici"
+                  value={periodAStartValue}
+                  options={monthOptions}
+                  onChange={setPeriodAStartValue}
+                  className="w-40"
+                />
+                <ScrollDropdown
+                  label="Mes fi"
+                  value={periodAEndValue}
+                  options={monthOptions}
+                  onChange={setPeriodAEndValue}
                   className="w-40"
                 />
               </div>

@@ -20,6 +20,7 @@ type ComparisonTableProps = {
   showNew: boolean;
   firstColumnLabel: string;
   subtitleLayout?: "service-manager" | "manager-only";
+  currentFirst?: boolean;
   onCommentCreated?: (
     clientId: number,
     serviceId: number,
@@ -38,6 +39,7 @@ export default function ComparisonTable({
   showNew,
   firstColumnLabel,
   subtitleLayout = "service-manager",
+  currentFirst = false,
   onCommentCreated,
 }: ComparisonTableProps) {
   const { sortState, sortedRows, handleSort } = useComparisonSort(rows);
@@ -127,14 +129,17 @@ export default function ComparisonTable({
     );
   }
 
+  const firstPeriodLabel = currentFirst ? periodBLabel : periodALabel;
+  const secondPeriodLabel = currentFirst ? periodALabel : periodBLabel;
+
   return (
     <div className="grid gap-3">
       <div
         className={`grid items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 ${gridClass}`}
       >
         {renderSortLabel(firstColumnLabel, "client")}
-        <span className="text-right">Serveis {periodALabel}</span>
-        <span className="text-right">Serveis {periodBLabel}</span>
+        <span className="text-right">Serveis {firstPeriodLabel}</span>
+        <span className="text-right">Serveis {secondPeriodLabel}</span>
         <span className="flex justify-end">
           {disableDeltaSort ? (
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -173,8 +178,12 @@ export default function ComparisonTable({
             )}
             {renderSubtitle(row.subtitle, row.missingReason)}
           </div>
-          {renderUnitsInfo(row.previousUnits, row.previousUnitPrice, row.previousRef)}
-          {renderUnitsInfo(row.currentUnits, row.currentUnitPrice, row.currentRef)}
+          {currentFirst
+            ? renderUnitsInfo(row.currentUnits, row.currentUnitPrice, row.currentRef)
+            : renderUnitsInfo(row.previousUnits, row.previousUnitPrice, row.previousRef)}
+          {currentFirst
+            ? renderUnitsInfo(row.previousUnits, row.previousUnitPrice, row.previousRef)
+            : renderUnitsInfo(row.currentUnits, row.currentUnitPrice, row.currentRef)}
           <span
             className={`text-right font-semibold tabular-nums ${
               row.isMissing || row.deltaPrice < 0
