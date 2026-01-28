@@ -1,7 +1,7 @@
-import { pairLines } from "./pairLines";
+import { pairLines, type PairingLine } from "./pairLines";
 import type { YearMonth } from "../ports/reportingRepository";
 
-type PairingInput<T> = {
+type PairingInput<T extends PairingLine> = {
   previous: T[];
   current: T[];
   periodMonthsA: YearMonth[];
@@ -10,13 +10,15 @@ type PairingInput<T> = {
   tolerance: number;
 };
 
-type PairingResult<T> = {
+type PairingResult<T extends PairingLine> = {
   matches: Array<{ previous: T; current: T }>;
   unmatchedPrevious: T[];
   unmatchedCurrent: T[];
 };
 
-export function pairPeriodLines<T extends { year: number; month: number }>({
+export function pairPeriodLines<
+  T extends PairingLine & { year: number; month: number },
+>({
   previous,
   current,
   periodMonthsA,
