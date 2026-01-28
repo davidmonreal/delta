@@ -8,7 +8,12 @@ const CheckboxSchema = z.preprocess((value) => {
 }, z.boolean().optional());
 
 export const ShowSchema = z.enum(["neg", "eq", "pos", "miss", "new"]);
-export const ComparisonRangeTypeSchema = z.enum(["month", "quarter", "period"]);
+export const ComparisonRangeTypeSchema = z.enum([
+  "month",
+  "quarter",
+  "year",
+  "period",
+]);
 
 export const ComparisonFiltersSchema = z.object({
   year: z.coerce.number().int().min(2000).optional(),

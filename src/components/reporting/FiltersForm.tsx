@@ -107,6 +107,19 @@ export default function FiltersForm({
   }, [monthOptionsB, monthYearValueA, monthYearValueB, selectedRangeType]);
 
   useEffect(() => {
+    if (selectedRangeType !== "year") return;
+    const targetYear = yearA - 1;
+    const targetValue = `${targetYear}-${String(monthA).padStart(2, "0")}`;
+    const targetOption = monthOptions.find(
+      (option) => option.value === targetValue,
+    );
+    if (!targetOption) return;
+    if (monthYearValueB === targetOption.value) return;
+    setYearB(targetOption.year);
+    setMonthB(targetOption.month);
+  }, [selectedRangeType, yearA, monthA, monthYearValueB, monthOptions]);
+
+  useEffect(() => {
     if (selectedRangeType !== "quarter") return;
     if (quarterAValue !== quarterBValue) return;
     const fallback = quarterOptionsB[0];
@@ -137,7 +150,8 @@ export default function FiltersForm({
         <span className="mr-2 uppercase tracking-[0.2em] text-slate-400">
           Tipus comparacio
         </span>
-        {(["month", "quarter", "period"] as ComparisonRangeType[]).map((value) => (
+        {(["month", "quarter", "year", "period"] as ComparisonRangeType[]).map(
+          (value) => (
           <button
             key={value}
             type="button"
@@ -152,9 +166,12 @@ export default function FiltersForm({
               ? "Mes"
               : value === "quarter"
                 ? "Trimestre"
+                : value === "year"
+                  ? "Any"
                 : "Periode"}
           </button>
-        ))}
+          ),
+        )}
         <input type="hidden" name="rangeType" value={selectedRangeType} />
       </div>
 
@@ -164,7 +181,7 @@ export default function FiltersForm({
             Periode A
           </span>
           <div className="min-h-[80px]">
-            {selectedRangeType === "month" ? (
+            {selectedRangeType === "month" || selectedRangeType === "year" ? (
               <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
                 <ScrollDropdown
                   label="Mes/Any"
@@ -177,12 +194,12 @@ export default function FiltersForm({
                     setMonthA(option.month);
                   }}
                 />
-                <input type="hidden" name="aStartMonth" value={monthA} />
-                <input type="hidden" name="aEndMonth" value={monthA} />
-                <input type="hidden" name="aStartYear" value={yearA} />
-                <input type="hidden" name="aEndYear" value={yearA} />
-              </div>
-            ) : null}
+              <input type="hidden" name="aStartMonth" value={monthA} />
+              <input type="hidden" name="aEndMonth" value={monthA} />
+              <input type="hidden" name="aStartYear" value={yearA} />
+              <input type="hidden" name="aEndYear" value={yearA} />
+            </div>
+          ) : null}
             {selectedRangeType === "quarter" ? (
               <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
                 <ScrollDropdown
@@ -242,7 +259,7 @@ export default function FiltersForm({
             Periode B
           </span>
           <div className="min-h-[80px]">
-            {selectedRangeType === "month" ? (
+            {selectedRangeType === "month" || selectedRangeType === "year" ? (
               <div className="flex w-48 flex-col gap-2 text-xs font-semibold text-slate-500">
                 <ScrollDropdown
                   label="Mes/Any"
@@ -254,6 +271,7 @@ export default function FiltersForm({
                     setYearB(option.year);
                     setMonthB(option.month);
                   }}
+                  disabled={selectedRangeType === "year"}
                 />
                 <input type="hidden" name="bStartMonth" value={monthB} />
                 <input type="hidden" name="bEndMonth" value={monthB} />
