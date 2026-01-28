@@ -1,4 +1,8 @@
-import type { ReportingQueryRepository, YearMonth } from "../ports/reportingRepository";
+import type {
+  MonthlyLineRow,
+  ReportingQueryRepository,
+  YearMonth,
+} from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { resolveFilters } from "./filters";
 import { pairPeriodLines } from "./pairPeriodLines";
@@ -181,8 +185,7 @@ export async function getMonthlyComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    type LineItem = (typeof unmatchedPrevious)[number];
-    const merged = mergeUnmatchedByService<LineItem>(
+    const merged = mergeUnmatchedByService<MonthlyLineRow>(
       unmatchedPrevious,
       unmatchedCurrent,
     );

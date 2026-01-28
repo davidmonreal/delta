@@ -1,5 +1,9 @@
 import { ClientIdSchema } from "../dto/reportingSchemas";
-import type { ReportingQueryRepository, YearMonth } from "../ports/reportingRepository";
+import type {
+  ClientLineRow,
+  ReportingQueryRepository,
+  YearMonth,
+} from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
 import { resolveFilters } from "./filters";
 import { pairPeriodLines } from "./pairPeriodLines";
@@ -194,8 +198,7 @@ export async function getClientComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    type LineItem = (typeof unmatchedPrevious)[number];
-    const merged = mergeUnmatchedByService<LineItem>(
+    const merged = mergeUnmatchedByService<ClientLineRow>(
       unmatchedPrevious,
       unmatchedCurrent,
     );
