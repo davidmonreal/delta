@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireSuperadminSession } from "@/lib/require-auth";
+import { requireAdminSession } from "@/lib/require-auth";
 import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import {
   ServiceLinkInputSchema,
@@ -25,7 +25,7 @@ export async function createServiceLinkAction(
   _state: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireSuperadminSession();
+  await requireAdminSession();
   const parsed = ServiceLinkInputSchema.safeParse({
     serviceId: getString(formData, "serviceId"),
     linkedServiceId: getString(formData, "linkedServiceId"),
@@ -48,7 +48,7 @@ export async function deleteServiceLinkAction(
   _state: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireSuperadminSession();
+  await requireAdminSession();
   const parsed = DeleteServiceLinkSchema.safeParse({
     id: getString(formData, "id"),
   });

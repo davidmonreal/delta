@@ -1,11 +1,11 @@
-import { requireSuperadminSession } from "@/lib/require-auth";
+import { requireAdminSession } from "@/lib/require-auth";
 import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastructure/prismaLinkedServiceRepository";
 import LinkedServicesConfigurator from "@/components/linked-services/LinkedServicesConfigurator";
 
 export const dynamic = "force-dynamic";
 
 export default async function LinkedServicesPage() {
-  await requireSuperadminSession();
+  await requireAdminSession();
   const repo = new PrismaLinkedServiceRepository();
   const [services, links] = await Promise.all([repo.listServices(), repo.listLinks()]);
   await repo.disconnect?.();

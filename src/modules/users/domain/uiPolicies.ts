@@ -10,5 +10,5 @@ export function canManageUsers(role: UserRole) {
 }
 
 export function canSeeLinkedServices(role: UserRole) {
-  return isSuperadminRole(role);
+  return isAdminRole(role);
 }

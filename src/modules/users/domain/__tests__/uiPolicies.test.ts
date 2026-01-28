@@ -10,7 +10,7 @@ describe("uiPolicies", () => {
     expect(canManageUsers("ADMIN")).toBe(true);
     expect(canManageUsers("USER")).toBe(false);
     expect(canSeeLinkedServices("SUPERADMIN")).toBe(true);
-    expect(canSeeLinkedServices("ADMIN")).toBe(false);
+    expect(canSeeLinkedServices("ADMIN")).toBe(true);
     expect(canSeeLinkedServices("USER")).toBe(false);
   });
 });
