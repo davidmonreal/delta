@@ -203,10 +203,13 @@ export async function getClientComparison({
       unmatchedPrevious: ClientLineRow[];
       unmatchedCurrent: ClientLineRow[];
     } = mergeUnmatchedByService<ClientLineRow>(
-      unmatchedPrevious,
-      unmatchedCurrent,
+      pairing.unmatchedPrevious,
+      pairing.unmatchedCurrent,
     );
-    const matches = merged.matches.length > 0 ? [...pairing.matches, ...merged.matches] : pairing.matches;
+    const matches =
+      merged.matches.length > 0
+        ? [...pairing.matches, ...merged.matches]
+        : pairing.matches;
     const unmatchedPrevious = merged.unmatchedPrevious;
     const unmatchedCurrent = merged.unmatchedCurrent;
 

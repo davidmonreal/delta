@@ -190,10 +190,13 @@ export async function getMonthlyComparison({
       unmatchedPrevious: MonthlyLineRow[];
       unmatchedCurrent: MonthlyLineRow[];
     } = mergeUnmatchedByService<MonthlyLineRow>(
-      unmatchedPrevious,
-      unmatchedCurrent,
+      pairing.unmatchedPrevious,
+      pairing.unmatchedCurrent,
     );
-    const matches = merged.matches.length > 0 ? [...pairing.matches, ...merged.matches] : pairing.matches;
+    const matches =
+      merged.matches.length > 0
+        ? [...pairing.matches, ...merged.matches]
+        : pairing.matches;
     const unmatchedPrevious = merged.unmatchedPrevious;
     const unmatchedCurrent = merged.unmatchedCurrent;
 
