@@ -194,7 +194,11 @@ export async function getClientComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    const merged = mergeUnmatchedByService(unmatchedPrevious, unmatchedCurrent);
+    type LineItem = (typeof unmatchedPrevious)[number];
+    const merged = mergeUnmatchedByService<LineItem>(
+      unmatchedPrevious,
+      unmatchedCurrent,
+    );
     const matches = merged.matches.length > 0 ? [...pairing.matches, ...merged.matches] : pairing.matches;
     const unmatchedPrevious = merged.unmatchedPrevious;
     const unmatchedCurrent = merged.unmatchedCurrent;
