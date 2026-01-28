@@ -198,7 +198,11 @@ export async function getClientComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    const merged = mergeUnmatchedByService<ClientLineRow>(
+    const merged: {
+      matches: Array<{ previous: ClientLineRow; current: ClientLineRow }>;
+      unmatchedPrevious: ClientLineRow[];
+      unmatchedCurrent: ClientLineRow[];
+    } = mergeUnmatchedByService<ClientLineRow>(
       unmatchedPrevious,
       unmatchedCurrent,
     );

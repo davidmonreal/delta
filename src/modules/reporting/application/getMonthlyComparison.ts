@@ -185,7 +185,11 @@ export async function getMonthlyComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    const merged = mergeUnmatchedByService<MonthlyLineRow>(
+    const merged: {
+      matches: Array<{ previous: MonthlyLineRow; current: MonthlyLineRow }>;
+      unmatchedPrevious: MonthlyLineRow[];
+      unmatchedCurrent: MonthlyLineRow[];
+    } = mergeUnmatchedByService<MonthlyLineRow>(
       unmatchedPrevious,
       unmatchedCurrent,
     );
