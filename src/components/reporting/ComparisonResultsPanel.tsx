@@ -46,12 +46,14 @@ type CommentKey = {
 function buildBaseFilters({
   periodA,
   periodB,
+  rangeType,
   showPercentUnder,
   showPercentEqual,
   showPercentOver,
 }: {
   periodA: PeriodRange;
   periodB: PeriodRange;
+  rangeType: ComparisonRangeType;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
   showPercentOver: boolean;
@@ -61,6 +63,7 @@ function buildBaseFilters({
     periodB,
     periodMonthsA: expandPeriodMonths(periodA),
     periodMonthsB: expandPeriodMonths(periodB),
+    rangeType,
     show: "neg" as ShowFilter,
     showNegative: false,
     showEqual: false,
@@ -122,11 +125,19 @@ export default function ComparisonResultsPanel({
       buildBaseFilters({
         periodA,
         periodB,
+        rangeType,
         showPercentUnder,
         showPercentEqual,
         showPercentOver,
       }),
-    [periodA, periodB, showPercentEqual, showPercentOver, showPercentUnder],
+    [
+      periodA,
+      periodB,
+      rangeType,
+      showPercentEqual,
+      showPercentOver,
+      showPercentUnder,
+    ],
   );
 
   const activeFilters = useMemo(
