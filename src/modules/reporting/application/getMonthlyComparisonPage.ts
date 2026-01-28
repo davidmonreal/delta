@@ -17,6 +17,15 @@ export async function getMonthlyComparisonPage({
   rawFilters: {
     year?: string | string[];
     month?: string | string[];
+    aStartYear?: string | string[];
+    aStartMonth?: string | string[];
+    aEndYear?: string | string[];
+    aEndMonth?: string | string[];
+    bStartYear?: string | string[];
+    bStartMonth?: string | string[];
+    bEndYear?: string | string[];
+    bEndMonth?: string | string[];
+    rangeType?: string | string[];
     show?: string | string[];
     pctUnder?: string | string[];
     pctEqual?: string | string[];

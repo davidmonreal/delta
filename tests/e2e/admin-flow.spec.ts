@@ -192,6 +192,34 @@ async function seedData() {
         managerUserId: user.id,
       },
       {
+        date: new Date("2024-12-15T00:00:00Z"),
+        year: 2024,
+        month: 12,
+        units: 10,
+        price: 11,
+        total: 110,
+        manager: "Manager X",
+        managerNormalized: "MANAGER X",
+        sourceFile,
+        clientId: client.id,
+        serviceId: serviceIdsByKey.negative,
+        managerUserId: user.id,
+      },
+      {
+        date: new Date("2025-12-15T00:00:00Z"),
+        year: 2025,
+        month: 12,
+        units: 10,
+        price: 9,
+        total: 90,
+        manager: "Manager X",
+        managerNormalized: "MANAGER X",
+        sourceFile,
+        clientId: client.id,
+        serviceId: serviceIdsByKey.negative,
+        managerUserId: user.id,
+      },
+      {
         date: new Date(),
         year: 2024,
         month: 1,
@@ -347,7 +375,7 @@ test.describe("admin flows", () => {
     ).toHaveCount(0);
   });
 
-  test("shows monthly comparison on the home page", async ({ page }) => {
+test("shows monthly comparison on the home page", async ({ page }) => {
     await login(page);
     await page.goto(`/?show=neg&year=2025&month=1`);
     await expect(page.getByPlaceholder("Cerca per client")).toBeVisible();
@@ -356,12 +384,54 @@ test.describe("admin flows", () => {
     await expect(page.getByText(serviceNames.negative).first()).toBeVisible();
     await expect(page.getByText(serviceNames.equal, { exact: true })).toHaveCount(0);
     await expect(page.getByText(serviceNames.positive, { exact: true })).toHaveCount(0);
-    await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
-  });
+  await expect(page.getByText(serviceNames.missing, { exact: true })).toHaveCount(0);
+});
 
-  test("keeps edit modal open when switching users after save", async ({
-    page,
-  }) => {
+test("filters comparison by selected month", async ({ page }) => {
+  await login(page);
+  await page.goto(`/client/${clientId}?show=miss&rangeType=month`);
+
+  const periodA = page.getByText("Periode A", { exact: true }).locator("..");
+  const periodB = page.getByText("Periode B", { exact: true }).locator("..");
+
+  const openMonthDropdown = async (container: ReturnType<Page["locator"]>) => {
+    const dropdown = container.getByText("Mes/Any", { exact: true }).locator("..");
+    await dropdown.getByRole("button").click();
+    return dropdown;
+  };
+
+  const selectMonth = async (
+    container: ReturnType<Page["locator"]>,
+    label: string,
+  ) => {
+    const dropdown = await openMonthDropdown(container);
+    const option = dropdown.getByRole("button", { name: label });
+    await option.scrollIntoViewIfNeeded();
+    await option.click();
+  };
+
+  await selectMonth(periodA, "01/2024");
+  await selectMonth(periodB, "01/2025");
+  await page.getByRole("button", { name: "Actualitza" }).click();
+  await page.waitForURL(/aStartMonth=1/);
+
+  await expect(
+    page.getByText(serviceNames.missing, { exact: true }).first(),
+  ).toBeVisible();
+
+  await selectMonth(periodA, "12/2024");
+  await selectMonth(periodB, "12/2025");
+  await page.getByRole("button", { name: "Actualitza" }).click();
+  await page.waitForURL(/aStartMonth=12/);
+
+  await expect(
+    page.getByText(serviceNames.missing, { exact: true }),
+  ).toHaveCount(0);
+});
+
+test("keeps edit modal open when switching users after save", async ({
+  page,
+}) => {
     await login(page);
     await page.goto(`/admin/users?q=${runId}`);
 

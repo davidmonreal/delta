@@ -111,6 +111,10 @@ export interface ReportingQueryRepository {
     clientId: number,
     params?: { managerUserId?: number },
   ): Promise<YearMonth | null>;
+  getAvailableMonths(params?: {
+    managerUserId?: number;
+    clientId?: number;
+  }): Promise<YearMonth[]>;
   getMonthlyLinesForMonths(params: {
     months: YearMonth[];
     managerUserId?: number;
@@ -159,8 +163,7 @@ export interface ReportingQueryRepository {
   }): Promise<ClientManagerRow[]>;
   getClientLines(params: {
     clientId: number;
-    years: number[];
-    month: number;
+    months: YearMonth[];
     managerUserId?: number;
   }): Promise<ClientLineRow[]>;
   getClientInvoiceLines(params: {

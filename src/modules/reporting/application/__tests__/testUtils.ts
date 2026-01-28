@@ -17,6 +17,7 @@ import type {
 type SeedData = {
   latestEntry?: YearMonth | null;
   latestEntryByClient?: Map<number, YearMonth | null>;
+  availableMonths?: YearMonth[];
   monthlyGroups?: MonthlyGroupRow[];
   monthlyRefs?: MonthlyRefRow[];
   monthlyManagers?: MonthlyManagerRow[];
@@ -37,6 +38,7 @@ export class InMemoryReportingRepository implements ReportingQueryRepository {
   private monthlyRefs: MonthlyRefRow[];
   private monthlyManagers: MonthlyManagerRow[];
   private monthlyLines: MonthlyLineRow[];
+  private availableMonths: YearMonth[];
   private clients: ClientRow[];
   private services: ServiceRow[];
   private clientGroupsByClientId: Map<number, ClientGroupRow[]>;
@@ -48,6 +50,7 @@ export class InMemoryReportingRepository implements ReportingQueryRepository {
   constructor(seed: SeedData = {}) {
     this.latestEntry = seed.latestEntry ?? null;
     this.latestEntryByClient = seed.latestEntryByClient ?? new Map();
+    this.availableMonths = seed.availableMonths ?? [];
     this.monthlyGroups = seed.monthlyGroups ?? [];
     this.monthlyRefs = seed.monthlyRefs ?? [];
     this.monthlyManagers = seed.monthlyManagers ?? [];
@@ -68,6 +71,21 @@ export class InMemoryReportingRepository implements ReportingQueryRepository {
 
   async getLatestEntryForClient(clientId: number) {
     return this.latestEntryByClient.get(clientId) ?? null;
+  }
+
+  async getAvailableMonths(params?: { clientId?: number }) {
+    if (this.availableMonths.length > 0) return this.availableMonths;
+    if (params?.clientId) {
+      const rows = this.clientLinesByClientIdForComparison.get(params.clientId) ?? [];
+      return Array.from(
+        new Map(rows.map((row) => [`${row.year}-${row.month}`, { year: row.year, month: row.month }])).values(),
+      );
+    }
+    return Array.from(
+      new Map(
+        this.monthlyLines.map((row) => [`${row.year}-${row.month}`, { year: row.year, month: row.month }]),
+      ).values(),
+    );
   }
 
   async getMonthlyLinesForMonths({
@@ -135,9 +153,16 @@ export class InMemoryReportingRepository implements ReportingQueryRepository {
     return rows.filter((row) => years.includes(row.year) && row.month === month);
   }
 
-  async getClientLines({ clientId, years, month }: { clientId: number; years: number[]; month: number }) {
+  async getClientLines({
+    clientId,
+    months,
+  }: {
+    clientId: number;
+    months: YearMonth[];
+  }) {
     const rows = this.clientLinesByClientIdForComparison.get(clientId) ?? [];
-    return rows.filter((row) => years.includes(row.year) && row.month === month);
+    const monthSet = new Set(months.map((entry) => `${entry.year}-${entry.month}`));
+    return rows.filter((row) => monthSet.has(`${row.year}-${row.month}`));
   }
 
   async getClientInvoiceLines({ clientId }: { clientId: number }) {

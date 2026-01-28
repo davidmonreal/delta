@@ -4,15 +4,13 @@ import type { CurrentUser } from "@/modules/users/application/types";
 export async function getCommentedContexts({
   repo,
   sessionUser,
-  year,
-  month,
+  months,
   clientIds,
   serviceIds,
 }: {
   repo: CommentQueryRepository;
   sessionUser: CurrentUser;
-  year: number;
-  month: number;
+  months: Array<{ year: number; month: number }>;
   clientIds: number[];
   serviceIds: number[];
 }) {
@@ -23,8 +21,7 @@ export async function getCommentedContexts({
 
   const keys = await repo.findCommentedContexts({
     viewer: { userId, role: sessionUser.role },
-    year,
-    month,
+    months,
     clientIds,
     serviceIds,
   });

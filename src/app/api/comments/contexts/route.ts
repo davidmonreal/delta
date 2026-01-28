@@ -6,8 +6,12 @@ import { PrismaCommentRepository } from "@/modules/comments/infrastructure/prism
 import { getCommentedContexts } from "@/modules/comments/application/getCommentedContexts";
 
 const payloadSchema = z.object({
-  year: z.number().int(),
-  month: z.number().int(),
+  months: z.array(
+    z.object({
+      year: z.number().int(),
+      month: z.number().int().min(1).max(12),
+    }),
+  ),
   clientIds: z.array(z.number().int()),
   serviceIds: z.array(z.number().int()),
 });
@@ -20,8 +24,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const { year, month, clientIds, serviceIds } = parsed.data;
-  if (clientIds.length === 0 || serviceIds.length === 0) {
+  const { months, clientIds, serviceIds } = parsed.data;
+  if (clientIds.length === 0 || serviceIds.length === 0 || months.length === 0) {
     return NextResponse.json({ keys: [] });
   }
 
@@ -29,8 +33,7 @@ export async function POST(request: Request) {
   const { keys } = await getCommentedContexts({
     repo,
     sessionUser: session.user,
-    year,
-    month,
+    months,
     clientIds,
     serviceIds,
   });

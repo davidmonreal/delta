@@ -55,29 +55,34 @@ export class PrismaCommentRepository implements CommentRepository {
 
   async findCommentedContexts({
     viewer,
-    year,
-    month,
+    months,
     clientIds,
     serviceIds,
   }: {
     viewer: CommentViewer;
-    year: number;
-    month: number;
+    months: Array<{ year: number; month: number }>;
     clientIds: number[];
     serviceIds: number[];
   }): Promise<CommentContextKey[]> {
-    if (clientIds.length === 0 || serviceIds.length === 0) return [];
+    if (clientIds.length === 0 || serviceIds.length === 0 || months.length === 0) {
+      return [];
+    }
     const visibilityFilter = this.buildVisibilityFilter(viewer);
+    const uniqueMonths = Array.from(
+      new Map(months.map((entry) => [`${entry.year}-${entry.month}`, entry])).values(),
+    );
     const rows = await prisma.comparisonComment.findMany({
       where: {
-        year,
-        month,
+        OR: uniqueMonths.map((entry) => ({
+          year: entry.year,
+          month: entry.month,
+        })),
         clientId: { in: clientIds },
         serviceId: { in: serviceIds },
         ...visibilityFilter,
       },
-      distinct: ["clientId", "serviceId"],
-      select: { clientId: true, serviceId: true },
+      distinct: ["clientId", "serviceId", "year", "month"],
+      select: { clientId: true, serviceId: true, year: true, month: true },
     });
     return rows;
   }

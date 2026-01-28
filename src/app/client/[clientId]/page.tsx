@@ -12,10 +12,21 @@ import { PrismaLinkedServiceRepository } from "@/modules/linkedServices/infrastr
 import FiltersForm from "@/components/reporting/FiltersForm";
 import ComparisonResultsPanel from "@/components/reporting/ComparisonResultsPanel";
 import ClientInvoiceGroups from "@/components/reporting/ClientInvoiceGroups";
+import { formatPeriodLabel } from "@/modules/reporting/domain/periods";
+import { getAvailableMonths } from "@/modules/reporting/application/getAvailableMonths";
 
 type SearchParams = {
   year?: string | string[];
   month?: string | string[];
+  aStartYear?: string | string[];
+  aStartMonth?: string | string[];
+  aEndYear?: string | string[];
+  aEndMonth?: string | string[];
+  bStartYear?: string | string[];
+  bStartMonth?: string | string[];
+  bEndYear?: string | string[];
+  bEndMonth?: string | string[];
+  rangeType?: string | string[];
   show?: string | string[];
   pctUnder?: string | string[];
   pctEqual?: string | string[];
@@ -45,6 +56,15 @@ export default async function ClientPage({
       rawFilters: {
         year: resolvedSearchParams.year,
         month: resolvedSearchParams.month,
+        aStartYear: resolvedSearchParams.aStartYear,
+        aStartMonth: resolvedSearchParams.aStartMonth,
+        aEndYear: resolvedSearchParams.aEndYear,
+        aEndMonth: resolvedSearchParams.aEndMonth,
+        bStartYear: resolvedSearchParams.bStartYear,
+        bStartMonth: resolvedSearchParams.bStartMonth,
+        bEndYear: resolvedSearchParams.bEndYear,
+        bEndMonth: resolvedSearchParams.bEndMonth,
+        rangeType: resolvedSearchParams.rangeType,
         show: resolvedSearchParams.show,
         pctUnder: resolvedSearchParams.pctUnder,
         pctEqual: resolvedSearchParams.pctEqual,
@@ -79,14 +99,21 @@ export default async function ClientPage({
     })),
   }));
   const {
-    year,
-    month,
-    previousYear,
+    periodA,
+    periodB,
+    rangeType,
     show,
     showPercentUnder,
     showPercentEqual,
     showPercentOver,
   } = filters;
+  const availableMonths = await getAvailableMonths({
+    repo,
+    managerUserId: Number.isNaN(managerUserId) ? undefined : managerUserId,
+    clientId,
+  });
+  const periodALabel = formatPeriodLabel(periodA);
+  const periodBLabel = formatPeriodLabel(periodB);
   const rowsWithComments = summaries.map((row) => ({
     id: row.id,
     clientId,
@@ -96,6 +123,10 @@ export default async function ClientPage({
     managerUserId: row.managerUserId ?? null,
     managerName: row.managerName ?? null,
     missingReason: row.missingReason,
+    previousYear: row.previousYear ?? null,
+    previousMonth: row.previousMonth ?? null,
+    currentYear: row.currentYear ?? null,
+    currentMonth: row.currentMonth ?? null,
     previousUnits: row.previousUnits,
     currentUnits: row.currentUnits,
     previousTotal: row.previousTotal,
@@ -130,10 +161,16 @@ export default async function ClientPage({
             {client.nameRaw}
           </h1>
           <p className="mt-2 text-base text-slate-500">
-            Diferències per servei ({month}/{previousYear} vs {month}/{year})
+            Diferències per servei ({periodALabel} vs {periodBLabel})
           </p>
         </div>
-        <FiltersForm year={year} month={month} show={show} />
+        <FiltersForm
+          periodA={periodA}
+          periodB={periodB}
+          rangeType={rangeType}
+          availableMonths={availableMonths}
+          show={show}
+        />
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -141,9 +178,9 @@ export default async function ClientPage({
           rows={rowsWithComments}
           showCounts={showCounts}
           baseHref={`/client/${clientId}`}
-          year={year}
-          month={month}
-          previousYear={previousYear}
+          periodA={periodA}
+          periodB={periodB}
+          rangeType={rangeType}
           initialShow={show}
           showPercentUnder={showPercentUnder}
           showPercentEqual={showPercentEqual}

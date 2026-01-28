@@ -3,6 +3,8 @@ import type { CommentViewer } from "../domain/commentVisibilityPolicy";
 export type CommentContextKey = {
   clientId: number;
   serviceId: number;
+  year: number;
+  month: number;
 };
 
 export type CreateComparisonCommentData = {
@@ -31,8 +33,7 @@ export interface CommentQueryRepository {
   }): Promise<ComparisonCommentSummary | null>;
   findCommentedContexts(params: {
     viewer: CommentViewer;
-    year: number;
-    month: number;
+    months: Array<{ year: number; month: number }>;
     clientIds: number[];
     serviceIds: number[];
   }): Promise<CommentContextKey[]>;

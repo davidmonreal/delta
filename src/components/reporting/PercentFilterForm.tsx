@@ -2,10 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
+import type { ComparisonRangeType } from "@/modules/reporting/dto/reportingSchemas";
+import type { PeriodRange } from "@/modules/reporting/domain/periods";
+
 type PercentFilterFormProps = {
   baseHref: string;
-  year: number;
-  month: number;
+  periodA: PeriodRange;
+  periodB: PeriodRange;
+  rangeType?: ComparisonRangeType;
   show: string;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
@@ -14,8 +18,9 @@ type PercentFilterFormProps = {
 
 export default function PercentFilterForm({
   baseHref,
-  year,
-  month,
+  periodA,
+  periodB,
+  rangeType,
   show,
   showPercentUnder,
   showPercentEqual,
@@ -45,8 +50,15 @@ export default function PercentFilterForm({
       ref={formRef}
       className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600"
     >
-      <input type="hidden" name="year" value={year} />
-      <input type="hidden" name="month" value={month} />
+      <input type="hidden" name="aStartYear" value={periodA.startYear} />
+      <input type="hidden" name="aStartMonth" value={periodA.startMonth} />
+      <input type="hidden" name="aEndYear" value={periodA.endYear} />
+      <input type="hidden" name="aEndMonth" value={periodA.endMonth} />
+      <input type="hidden" name="bStartYear" value={periodB.startYear} />
+      <input type="hidden" name="bStartMonth" value={periodB.startMonth} />
+      <input type="hidden" name="bEndYear" value={periodB.endYear} />
+      <input type="hidden" name="bEndMonth" value={periodB.endMonth} />
+      {rangeType ? <input type="hidden" name="rangeType" value={rangeType} /> : null}
       <input type="hidden" name="show" value={show} />
       <span className="uppercase tracking-[0.2em] text-slate-400">Variació %</span>
       <label className="flex items-center gap-2">

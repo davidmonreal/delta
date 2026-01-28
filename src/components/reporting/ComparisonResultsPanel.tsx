@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { ShowFilter } from "@/modules/reporting/dto/reportingSchemas";
+import type { ComparisonRangeType, ShowFilter } from "@/modules/reporting/dto/reportingSchemas";
 import type { ComparisonRowViewModel } from "@/modules/reporting/dto/reportingViewModel";
 import type { FilterUserOption } from "@/modules/users/application/listUsersForFilter";
 import {
@@ -16,14 +16,16 @@ import ComparisonTable from "@/components/reporting/ComparisonTable";
 import ComparisonSummaryRow from "@/components/reporting/ComparisonSummaryRow";
 import PercentFilterForm from "@/components/reporting/PercentFilterForm";
 import ShowLinks from "@/components/reporting/ShowLinks";
+import type { PeriodRange } from "@/modules/reporting/domain/periods";
+import { expandPeriodMonths, formatPeriodLabel } from "@/modules/reporting/domain/periods";
 
 type ComparisonResultsPanelProps = {
   rows: ComparisonRowViewModel[];
   showCounts: ShowCounts;
   baseHref: string;
-  year: number;
-  month: number;
-  previousYear: number;
+  periodA: PeriodRange;
+  periodB: PeriodRange;
+  rangeType: ComparisonRangeType;
   initialShow: ShowFilter;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
@@ -37,27 +39,28 @@ type ComparisonResultsPanelProps = {
 type CommentKey = {
   clientId: number;
   serviceId: number;
+  year: number;
+  month: number;
 };
 
 function buildBaseFilters({
-  year,
-  month,
-  previousYear,
+  periodA,
+  periodB,
   showPercentUnder,
   showPercentEqual,
   showPercentOver,
 }: {
-  year: number;
-  month: number;
-  previousYear: number;
+  periodA: PeriodRange;
+  periodB: PeriodRange;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
   showPercentOver: boolean;
 }) {
   return {
-    year,
-    month,
-    previousYear,
+    periodA,
+    periodB,
+    periodMonthsA: expandPeriodMonths(periodA),
+    periodMonthsB: expandPeriodMonths(periodB),
     show: "neg" as ShowFilter,
     showNegative: false,
     showEqual: false,
@@ -74,9 +77,9 @@ export default function ComparisonResultsPanel({
   rows,
   showCounts,
   baseHref,
-  year,
-  month,
-  previousYear,
+  periodA,
+  periodB,
+  rangeType,
   initialShow,
   showPercentUnder,
   showPercentEqual,
@@ -103,25 +106,27 @@ export default function ComparisonResultsPanel({
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }, [activeShow]);
 
-  const handleCommentCreated = useCallback((clientId: number, serviceId: number) => {
-    setCommentKeys((prev) => {
-      const next = new Set(prev ?? []);
-      next.add(`${clientId}-${serviceId}`);
-      return next;
-    });
-  }, []);
+  const handleCommentCreated = useCallback(
+    (clientId: number, serviceId: number, year: number, month: number) => {
+      setCommentKeys((prev) => {
+        const next = new Set(prev ?? []);
+        next.add(`${clientId}-${serviceId}-${year}-${month}`);
+        return next;
+      });
+    },
+    [],
+  );
 
   const baseFilters = useMemo(
     () =>
       buildBaseFilters({
-        year,
-        month,
-        previousYear,
+        periodA,
+        periodB,
         showPercentUnder,
         showPercentEqual,
         showPercentOver,
       }),
-    [month, previousYear, showPercentEqual, showPercentOver, showPercentUnder, year],
+    [periodA, periodB, showPercentEqual, showPercentOver, showPercentUnder],
   );
 
   const activeFilters = useMemo(
@@ -132,15 +137,38 @@ export default function ComparisonResultsPanel({
   const commentParams = useMemo(() => {
     const clientIds = Array.from(new Set(rows.map((row) => row.clientId)));
     const serviceIds = Array.from(new Set(rows.map((row) => row.serviceId)));
+    const monthMap = new Map<string, { year: number; month: number }>();
+    for (const row of rows) {
+      if (row.previousYear && row.previousMonth) {
+        monthMap.set(`${row.previousYear}-${row.previousMonth}`, {
+          year: row.previousYear,
+          month: row.previousMonth,
+        });
+      }
+      if (row.currentYear && row.currentMonth) {
+        monthMap.set(`${row.currentYear}-${row.currentMonth}`, {
+          year: row.currentYear,
+          month: row.currentMonth,
+        });
+      }
+    }
+    const months = Array.from(monthMap.values());
     return {
       clientIds,
       serviceIds,
-      key: `${year}-${month}-${clientIds.join(",")}-${serviceIds.join(",")}`,
+      months,
+      key: `${clientIds.join(",")}-${serviceIds.join(",")}-${months
+        .map((entry) => `${entry.year}-${entry.month}`)
+        .join(",")}`,
     };
-  }, [month, rows, year]);
+  }, [rows]);
 
   useEffect(() => {
-    if (commentParams.clientIds.length === 0 || commentParams.serviceIds.length === 0) {
+    if (
+      commentParams.clientIds.length === 0 ||
+      commentParams.serviceIds.length === 0 ||
+      commentParams.months.length === 0
+    ) {
       setCommentKeys(new Set());
       return;
     }
@@ -150,8 +178,7 @@ export default function ComparisonResultsPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          year,
-          month,
+          months: commentParams.months,
           clientIds: commentParams.clientIds,
           serviceIds: commentParams.serviceIds,
         }),
@@ -160,7 +187,9 @@ export default function ComparisonResultsPanel({
       const data = (await response.json()) as { keys: CommentKey[] };
       if (!active) return;
       const nextSet = new Set(
-        data.keys.map((key) => `${key.clientId}-${key.serviceId}`),
+        data.keys.map(
+          (key) => `${key.clientId}-${key.serviceId}-${key.year}-${key.month}`,
+        ),
       );
       setCommentKeys(nextSet);
     };
@@ -168,7 +197,7 @@ export default function ComparisonResultsPanel({
     return () => {
       active = false;
     };
-  }, [commentParams.key, commentParams.clientIds, commentParams.serviceIds, month, year]);
+  }, [commentParams.key, commentParams.clientIds, commentParams.serviceIds, commentParams.months]);
 
   useEffect(() => {
     if (!enableAdminFilters) return;
@@ -190,7 +219,18 @@ export default function ComparisonResultsPanel({
     if (!commentKeys) return rows;
     return rows.map((row) => ({
       ...row,
-      hasComment: commentKeys.has(`${row.clientId}-${row.serviceId}`),
+      hasComment: Boolean(
+        (row.currentYear &&
+          row.currentMonth &&
+          commentKeys.has(
+            `${row.clientId}-${row.serviceId}-${row.currentYear}-${row.currentMonth}`,
+          )) ||
+          (row.previousYear &&
+            row.previousMonth &&
+            commentKeys.has(
+              `${row.clientId}-${row.serviceId}-${row.previousYear}-${row.previousMonth}`,
+            )),
+      ),
     }));
   }, [commentKeys, rows]);
 
@@ -243,8 +283,9 @@ export default function ComparisonResultsPanel({
         <div className="flex flex-col items-end gap-2">
           <ShowLinks
             baseHref={baseHref}
-            year={year}
-            month={month}
+            periodA={periodA}
+            periodB={periodB}
+            rangeType={rangeType}
             activeShow={activeShow}
             showPercentUnder={showPercentUnder}
             showPercentEqual={showPercentEqual}
@@ -255,8 +296,9 @@ export default function ComparisonResultsPanel({
           {showPositive ? (
             <PercentFilterForm
               baseHref={baseHref}
-              year={year}
-              month={month}
+              periodA={periodA}
+              periodB={periodB}
+              rangeType={rangeType}
               show={activeShow}
               showPercentUnder={showPercentUnder}
               showPercentEqual={showPercentEqual}
@@ -269,9 +311,8 @@ export default function ComparisonResultsPanel({
         <AdminComparisonTable
           rows={filteredRows}
           users={users}
-          previousYear={previousYear}
-          year={year}
-          month={month}
+          periodALabel={formatPeriodLabel(periodA)}
+          periodBLabel={formatPeriodLabel(periodB)}
           showPositive={showPositive}
           showEqual={showEqual}
           showMissing={showMissing}
@@ -282,9 +323,8 @@ export default function ComparisonResultsPanel({
       ) : (
         <ComparisonTable
           rows={filteredRows}
-          previousYear={previousYear}
-          year={year}
-          month={month}
+          periodALabel={formatPeriodLabel(periodA)}
+          periodBLabel={formatPeriodLabel(periodB)}
           showPositive={showPositive}
           showEqual={showEqual}
           showMissing={showMissing}

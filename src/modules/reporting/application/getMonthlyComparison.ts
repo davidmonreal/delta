@@ -1,11 +1,12 @@
 import type { ReportingQueryRepository, YearMonth } from "../ports/reportingRepository";
 import { formatRef } from "./formatRef";
-import { pairLines } from "./pairLines";
 import { resolveFilters } from "./filters";
+import { pairPeriodLines } from "./pairPeriodLines";
 import { applySummaryMetrics, buildShowCounts, type ShowCounts } from "./summaryUtils";
 import type { LinkedServiceRepository } from "@/modules/linkedServices/ports/linkedServiceRepository";
 import type { UserRole } from "@/modules/users/domain/userRole";
 import { isSuperadminRole } from "@/modules/users/domain/rolePolicies";
+import { shiftYearMonth } from "../domain/periods";
 
 export type MonthlySummaryRow = {
   id: string;
@@ -17,6 +18,10 @@ export type MonthlySummaryRow = {
   managerUserId?: number | null;
   missingReason?: string;
   isLinkedService?: boolean;
+  previousYear?: number;
+  previousMonth?: number;
+  currentYear?: number;
+  currentMonth?: number;
   previousRef: string | null;
   currentRef: string | null;
   previousTotal: number;
@@ -50,6 +55,15 @@ export async function getMonthlyComparison({
   rawFilters: {
     year?: string | string[];
     month?: string | string[];
+    aStartYear?: string | string[];
+    aStartMonth?: string | string[];
+    aEndYear?: string | string[];
+    aEndMonth?: string | string[];
+    bStartYear?: string | string[];
+    bStartMonth?: string | string[];
+    bEndYear?: string | string[];
+    bEndMonth?: string | string[];
+    rangeType?: string | string[];
     show?: string | string[];
     pctUnder?: string | string[];
     pctEqual?: string | string[];
@@ -57,8 +71,8 @@ export async function getMonthlyComparison({
   };
   managerUserId?: number;
 }): Promise<MonthlyComparisonResult> {
-  // Business rule: compare the same month across consecutive years and classify
-  // items as missing/new/changed for manager review.
+  // Business rule: compare two periods of equal length, matching month-by-month
+  // first and then reconciling remaining lines across the full period.
   const latestEntry = await repo.getLatestEntry({ managerUserId });
   const defaults = {
     year: latestEntry?.year ?? new Date().getFullYear(),
@@ -67,11 +81,17 @@ export async function getMonthlyComparison({
 
   const filters = resolveFilters({ raw: rawFilters, defaults });
 
-  const lines = await repo.getMonthlyLines({
-    years: [filters.previousYear, filters.year],
-    month: filters.month,
-    managerUserId,
-  });
+  const [previousLines, currentLines] = await Promise.all([
+    repo.getMonthlyLinesForMonths({
+      months: filters.periodMonthsA,
+      managerUserId,
+    }),
+    repo.getMonthlyLinesForMonths({
+      months: filters.periodMonthsB,
+      managerUserId,
+    }),
+  ]);
+  const lines = [...previousLines, ...currentLines];
   const includeLinkedMissing =
     filters.showMissing &&
     viewerRole &&
@@ -81,20 +101,18 @@ export async function getMonthlyComparison({
     ? await linkedServiceRepo.listLinks()
     : [];
   const linkedOffsets = new Set(linkedServices.map((link) => link.offsetMonths));
-  const extraOffsets = Array.from(linkedOffsets).filter(
-    (offset) => offset !== 0 && offset !== 12,
-  );
-  const offsetMonthMap = new Map<number, YearMonth>();
+  const extraOffsets = Array.from(linkedOffsets).filter((offset) => offset !== 0);
+  const offsetMonthMap = new Map<number, YearMonth[]>();
   for (const offset of extraOffsets) {
-    const shifted = new Date(filters.year, filters.month - 1 - offset, 1);
-    offsetMonthMap.set(offset, {
-      year: shifted.getFullYear(),
-      month: shifted.getMonth() + 1,
-    });
+    const months = filters.periodMonthsB.map((entry) =>
+      shiftYearMonth(entry, -offset),
+    );
+    offsetMonthMap.set(offset, months);
   }
+  const extraMonths = Array.from(offsetMonthMap.values()).flat();
   const extraLines = includeLinkedMissing
     ? await repo.getMonthlyLinesForMonths({
-        months: Array.from(offsetMonthMap.values()),
+        months: extraMonths,
         managerUserId,
       })
     : [];
@@ -123,6 +141,12 @@ export async function getMonthlyComparison({
 
   const rows = new Map<string, MonthlySummaryRow[]>();
   const linesByKey = new Map<string, typeof lines>();
+  const periodASet = new Set(
+    filters.periodMonthsA.map((entry) => `${entry.year}-${entry.month}`),
+  );
+  const periodBSet = new Set(
+    filters.periodMonthsB.map((entry) => `${entry.year}-${entry.month}`),
+  );
 
   for (const line of lines) {
     const key = `${line.clientId}-${line.serviceId}`;
@@ -136,8 +160,12 @@ export async function getMonthlyComparison({
     const [clientIdRaw, serviceIdRaw] = key.split("-");
     const clientId = Number(clientIdRaw);
     const serviceId = Number(serviceIdRaw);
-    const previous = serviceLines.filter((line) => line.year === filters.previousYear);
-    const current = serviceLines.filter((line) => line.year === filters.year);
+    const previous = serviceLines.filter((line) =>
+      periodASet.has(`${line.year}-${line.month}`),
+    );
+    const current = serviceLines.filter((line) =>
+      periodBSet.has(`${line.year}-${line.month}`),
+    );
     const pairing =
       previous.length === 1 && current.length === 1
         ? {
@@ -145,9 +173,11 @@ export async function getMonthlyComparison({
             unmatchedPrevious: [],
             unmatchedCurrent: [],
           }
-        : pairLines({
+        : pairPeriodLines({
             previous,
             current,
+            periodMonthsA: filters.periodMonthsA,
+            periodMonthsB: filters.periodMonthsB,
             metric: "unit",
             tolerance: 0.01,
           });
@@ -168,6 +198,10 @@ export async function getMonthlyComparison({
         managerName: match.current.managerName ?? match.previous.managerName ?? null,
         managerUserId:
           match.current.managerUserId ?? match.previous.managerUserId ?? null,
+        previousYear: match.previous.year,
+        previousMonth: match.previous.month,
+        currentYear: match.current.year,
+        currentMonth: match.current.month,
         previousRef: formatRef(
           match.previous.series,
           match.previous.albaran,
@@ -195,6 +229,8 @@ export async function getMonthlyComparison({
         ...baseRow,
         managerName: prev.managerName ?? null,
         managerUserId: prev.managerUserId ?? null,
+        previousYear: prev.year,
+        previousMonth: prev.month,
         previousRef: formatRef(prev.series, prev.albaran, prev.numero),
         currentRef: null,
         previousTotal: prev.total,
@@ -214,6 +250,8 @@ export async function getMonthlyComparison({
         ...baseRow,
         managerName: curr.managerName ?? null,
         managerUserId: curr.managerUserId ?? null,
+        currentYear: curr.year,
+        currentMonth: curr.month,
         previousRef: null,
         currentRef: formatRef(curr.series, curr.albaran, curr.numero),
         previousTotal: 0,
@@ -232,17 +270,14 @@ export async function getMonthlyComparison({
 
   const flattened = Array.from(rows.values()).flat();
   if (includeLinkedMissing) {
-    const currentLines = lines.filter((line) => line.year === filters.year);
-    const previousYearLines = lines.filter(
-      (line) => line.year === filters.previousYear,
-    );
+    const currentLinesForMissing = currentLines;
     const existingMissingKeys = new Set(
       flattened
         .filter((row) => row.previousUnits > 0 && row.currentUnits === 0)
         .map((row) => `${row.clientId}-${row.serviceId}`),
     );
     const currentKeys = new Set(
-      currentLines.map((line) => `${line.clientId}-${line.serviceId}`),
+      currentLinesForMissing.map((line) => `${line.clientId}-${line.serviceId}`),
     );
     const linkMap = new Map<
       number,
@@ -259,11 +294,13 @@ export async function getMonthlyComparison({
       }
     }
     const triggerLinesByOffset = new Map<number, typeof lines>();
-    triggerLinesByOffset.set(0, currentLines);
-    triggerLinesByOffset.set(12, previousYearLines);
-    for (const [offset, month] of offsetMonthMap.entries()) {
-      const scoped = extraLines.filter(
-        (line) => line.year === month.year && line.month === month.month,
+    triggerLinesByOffset.set(0, currentLinesForMissing);
+    for (const [offset, months] of offsetMonthMap.entries()) {
+      const monthSet = new Set(
+        months.map((entry) => `${entry.year}-${entry.month}`),
+      );
+      const scoped = extraLines.filter((line) =>
+        monthSet.has(`${line.year}-${line.month}`),
       );
       triggerLinesByOffset.set(offset, scoped);
     }

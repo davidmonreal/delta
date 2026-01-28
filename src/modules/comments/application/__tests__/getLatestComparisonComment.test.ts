@@ -15,7 +15,12 @@ class InMemoryCommentRepository implements CommentQueryRepository {
     };
   }
 
-  async findCommentedContexts() {
+  async findCommentedContexts(_: {
+    viewer: { userId: number; role: string };
+    months: Array<{ year: number; month: number }>;
+    clientIds: number[];
+    serviceIds: number[];
+  }) {
     return [];
   }
 }

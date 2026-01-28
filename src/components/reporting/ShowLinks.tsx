@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 
-import type { ShowFilter } from "@/modules/reporting/dto/reportingSchemas";
+import type { ComparisonRangeType, ShowFilter } from "@/modules/reporting/dto/reportingSchemas";
+import type { PeriodRange } from "@/modules/reporting/domain/periods";
+import { buildPeriodQueryParams } from "@/modules/reporting/domain/periods";
 
 type ShowLinksProps = {
   baseHref: string;
-  year: number;
-  month: number;
+  periodA: PeriodRange;
+  periodB: PeriodRange;
+  rangeType?: ComparisonRangeType;
   activeShow: ShowFilter;
   showPercentUnder: boolean;
   showPercentEqual: boolean;
@@ -24,8 +27,9 @@ type ShowLinksProps = {
 
 export default function ShowLinks({
   baseHref,
-  year,
-  month,
+  periodA,
+  periodB,
+  rangeType,
   activeShow,
   showPercentUnder,
   showPercentEqual,
@@ -41,13 +45,13 @@ export default function ShowLinks({
     value === activeShow
       ? "ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white"
       : "ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700";
-  const percentParams = new URLSearchParams({
-    pctUnder: showPercentUnder ? "1" : "0",
-    pctEqual: showPercentEqual ? "1" : "0",
-    pctOver: showPercentOver ? "1" : "0",
-  });
-  const percentSuffix = percentParams.toString();
-  const percentQuery = percentSuffix ? `&${percentSuffix}` : "";
+  const periodParams = buildPeriodQueryParams(periodA, periodB);
+  if (rangeType) {
+    periodParams.set("rangeType", rangeType);
+  }
+  periodParams.set("pctUnder", showPercentUnder ? "1" : "0");
+  periodParams.set("pctEqual", showPercentEqual ? "1" : "0");
+  periodParams.set("pctOver", showPercentOver ? "1" : "0");
 
   const items: Array<{ value: ShowFilter; label: string; count?: number }> = [
     { value: "neg", label: "Només negatives", count: showCounts?.neg },
@@ -75,7 +79,11 @@ export default function ShowLinks({
         ) : (
           <Link
             key={item.value}
-            href={`${baseHref}?year=${year}&month=${month}&show=${item.value}${percentQuery}`}
+            href={`${baseHref}?${(() => {
+              const params = new URLSearchParams(periodParams);
+              params.set("show", item.value);
+              return params.toString();
+            })()}`}
             className={linkClass(item.value)}
           >
             {item.label}

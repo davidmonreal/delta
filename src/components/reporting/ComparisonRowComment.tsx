@@ -9,8 +9,8 @@ import { IconButton } from "@/components/common/IconButton";
 type ComparisonRowCommentProps = {
   clientId: number;
   serviceId: number;
-  year: number;
-  month: number;
+  commentYear: number;
+  commentMonth: number;
   title: string;
   subtitle?: string;
   hasComment?: boolean;
@@ -27,8 +27,8 @@ const initialState: ActionState = {};
 export default function ComparisonRowComment({
   clientId,
   serviceId,
-  year,
-  month,
+  commentYear,
+  commentMonth,
   title,
   subtitle,
   hasComment = false,
@@ -63,7 +63,12 @@ export default function ComparisonRowComment({
     fetch("/api/comments/latest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId, serviceId, year, month }),
+      body: JSON.stringify({
+        clientId,
+        serviceId,
+        year: commentYear,
+        month: commentMonth,
+      }),
     })
       .then(async (res) => {
         if (!res.ok) return null;
@@ -82,7 +87,7 @@ export default function ComparisonRowComment({
           setIsLoading(false);
         }
       });
-  }, [open, clientId, serviceId, year, month]);
+  }, [open, clientId, serviceId, commentYear, commentMonth]);
 
   function handleSubmit(kind: "REPORT_ERROR" | "VALIDATE_DIFFERENCE") {
     const trimmed = message.trim();
@@ -94,8 +99,8 @@ export default function ComparisonRowComment({
     const formData = new FormData();
     formData.set("clientId", String(clientId));
     formData.set("serviceId", String(serviceId));
-    formData.set("year", String(year));
-    formData.set("month", String(month));
+    formData.set("year", String(commentYear));
+    formData.set("month", String(commentMonth));
     formData.set("kind", kind);
     formData.set("message", trimmed);
 

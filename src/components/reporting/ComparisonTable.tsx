@@ -12,23 +12,26 @@ import PaginationControls from "@/components/common/PaginationControls";
 
 type ComparisonTableProps = {
   rows: ComparisonRowViewModel[];
-  previousYear: number;
-  year: number;
-  month: number;
+  periodALabel: string;
+  periodBLabel: string;
   showPositive: boolean;
   showEqual: boolean;
   showMissing: boolean;
   showNew: boolean;
   firstColumnLabel: string;
   subtitleLayout?: "service-manager" | "manager-only";
-  onCommentCreated?: (clientId: number, serviceId: number) => void;
+  onCommentCreated?: (
+    clientId: number,
+    serviceId: number,
+    year: number,
+    month: number,
+  ) => void;
 };
 
 export default function ComparisonTable({
   rows,
-  previousYear,
-  year,
-  month,
+  periodALabel,
+  periodBLabel,
   showPositive,
   showEqual,
   showMissing,
@@ -130,8 +133,8 @@ export default function ComparisonTable({
         className={`grid items-center gap-4 rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 ${gridClass}`}
       >
         {renderSortLabel(firstColumnLabel, "client")}
-        <span className="text-right">Serveis {previousYear}</span>
-        <span className="text-right">Serveis {year}</span>
+        <span className="text-right">Serveis {periodALabel}</span>
+        <span className="text-right">Serveis {periodBLabel}</span>
         <span className="flex justify-end">
           {disableDeltaSort ? (
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -187,20 +190,28 @@ export default function ComparisonTable({
             </span>
           ) : null}
           <div className="flex justify-end">
-            <ComparisonRowComment
-              clientId={row.clientId}
-              serviceId={row.serviceId}
-              year={year}
-              month={month}
-              title={row.title}
-              subtitle={row.subtitle}
-              hasComment={row.hasComment}
-              onCommentCreated={
-                onCommentCreated
-                  ? () => onCommentCreated(row.clientId, row.serviceId)
-                  : undefined
-              }
-            />
+            {row.currentYear || row.previousYear ? (
+              <ComparisonRowComment
+                clientId={row.clientId}
+                serviceId={row.serviceId}
+                commentYear={row.currentYear ?? row.previousYear ?? 0}
+                commentMonth={row.currentMonth ?? row.previousMonth ?? 1}
+                title={row.title}
+                subtitle={row.subtitle}
+                hasComment={row.hasComment}
+                onCommentCreated={
+                  onCommentCreated
+                    ? () =>
+                        onCommentCreated(
+                          row.clientId,
+                          row.serviceId,
+                          row.currentYear ?? row.previousYear ?? 0,
+                          row.currentMonth ?? row.previousMonth ?? 1,
+                        )
+                    : undefined
+                }
+              />
+            ) : null}
           </div>
         </div>
       ))}

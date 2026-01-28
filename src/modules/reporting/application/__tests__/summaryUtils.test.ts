@@ -7,6 +7,7 @@ import {
   sortSummaries,
 } from "../summaryUtils";
 import type { ResolvedFilters } from "../filters";
+import { expandPeriodMonths } from "../../domain/periods";
 
 describe("summaryUtils", () => {
   it("calculates unit prices and percent deltas", () => {
@@ -58,10 +59,14 @@ describe("summaryUtils", () => {
       { deltaPrice: 1, isMissing: false, isNew: true },
     ];
 
+    const periodA = { startYear: 2023, startMonth: 1, endYear: 2023, endMonth: 1 };
+    const periodB = { startYear: 2024, startMonth: 1, endYear: 2024, endMonth: 1 };
     const baseFilters: ResolvedFilters = {
-      year: 2024,
-      month: 1,
-      previousYear: 2023,
+      periodA,
+      periodB,
+      periodMonthsA: expandPeriodMonths(periodA),
+      periodMonthsB: expandPeriodMonths(periodB),
+      rangeType: "month",
       show: "neg",
       showNegative: true,
       showEqual: false,
@@ -93,10 +98,14 @@ describe("summaryUtils", () => {
   });
 
   it("sorts missing first and orders by delta", () => {
+    const periodA = { startYear: 2023, startMonth: 1, endYear: 2023, endMonth: 1 };
+    const periodB = { startYear: 2024, startMonth: 1, endYear: 2024, endMonth: 1 };
     const filters: ResolvedFilters = {
-      year: 2024,
-      month: 1,
-      previousYear: 2023,
+      periodA,
+      periodB,
+      periodMonthsA: expandPeriodMonths(periodA),
+      periodMonthsB: expandPeriodMonths(periodB),
+      rangeType: "month",
       show: "neg",
       showNegative: true,
       showEqual: false,
@@ -121,10 +130,14 @@ describe("summaryUtils", () => {
   });
 
   it("sorts positives by percent delta", () => {
+    const periodA = { startYear: 2023, startMonth: 1, endYear: 2023, endMonth: 1 };
+    const periodB = { startYear: 2024, startMonth: 1, endYear: 2024, endMonth: 1 };
     const filters: ResolvedFilters = {
-      year: 2024,
-      month: 1,
-      previousYear: 2023,
+      periodA,
+      periodB,
+      periodMonthsA: expandPeriodMonths(periodA),
+      periodMonthsB: expandPeriodMonths(periodB),
+      rangeType: "month",
       show: "pos",
       showNegative: false,
       showEqual: false,
@@ -153,10 +166,14 @@ describe("summaryUtils", () => {
       { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 3 },
       { deltaPrice: 1, isMissing: false, isNew: false, percentDelta: 4.2 },
     ];
+    const periodA = { startYear: 2023, startMonth: 1, endYear: 2023, endMonth: 1 };
+    const periodB = { startYear: 2024, startMonth: 1, endYear: 2024, endMonth: 1 };
     const filters: ResolvedFilters = {
-      year: 2024,
-      month: 1,
-      previousYear: 2023,
+      periodA,
+      periodB,
+      periodMonthsA: expandPeriodMonths(periodA),
+      periodMonthsB: expandPeriodMonths(periodB),
+      rangeType: "month",
       show: "pos",
       showNegative: false,
       showEqual: false,
@@ -186,10 +203,14 @@ describe("summaryUtils", () => {
       { deltaPrice: 0, isMissing: true, isNew: false },
       { deltaPrice: 1, isMissing: false, isNew: true },
     ];
+    const periodA = { startYear: 2023, startMonth: 1, endYear: 2023, endMonth: 1 };
+    const periodB = { startYear: 2024, startMonth: 1, endYear: 2024, endMonth: 1 };
     const filters: ResolvedFilters = {
-      year: 2024,
-      month: 1,
-      previousYear: 2023,
+      periodA,
+      periodB,
+      periodMonthsA: expandPeriodMonths(periodA),
+      periodMonthsB: expandPeriodMonths(periodB),
+      rangeType: "month",
       show: "neg",
       showNegative: true,
       showEqual: false,

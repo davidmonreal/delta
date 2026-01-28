@@ -14,15 +14,19 @@ type UserOption = {
 type AdminComparisonTableProps = {
   rows: ComparisonRowViewModel[];
   users?: UserOption[];
-  previousYear: number;
-  year: number;
-  month: number;
+  periodALabel: string;
+  periodBLabel: string;
   showPositive: boolean;
   showEqual: boolean;
   showMissing: boolean;
   showNew: boolean;
   firstColumnLabel: string;
-  onCommentCreated?: (clientId: number, serviceId: number) => void;
+  onCommentCreated?: (
+    clientId: number,
+    serviceId: number,
+    year: number,
+    month: number,
+  ) => void;
 };
 
 function normalizeSearch(value: string) {
@@ -35,9 +39,8 @@ function normalizeSearch(value: string) {
 export default function AdminComparisonTable({
   rows,
   users,
-  previousYear,
-  year,
-  month,
+  periodALabel,
+  periodBLabel,
   showPositive,
   showEqual,
   showMissing,
@@ -121,9 +124,8 @@ export default function AdminComparisonTable({
       </div>
       <ComparisonTable
         rows={filteredRows}
-        previousYear={previousYear}
-        year={year}
-        month={month}
+        periodALabel={periodALabel}
+        periodBLabel={periodBLabel}
         showPositive={showPositive}
         showEqual={showEqual}
         showMissing={showMissing}

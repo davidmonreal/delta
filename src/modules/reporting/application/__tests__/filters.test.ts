@@ -9,9 +9,10 @@ describe("resolveFilters", () => {
       defaults: { year: 2024, month: 2 },
     });
 
-    expect(result.year).toBe(2024);
-    expect(result.month).toBe(2);
-    expect(result.previousYear).toBe(2023);
+    expect(result.periodB.startYear).toBe(2024);
+    expect(result.periodB.startMonth).toBe(2);
+    expect(result.periodA.startYear).toBe(2023);
+    expect(result.periodA.startMonth).toBe(2);
     expect(result.showNegative).toBe(true);
     expect(result.showPercentUnder).toBe(true);
     expect(result.showPercentEqual).toBe(false);

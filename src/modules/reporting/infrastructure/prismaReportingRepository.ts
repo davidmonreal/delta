@@ -137,6 +137,22 @@ export class PrismaReportingRepository implements ReportingRepository {
     });
   }
 
+  async getAvailableMonths(params?: {
+    managerUserId?: number;
+    clientId?: number;
+  }): Promise<YearMonth[]> {
+    const rows = await this.prismaClient.invoiceLine.findMany({
+      where: buildInvoiceLineWhere({
+        managerUserId: params?.managerUserId,
+        clientId: params?.clientId,
+      }),
+      distinct: ["year", "month"],
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+      select: { year: true, month: true },
+    });
+    return rows.map((row) => ({ year: row.year, month: row.month }));
+  }
+
   async getMonthlyLinesForMonths({
     months,
     managerUserId,
@@ -402,17 +418,26 @@ export class PrismaReportingRepository implements ReportingRepository {
 
   async getClientLines({
     clientId,
-    years,
-    month,
+    months,
     managerUserId,
   }: {
     clientId: number;
-    years: number[];
-    month: number;
+    months: YearMonth[];
     managerUserId?: number;
   }): Promise<ClientLineRow[]> {
-    const rows = await this.findInvoiceLines({
-      where: { clientId, years, month, managerUserId },
+    if (months.length === 0) return [];
+    const uniqueMonths = Array.from(
+      new Map(months.map((entry) => [`${entry.year}-${entry.month}`, entry])).values(),
+    );
+    const rows = await this.prismaClient.invoiceLine.findMany({
+      where: {
+        clientId,
+        ...(managerUserId ? { managerUserId } : {}),
+        OR: uniqueMonths.map((entry) => ({
+          year: entry.year,
+          month: entry.month,
+        })),
+      },
       select: {
         serviceId: true,
         year: true,
