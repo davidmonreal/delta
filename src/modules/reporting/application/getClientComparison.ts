@@ -194,7 +194,10 @@ export async function getClientComparison({
             metric: "unit",
             tolerance: 0.01,
           });
-    const { matches, unmatchedPrevious, unmatchedCurrent } = pairing;
+    const merged = mergeUnmatchedByService(unmatchedPrevious, unmatchedCurrent);
+    const matches = merged.matches.length > 0 ? [...pairing.matches, ...merged.matches] : pairing.matches;
+    const unmatchedPrevious = merged.unmatchedPrevious;
+    const unmatchedCurrent = merged.unmatchedCurrent;
 
     const baseRow = {
       serviceId,
@@ -368,4 +371,59 @@ export async function getClientComparison({
     summaries,
     showCounts,
   };
+}
+
+function mergeUnmatchedByService<T extends {
+  year: number;
+  month: number;
+  total: number;
+  units: number;
+  managerName?: string | null;
+  managerUserId?: number | null;
+  series?: string | null;
+  albaran?: string | null;
+  numero?: string | null;
+}>(previous: T[], current: T[]) {
+  if (previous.length === 0 || current.length === 0) {
+    return { matches: [] as Array<{ previous: T; current: T }>, unmatchedPrevious: previous, unmatchedCurrent: current };
+  }
+  const previousAggregate = buildAggregateLine(previous);
+  const currentAggregate = buildAggregateLine(current);
+  return {
+    matches: [{ previous: previousAggregate, current: currentAggregate }],
+    unmatchedPrevious: [] as T[],
+    unmatchedCurrent: [] as T[],
+  };
+}
+
+function buildAggregateLine<T extends {
+  year: number;
+  month: number;
+  total: number;
+  units: number;
+  managerName?: string | null;
+  managerUserId?: string | number | null;
+  series?: string | null;
+  albaran?: string | null;
+  numero?: string | null;
+}>(lines: T[]): T {
+  const latest = getLatestLine(lines);
+  const total = lines.reduce((sum, line) => sum + line.total, 0);
+  const units = lines.reduce((sum, line) => sum + line.units, 0);
+  return {
+    ...latest,
+    total,
+    units,
+    series: null,
+    albaran: null,
+    numero: null,
+  };
+}
+
+function getLatestLine<T extends { year: number; month: number }>(lines: T[]): T {
+  return lines.reduce((latest, line) => {
+    if (line.year > latest.year) return line;
+    if (line.year === latest.year && line.month > latest.month) return line;
+    return latest;
+  }, lines[0]);
 }
